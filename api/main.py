@@ -23,13 +23,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 
 from api import db
-from api.training import predict_with_cam, train_cnn
+from api.training import predict_with_cam, run_experiment
 from shared.data import CLASS_NAMES, IMG_SIZE, N_CLASSES, generate_one
 from shared.schemas import (
     ClassesResponse,
     ClassMetrics,
     Dataset,
     DatasetCreate,
+    ExperimentFields,
     Health,
     PredictResponse,
     PredictSampleRequest,
@@ -108,30 +109,68 @@ def create_dataset(req: DatasetCreate) -> Dataset:
 # ---------------------------------------------------------------------------
 @app.post("/train", response_model=TrainResponse, tags=["training"])
 def train(req: TrainRequest) -> TrainResponse:
-    """Read dataset params from Supabase, train the CNN, persist run + artifact."""
+    """Train with the registered dataset's settings; save the run, metadata and checkpoint."""
     dataset = db.get_dataset(req.dataset_id)
     if dataset is None:
         raise HTTPException(status_code=404, detail="dataset_id not found")
+    if (
+        req.experiment_group
+        and req.run_name
+        and db.run_name_exists(req.experiment_group, req.run_name)
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail=f"run_name {req.run_name!r} already exists in group {req.experiment_group!r}",
+        )
 
-    metrics, model_b64, _loss = train_cnn(
-        n_rows=dataset["n_rows"],
-        img_size=dataset["img_size"],
-        noise=dataset["noise"],
-        seed=dataset["seed"],
-        lr=req.lr,
-        batch_size=req.batch_size,
-        epochs=req.epochs,
-        test_size=req.test_size,
-    )
+    try:
+        result = run_experiment(
+            n_rows=dataset["n_rows"],
+            img_size=dataset["img_size"],
+            noise=dataset["noise"],
+            data_seed=dataset["seed"],
+            split_seed=req.split_seed,
+            train_seed=req.train_seed,
+            lr=req.lr,
+            batch_size=req.batch_size,
+            epochs=req.epochs,
+            test_size=req.test_size,
+            val_size=req.val_size,
+            arch=req.model_variant,
+            use_batchnorm=req.use_batchnorm,
+            dropout=req.dropout,
+            augment=req.augment,
+            augment_max_shift=req.augment_max_shift,
+            scheduler=req.scheduler,
+        )
+    except ValueError as exc:  # e.g. split fractions leave an empty partition
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    try:
+        experiment = db.experiment_columns(result, req.experiment_group, req.run_name)
+    except ValueError as exc:  # our own result failed its consistency checks
+        raise HTTPException(status_code=500, detail=f"inconsistent experiment result: {exc}")
+
+    metrics = result["metrics"]
     run = db.insert_run(
         dataset_id=req.dataset_id,
         lr=req.lr,
         batch_size=req.batch_size,
         epochs=req.epochs,
         metrics=metrics,
-        model_b64=model_b64,
+        model_b64=result["model_b64"],
+        experiment=experiment,
     )
-    return TrainResponse(run_id=run["id"], metrics=ClassMetrics(**metrics))
+    return TrainResponse(
+        run_id=run["id"],
+        metrics=ClassMetrics(**metrics),
+        **{k: run.get(k) for k in ExperimentFields.model_fields},
+    )
+
+
+def _run_from_row(row: dict) -> Run:
+    # Rows saved before migration 002 have no (or NULL) experiment fields.
+    return Run(**{k: row.get(k) for k in Run.model_fields})
 
 
 @app.get("/runs/{run_id}", response_model=Run, tags=["training"])
@@ -139,13 +178,12 @@ def get_run(run_id: int) -> Run:
     row = db.get_run(run_id)
     if row is None:
         raise HTTPException(status_code=404, detail="run_id not found")
-    return Run(**{k: row[k] for k in Run.model_fields})
+    return _run_from_row(row)
 
 
 @app.get("/runs", response_model=list[Run], tags=["training"])
 def list_runs() -> list[Run]:
-    rows = db.latest_runs(limit=50)
-    return [Run(**{k: r[k] for k in Run.model_fields}) for r in rows]
+    return [_run_from_row(r) for r in db.latest_runs(limit=50)]
 
 
 # ---------------------------------------------------------------------------

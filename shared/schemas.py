@@ -7,9 +7,9 @@ contract is identical to the base template; only the fields change.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -39,22 +39,93 @@ class Dataset(BaseModel):
 # Training
 # ---------------------------------------------------------------------------
 class TrainRequest(BaseModel):
-    """Request body for POST /train."""
+    """Request body for POST /train.
+
+    Everything after ``test_size`` is optional: an old request that only sends
+    ``dataset_id``/``lr``/``batch_size``/``epochs`` trains the baseline CNN with
+    no augmentation and no scheduler. The images always come from the registered
+    dataset's own generation settings (rows, noise, seed).
+    """
 
     dataset_id: int
-    lr: float = Field(0.01, gt=0.0, description="Adam learning rate.")
+    lr: float = Field(0.01, gt=0.0, description="Initial Adam learning rate.")
     batch_size: int = Field(32, ge=1)
     epochs: int = Field(15, ge=1, le=500)
-    test_size: float = Field(0.2, gt=0.0, lt=1.0, description="Held-out fraction.")
+    test_size: float = Field(0.2, gt=0.0, lt=1.0, description="Held-out test fraction.")
+    val_size: float = Field(0.1, gt=0.0, lt=1.0, description="Validation fraction.")
+
+    # Model variant and technique switches (independent of each other).
+    model_variant: Literal["baseline", "improved"] = "baseline"
+    use_batchnorm: bool = Field(True, description="Improved model only; ignored by baseline.")
+    dropout: float = Field(0.3, ge=0.0, lt=1.0, description="Improved model only; ignored by baseline.")
+    augment: bool = False
+    augment_max_shift: int = Field(2, ge=0, le=8)
+    scheduler: Literal["none", "cosine", "step"] = "none"
+
+    # Seeds: images come from the dataset's seed; these control the rest.
+    split_seed: int = Field(0, ge=0, le=2**32 - 1)
+    train_seed: int = Field(0, ge=0, le=2**32 - 1)
+
+    # Experiment bookkeeping (a run name is unique within its group).
+    experiment_group: Optional[str] = Field(None, min_length=1, max_length=100)
+    run_name: Optional[str] = Field(None, min_length=1, max_length=100)
+
+    model_config = ConfigDict(protected_namespaces=())
+
+    @model_validator(mode="after")
+    def _fractions_fit(self) -> "TrainRequest":
+        if self.test_size + self.val_size >= 1.0:
+            raise ValueError("test_size + val_size must be less than 1")
+        return self
 
 
 class ClassMetrics(BaseModel):
     accuracy: float
     macro_f1: float
+    test_loss: Optional[float] = None
 
 
-class Run(BaseModel):
-    """A training-run row as stored in Supabase (metrics only)."""
+class ExperimentFields(BaseModel):
+    """Experiment metadata stored on a run (columns added by migration 002).
+
+    All optional: runs saved before the migration have no values for them.
+    """
+
+    experiment_group: Optional[str] = None
+    run_name: Optional[str] = None
+    model_variant: Optional[Literal["baseline", "improved"]] = None
+    use_batchnorm: Optional[bool] = None
+    dropout: Optional[float] = None
+    augment: Optional[bool] = None
+    augment_max_shift: Optional[int] = None
+    scheduler: Optional[Literal["none", "cosine", "step"]] = None
+    data_seed: Optional[int] = None
+    split_seed: Optional[int] = None
+    train_seed: Optional[int] = None
+    split_sha256: Optional[str] = None
+    n_train: Optional[int] = None
+    n_val: Optional[int] = None
+    n_test: Optional[int] = None
+    optimizer: Optional[str] = None
+    config: Optional[Dict[str, Any]] = None
+    test_loss: Optional[float] = None
+    confusion_matrix: Optional[List[List[int]]] = Field(
+        None, description="Rows = true class, columns = predicted class (test set)."
+    )
+    train_loss_history: Optional[List[float]] = None
+    val_loss_history: Optional[List[float]] = None
+    val_accuracy_history: Optional[List[float]] = None
+    lr_history: Optional[List[float]] = None
+    best_epoch: Optional[int] = None
+    param_count: Optional[int] = None
+    train_seconds: Optional[float] = None
+    artifact_version: Optional[int] = None
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class Run(ExperimentFields):
+    """A training-run row as stored in Supabase (metrics + experiment metadata)."""
 
     id: int
     dataset_id: int
@@ -66,7 +137,7 @@ class Run(BaseModel):
     created_at: datetime
 
 
-class TrainResponse(BaseModel):
+class TrainResponse(ExperimentFields):
     run_id: int
     metrics: ClassMetrics
 

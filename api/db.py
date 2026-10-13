@@ -16,13 +16,28 @@ Environment variables (set locally in a .env, and in the Render dashboard):
 from __future__ import annotations
 
 import os
-from typing import List, Optional
+from typing import Any, List, Mapping, Optional
 
 from supabase import Client, create_client
 
+from api.experiments import validate_result
+
 _client: Optional[Client] = None
 
-_RUN_COLS = "id,dataset_id,lr,batch_size,epochs,accuracy,macro_f1,created_at"
+# Columns added to `runs` by db/migrations/002_experiment_tracking.sql. NULL on
+# rows saved before that migration.
+EXPERIMENT_COLUMNS = (
+    "experiment_group", "run_name", "model_variant", "use_batchnorm", "dropout",
+    "augment", "augment_max_shift", "scheduler", "data_seed", "split_seed",
+    "train_seed", "split_sha256", "n_train", "n_val", "n_test", "optimizer",
+    "config", "test_loss", "confusion_matrix", "train_loss_history",
+    "val_loss_history", "val_accuracy_history", "lr_history", "best_epoch",
+    "param_count", "train_seconds", "artifact_version",
+)
+_RUN_COLS = ",".join(
+    ("id", "dataset_id", "lr", "batch_size", "epochs", "accuracy", "macro_f1", "created_at")
+    + EXPERIMENT_COLUMNS
+)
 
 
 def get_client() -> Client:
@@ -82,6 +97,50 @@ def get_dataset(dataset_id: int) -> Optional[dict]:
 # ---------------------------------------------------------------------------
 # runs  +  run_artifacts
 # ---------------------------------------------------------------------------
+def experiment_columns(
+    result: Mapping[str, Any],
+    experiment_group: Optional[str] = None,
+    run_name: Optional[str] = None,
+) -> dict:
+    """Map a ``run_experiment`` result to the new `runs` columns (migration 002).
+
+    ``accuracy`` / ``macro_f1`` are NOT here: they use the existing columns.
+    The model checkpoint is NOT here either: it goes to `run_artifacts`.
+    Raises ``ValueError`` if the result is inconsistent (see ``validate_result``).
+    """
+    validate_result(result)
+    cfg, sizes = result["config"], result["split_sizes"]
+    return {
+        "experiment_group": experiment_group,
+        "run_name": run_name,
+        "model_variant": cfg["arch"],
+        "use_batchnorm": cfg["use_batchnorm"],
+        "dropout": cfg["dropout"],
+        "augment": cfg["augment"],
+        "augment_max_shift": cfg["augment_max_shift"],
+        "scheduler": cfg["scheduler"],
+        "data_seed": cfg["data_seed"],
+        "split_seed": cfg["split_seed"],
+        "train_seed": cfg["train_seed"],
+        "split_sha256": result["split_sha256"],
+        "n_train": sizes["train"],
+        "n_val": sizes["val"],
+        "n_test": sizes["test"],
+        "optimizer": cfg["optimizer"],
+        "config": cfg,
+        "test_loss": result["metrics"]["test_loss"],
+        "confusion_matrix": result["confusion_matrix"],
+        "train_loss_history": result["train_loss"],
+        "val_loss_history": result["val_loss"],
+        "val_accuracy_history": result["val_accuracy"],
+        "lr_history": result["lr_history"],
+        "best_epoch": result["best_epoch"],
+        "param_count": result["param_count"],
+        "train_seconds": result["train_seconds"],
+        "artifact_version": result["artifact_version"],
+    }
+
+
 def insert_run(
     dataset_id: int,
     lr: float,
@@ -89,27 +148,46 @@ def insert_run(
     epochs: int,
     metrics: dict,
     model_b64: str,
+    experiment: Optional[Mapping[str, Any]] = None,
 ) -> dict:
+    """Save a run row (metrics + optional experiment metadata) and its checkpoint.
+
+    ``experiment`` is the dict from ``experiment_columns``; without it the row is
+    saved the old way and the new columns stay NULL.
+    """
     client = get_client()
+    row = {
+        "dataset_id": dataset_id,
+        "lr": lr,
+        "batch_size": batch_size,
+        "epochs": epochs,
+        "accuracy": metrics["accuracy"],
+        "macro_f1": metrics["macro_f1"],
+        **(experiment or {}),
+    }
+    run = client.table("runs").insert(row).execute().data[0]
+    try:
+        client.table("run_artifacts").insert(
+            {"run_id": run["id"], "model_b64": model_b64}
+        ).execute()
+    except Exception:
+        # Do not leave a run with no checkpoint behind.
+        client.table("runs").delete().eq("id", run["id"]).execute()
+        raise
+    return run
+
+
+def run_name_exists(experiment_group: str, run_name: str) -> bool:
     resp = (
-        client.table("runs")
-        .insert(
-            {
-                "dataset_id": dataset_id,
-                "lr": lr,
-                "batch_size": batch_size,
-                "epochs": epochs,
-                "accuracy": metrics["accuracy"],
-                "macro_f1": metrics["macro_f1"],
-            }
-        )
+        get_client()
+        .table("runs")
+        .select("id")
+        .eq("experiment_group", experiment_group)
+        .eq("run_name", run_name)
+        .limit(1)
         .execute()
     )
-    run = resp.data[0]
-    client.table("run_artifacts").insert(
-        {"run_id": run["id"], "model_b64": model_b64}
-    ).execute()
-    return run
+    return bool(resp.data)
 
 
 def get_run(run_id: int) -> Optional[dict]:

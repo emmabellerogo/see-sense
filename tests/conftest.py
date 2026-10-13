@@ -6,11 +6,22 @@ unless real credentials are present, so `pytest` stays green in CI/offline.
 """
 from __future__ import annotations
 
+import json
 import os
+import re
+from pathlib import Path
 
 import pytest
 
 from shared.data import IMG_SIZE, N_CLASSES
+
+
+# The runs columns migration 002 adds, read from the SQL file itself so the fake
+# database below accepts exactly the column names a real one would.
+MIGRATION_002 = Path(__file__).parent.parent / "db" / "migrations" / "002_experiment_tracking.sql"
+MIGRATION_COLUMNS = tuple(
+    re.findall(r"add column if not exists (\w+)", MIGRATION_002.read_text())
+)
 
 
 @pytest.fixture
@@ -46,7 +57,19 @@ def client(monkeypatch):
     def get_dataset(dataset_id):
         return store["datasets"].get(dataset_id)
 
-    def insert_run(dataset_id, lr, batch_size, epochs, metrics, model_b64):
+    def insert_run(dataset_id, lr, batch_size, epochs, metrics, model_b64, experiment=None):
+        experiment = dict(experiment or {})
+        unknown = set(experiment) - set(MIGRATION_COLUMNS)
+        assert not unknown, f"columns not in migration 002: {sorted(unknown)}"
+        json.dumps(experiment)  # jsonb columns must be JSON-serializable
+        # Mirror a few of the migration's CHECK constraints.
+        assert experiment.get("model_variant") in (None, "baseline", "improved")
+        assert experiment.get("scheduler") in (None, "none", "cosine", "step")
+        for h in ("train_loss_history", "val_loss_history", "val_accuracy_history", "lr_history"):
+            assert experiment.get(h) is None or len(experiment[h]) == epochs
+        group, name = experiment.get("experiment_group"), experiment.get("run_name")
+        if group and name:
+            assert not run_name_exists(group, name), "duplicate (experiment_group, run_name)"
         counters["runs"] += 1
         row = {
             "id": counters["runs"],
@@ -57,10 +80,18 @@ def client(monkeypatch):
             "accuracy": metrics["accuracy"],
             "macro_f1": metrics["macro_f1"],
             "created_at": "2026-01-01T00:00:00+00:00",
+            **{c: None for c in MIGRATION_COLUMNS},  # old-style rows leave these NULL
+            **experiment,
         }
         store["runs"][row["id"]] = row
         store["artifacts"][row["id"]] = model_b64
         return row
+
+    def run_name_exists(experiment_group, run_name):
+        return any(
+            r["experiment_group"] == experiment_group and r["run_name"] == run_name
+            for r in store["runs"].values()
+        )
 
     def get_run(run_id):
         return store["runs"].get(run_id)
@@ -89,6 +120,7 @@ def client(monkeypatch):
     monkeypatch.setattr(db, "insert_dataset", insert_dataset)
     monkeypatch.setattr(db, "get_dataset", get_dataset)
     monkeypatch.setattr(db, "insert_run", insert_run)
+    monkeypatch.setattr(db, "run_name_exists", run_name_exists)
     monkeypatch.setattr(db, "get_run", get_run)
     monkeypatch.setattr(db, "get_run_artifact", get_run_artifact)
     monkeypatch.setattr(db, "latest_runs", latest_runs)
