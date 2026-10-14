@@ -101,7 +101,7 @@ cd see-sense
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 
-pytest -q            # 6 pass; the live-Supabase test skips without creds
+pytest -q            # 82 pass; the live-Supabase test skips without creds
 
 cp .env.example .env                                   # API: SUPABASE_URL + SERVICE key
 cp ui/.streamlit/secrets.toml.example ui/.streamlit/secrets.toml
@@ -109,6 +109,11 @@ cp ui/.streamlit/secrets.toml.example ui/.streamlit/secrets.toml
 uvicorn api.main:app --reload --port 8000              # terminal 1
 streamlit run ui/app.py                                # terminal 2
 ```
+
+No Supabase keys yet? Run the API offline with
+`SEE_SENSE_LOCAL_DB=.local_db.json uvicorn api.main:app --port 8000`.
+See [docs/RUN_API_LOCALLY.md](docs/RUN_API_LOCALLY.md) for both modes and the
+verification steps.
 
 To deploy to the three clouds, follow **Part E** of the main
 [TUTORIAL](../three-cloud/TUTORIAL.md): apply
