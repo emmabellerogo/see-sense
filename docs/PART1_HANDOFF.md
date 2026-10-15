@@ -218,12 +218,14 @@ during exploration. Queries 1 to 3 are the safe ones before freezing; keep to th
 
 | Item | Value |
 |---|---|
-| Dataset ID / rows / noise / data seed | |
-| `split_seed`, test fraction, validation fraction | |
-| Training seeds | |
-| Epochs, batch size, initial learning rate (Adam) | |
-| Dropout, augmentation shift, scheduler | |
-| Evidence used to choose these (validation / training only) | |
-| Experiment group | |
-| Protocol fingerprint | |
-| Frozen on (date) | |
+| Dataset ID / rows / noise / data seed | new dataset `shapes-2000-noise1.0`: 2000 rows, noise 1.0, seed 42 (ID 2 locally; register in Supabase with `POST /datasets`) |
+| `split_seed`, test fraction, validation fraction | 0, 0.2, 0.1 |
+| Training seeds | 0, 1, 2, 3, 4 |
+| Epochs, batch size, initial learning rate (Adam) | 30, 32, 0.01 |
+| Dropout, augmentation shift, scheduler | 0.3, 1 px, cosine |
+| Evidence used to choose these (validation / training only) | see [PART2_PROTOCOL.md](PART2_PROTOCOL.md) and `experiments/results/explore_*.jsonl` |
+| Experiment group | `official-1` |
+| Protocol fingerprint | `cf05f9546cbbb0d4eb1cadfe0f7854bee883ffd9899ba5b1388aab3d6d9a578d` (dataset ID 2; changes only if the Supabase dataset ID differs) |
+| Frozen on (date) | 2026-10-15 |
+
+Results: [PART2_RESULTS.md](PART2_RESULTS.md).
