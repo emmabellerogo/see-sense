@@ -1,4 +1,10 @@
-"""Loaders for the saved official-supabase-1 experiment evidence.
+"""Loaders for saved experiment evidence: the FINAL Fashion-MNIST set and the HISTORICAL synthetic set.
+
+Two evidence sets exist and are never mixed:
+  * ``FASHION``    - the final 10-class Fashion-MNIST comparison (files appear only after the
+                     official runs have been completed; until then it reports "not available").
+  * ``HISTORICAL`` - the earlier 4-class synthetic-shape experiment (group official-supabase-1),
+                     kept for transparency and clearly labelled where it is shown.
 
 Pure standard library (no streamlit, pandas or torch) so it can be unit-tested
 offline. Every path is resolved from this file's location, never from the
@@ -8,37 +14,93 @@ message when a file is missing or malformed; they never invent values.
 from __future__ import annotations
 
 import csv
+import json
 import math
 import re
 from pathlib import Path
+from typing import NamedTuple, Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-GROUP = "official-supabase-1"
 RESULTS = REPO_ROOT / "experiments" / "results"
-SQL_DIR = RESULTS / f"{GROUP}-sql"
-ANALYSIS_DIR = RESULTS / f"{GROUP}-analysis"
-GRADCAM_DIR = RESULTS / f"{GROUP}-gradcam"
 MODEL_CARD = REPO_ROOT / "MODEL_CARD.md"
-FAILURE_DOC = REPO_ROOT / "docs" / "SUPABASE_GRADCAM_FAILURE_ANALYSIS.md"
+PROTOCOL_CONFIG = REPO_ROOT / "config" / "fashion_protocol.json"
+
+FASHION_CLASSES = ("T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
+                   "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot")
+LEGACY_SYNTHETIC_CLASSES = ("horizontal", "vertical", "diagonal", "block")
+
+
+def _fashion_group(path: Path = PROTOCOL_CONFIG) -> str:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))["experiment_group"]
+    except (OSError, ValueError, KeyError):
+        return "fashion-official-1"
+
+
+class EvidenceSet(NamedTuple):
+    """Where one experiment's saved evidence lives and what shape it must have."""
+
+    key: str
+    title: str
+    group: str
+    classes: tuple
+    failure_doc: Path
+    expected_seeds: Optional[int]          # None = whatever the protocol used (>= 1)
+    gradcam_counts: Optional[tuple]        # exact (n_correct, n_incorrect), or None = at least 5 each
+
+    @property
+    def sql_dir(self) -> Path:
+        return RESULTS / f"{self.group}-sql"
+
+    @property
+    def analysis_dir(self) -> Path:
+        return RESULTS / f"{self.group}-analysis"
+
+    @property
+    def gradcam_dir(self) -> Path:
+        return RESULTS / f"{self.group}-gradcam"
+
+    def figure(self, name: str) -> Path:
+        folder = self.gradcam_dir if name.startswith("gradcam") else self.analysis_dir
+        return folder / f"{name}.png"
+
+    def available(self) -> bool:
+        return (self.sql_dir / "q5.csv").is_file()
+
+
+HISTORICAL = EvidenceSet(
+    key="historical-synthetic", title="Historical: 4-class synthetic shapes (NOT Fashion-MNIST)",
+    group="official-supabase-1", classes=LEGACY_SYNTHETIC_CLASSES,
+    failure_doc=REPO_ROOT / "docs" / "SUPABASE_GRADCAM_FAILURE_ANALYSIS.md",
+    expected_seeds=5, gradcam_counts=(5, 8),
+)
+FASHION = EvidenceSet(
+    key="fashion-mnist", title="Final: Fashion-MNIST, 10 classes", group=_fashion_group(),
+    classes=FASHION_CLASSES, failure_doc=REPO_ROOT / "docs" / "FASHION_GRADCAM_FAILURE_ANALYSIS.md",
+    expected_seeds=None, gradcam_counts=None,
+)
+
+# Backwards-compatible names for the historical set.
+GROUP = HISTORICAL.group
+SQL_DIR, ANALYSIS_DIR, GRADCAM_DIR = HISTORICAL.sql_dir, HISTORICAL.analysis_dir, HISTORICAL.gradcam_dir
+FAILURE_DOC = HISTORICAL.failure_doc
+
+# Two-sided 95% t critical values by degrees of freedom (number of paired seeds - 1).
+T95 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776445105, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262}
 
 EXPECTED_SEEDS = 5
 EXPECTED_VARIANTS = (
     "baseline", "full_improved", "no_augmentation",
     "no_batchnorm", "no_dropout", "no_scheduler",
 )
-# Two-sided 95% t critical value, df = 4 (five paired seeds).
-T_CRIT_DF4 = 2.776445105
+T_CRIT_DF4 = T95[4]
 N_CORRECT_EXPECTED = 5
 N_INCORRECT_EXPECTED = 8
 UNCERTAIN_BELOW = 0.5  # a correct prediction under this confidence is flagged
 
-FIGURES = {
-    "loss_curves": ANALYSIS_DIR / "loss_curves.png",
-    "confusion_matrices": ANALYSIS_DIR / "confusion_matrices.png",
-    "test_metrics_by_seed": ANALYSIS_DIR / "test_metrics_by_seed.png",
-    "gradcam_correct": GRADCAM_DIR / "gradcam_correct.png",
-    "gradcam_incorrect": GRADCAM_DIR / "gradcam_incorrect.png",
-}
+FIGURE_NAMES = ("loss_curves", "accuracy_curves", "confusion_matrices", "test_metrics_by_seed",
+                "per_class_precision_recall", "gradcam_correct", "gradcam_incorrect")
+FIGURES = {n: HISTORICAL.figure(n) for n in FIGURE_NAMES}  # historical set (kept for compatibility)
 
 # Ablation variant -> technique removed (the full model keeps the others).
 TECHNIQUE_REMOVED = {
@@ -109,7 +171,7 @@ def load_param_counts(sql_dir: Path = SQL_DIR) -> dict[str, int]:
             for r in _read_csv(path)}
 
 
-def load_audit(sql_dir: Path = SQL_DIR) -> dict:
+def load_audit(sql_dir: Path = SQL_DIR, expected_seeds: Optional[int] = EXPECTED_SEEDS) -> dict:
     """Query 1: matched-configuration audit. Passes only if every seed has all
     six runs and exactly one value for every configuration column."""
     path = sql_dir / "q1.csv"
@@ -122,13 +184,13 @@ def load_audit(sql_dir: Path = SQL_DIR) -> dict:
         for c in config_cols:
             if int(_num(r, c, path)) != 1:
                 problems.append(f"seed {r['train_seed']}: {c} has {r[c]} distinct values")
-    if len(rows) != EXPECTED_SEEDS:
-        problems.append(f"expected {EXPECTED_SEEDS} seeds, found {len(rows)}")
+    if expected_seeds is not None and len(rows) != expected_seeds:
+        problems.append(f"expected {expected_seeds} seeds, found {len(rows)}")
     return {"rows": rows, "config_columns": config_cols,
             "passed": not problems, "problems": problems}
 
 
-def load_paired_differences(sql_dir: Path = SQL_DIR) -> list[dict]:
+def load_paired_differences(sql_dir: Path = SQL_DIR, expected_seeds: Optional[int] = EXPECTED_SEEDS) -> list[dict]:
     """Query 6 -> mean paired difference vs full_improved with a 95% t interval,
     computed here from the per-seed deltas (percentage points for accuracy)."""
     path = sql_dir / "q6.csv"
@@ -143,15 +205,16 @@ def load_paired_differences(sql_dir: Path = SQL_DIR) -> list[dict]:
     out = []
     for variant, technique in TECHNIQUE_REMOVED.items():
         seeds = by_variant.get(variant, {})
-        if len(seeds) != EXPECTED_SEEDS:
+        if len(seeds) < 2 or (expected_seeds is not None and len(seeds) != expected_seeds):
             raise EvidenceError(
-                f"{_rel(path)}: {variant} has {len(seeds)} seeds, expected {EXPECTED_SEEDS}"
+                f"{_rel(path)}: {variant} has {len(seeds)} seeds, expected "
+                f"{expected_seeds if expected_seeds is not None else 'at least 2'}"
             )
         accs = [seeds[s]["acc_pp"] for s in sorted(seeds)]
         n = len(accs)
         mean = sum(accs) / n
         sd = math.sqrt(sum((a - mean) ** 2 for a in accs) / (n - 1))
-        half = T_CRIT_DF4 * sd / math.sqrt(n)
+        half = T95.get(n - 1, 1.96) * sd / math.sqrt(n)
         lo, hi = mean - half, mean + half
         out.append({
             "variant": variant,
@@ -169,7 +232,38 @@ def load_paired_differences(sql_dir: Path = SQL_DIR) -> list[dict]:
     return out
 
 
-def load_gradcam_examples(gradcam_dir: Path = GRADCAM_DIR) -> list[dict]:
+CLASS_ORDER = LEGACY_SYNTHETIC_CLASSES
+
+
+def load_per_class_metrics(analysis_dir: Path = ANALYSIS_DIR, class_order: tuple = CLASS_ORDER) -> list[dict]:
+    """Per-class test precision / recall per variant (mean and sd over seeds).
+
+    ``per_class_metrics.csv`` is written by ``experiments.analyze`` from the saved query-7
+    confusion counts; nothing is estimated here. Rows follow variant then class order.
+    """
+    path = analysis_dir / "per_class_metrics.csv"
+    out = []
+    for r in _read_csv(path):
+        out.append({
+            "variant": r.get("variant", ""),
+            "class": r.get("class", ""),
+            "precision": _num(r, "mean_precision", path),
+            "precision_sd": _num(r, "sd_precision", path),
+            "recall": _num(r, "mean_recall", path),
+            "recall_sd": _num(r, "sd_recall", path),
+            "n_runs": int(_num(r, "n_runs", path)),
+        })
+    missing = {(v, c) for v in EXPECTED_VARIANTS for c in class_order} - {(r["variant"], r["class"]) for r in out}
+    if missing:
+        raise EvidenceError(f"{_rel(path)}: missing variant/class rows {sorted(missing)[:3]}...")
+    order = {v: i for i, v in enumerate(EXPECTED_VARIANTS)}
+    return sorted(out, key=lambda r: (order[r["variant"]], class_order.index(r["class"])))
+
+
+def load_gradcam_examples(gradcam_dir: Path = GRADCAM_DIR,
+                          counts: Optional[tuple] = (N_CORRECT_EXPECTED, N_INCORRECT_EXPECTED)) -> list[dict]:
+    """Rows of examples.csv. ``counts`` is an exact (correct, incorrect) pair, or None to
+    require at least five of each."""
     path = gradcam_dir / "examples.csv"
     out = []
     for r in _read_csv(path):
@@ -186,11 +280,13 @@ def load_gradcam_examples(gradcam_dir: Path = GRADCAM_DIR) -> list[dict]:
         })
     n_c = sum(e["set"] == "correct" for e in out)
     n_i = sum(e["set"] == "incorrect" for e in out)
-    if (n_c, n_i) != (N_CORRECT_EXPECTED, N_INCORRECT_EXPECTED):
+    if counts is not None and (n_c, n_i) != tuple(counts):
         raise EvidenceError(
-            f"{_rel(path)}: expected {N_CORRECT_EXPECTED} correct and "
-            f"{N_INCORRECT_EXPECTED} incorrect examples, found {n_c} and {n_i}"
+            f"{_rel(path)}: expected {counts[0]} correct and {counts[1]} incorrect examples, "
+            f"found {n_c} and {n_i}"
         )
+    if counts is None and (n_c < 5 or n_i < 5):
+        raise EvidenceError(f"{_rel(path)}: need at least 5 correct and 5 incorrect examples, found {n_c} and {n_i}")
     return out
 
 
@@ -226,6 +322,49 @@ def load_failure_interpretations(doc: Path = FAILURE_DOC) -> dict:
 
 def missing_figures(figures: dict[str, Path] = FIGURES) -> list[str]:
     return [_rel(p) for p in figures.values() if not p.is_file()]
+
+
+def figures_for(ev: EvidenceSet) -> dict[str, Path]:
+    return {n: ev.figure(n) for n in FIGURE_NAMES}
+
+
+def load_calibration_summary(analysis_dir: Path) -> list[dict]:
+    """Per-variant mean temperature and test ECE / NLL before and after, from calibration.csv.
+
+    Raises EvidenceError if calibration was not measured (file missing). Values are averages of
+    the saved per-run measurements; nothing is estimated here.
+    """
+    path = analysis_dir / "calibration.csv"
+    by: dict[str, dict[str, list[float]]] = {}
+    keys = ("temperature", "test_ece_before", "test_ece_after", "test_nll_before", "test_nll_after")
+    for r in _read_csv(path):
+        d = by.setdefault(r["run_name"].rsplit("-seed", 1)[0], {k: [] for k in keys})
+        for k in keys:
+            d[k].append(_num(r, k, path))
+    out = []
+    for v in EXPECTED_VARIANTS:
+        if v in by:
+            out.append({"variant": v, "n_runs": len(by[v]["temperature"]),
+                        **{k: sum(by[v][k]) / len(by[v][k]) for k in keys}})
+    if not out:
+        raise EvidenceError(f"{_rel(path)}: no calibration rows")
+    return out
+
+
+def load_provenance(sql_dir: Path) -> dict:
+    """What the saved q*.csv files say about where they came from (their PROVENANCE.md).
+
+    Returns {'source': str, 'is_supabase_sql': bool}. The files are only treated as a Supabase SQL
+    export when PROVENANCE.md says so (written by experiments/ingest_sql_export.py from a result that
+    contains the database's own ``meta`` row); anything else is reported as it describes itself.
+    """
+    try:
+        text = (sql_dir / "PROVENANCE.md").read_text(encoding="utf-8")
+    except OSError:
+        return {"source": "not recorded", "is_supabase_sql": False}
+    m = re.search(r"^- source: \*\*(.+?)\*\*", text, flags=re.M)
+    source = m.group(1).strip() if m else "not recorded"
+    return {"source": source, "is_supabase_sql": source.lower().startswith("supabase")}
 
 
 def load_model_card(path: Path = MODEL_CARD) -> str:
