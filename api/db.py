@@ -18,9 +18,15 @@ from __future__ import annotations
 import os
 from typing import Any, List, Mapping, Optional
 
+from dotenv import load_dotenv
 from supabase import Client, create_client
 
 from api.experiments import validate_result
+
+# Read a local .env (if there is one) so `uvicorn api.main:app` picks up
+# SUPABASE_URL / SUPABASE_SERVICE_KEY without exporting them by hand. Variables
+# already set in the environment (e.g. on Render) take precedence.
+load_dotenv()
 
 _client: Optional[Client] = None
 
@@ -250,3 +256,25 @@ def insert_image_metadata(
         .execute()
     )
     return resp.data[0]
+
+
+# ---------------------------------------------------------------------------
+# Optional offline mode (local development only)
+# ---------------------------------------------------------------------------
+# If SEE_SENSE_LOCAL_DB is set to a file path, every function above is replaced
+# by the JSON-file version in api/local_db.py, so the API runs with no Supabase
+# credentials. Leave it unset for the real (shared) database.
+LOCAL_DB_PATH = os.environ.get("SEE_SENSE_LOCAL_DB")
+if LOCAL_DB_PATH:
+    from api.local_db import LocalStore
+
+    _local = LocalStore(LOCAL_DB_PATH)
+    ping = _local.ping
+    insert_dataset = _local.insert_dataset
+    get_dataset = _local.get_dataset
+    insert_run = _local.insert_run
+    run_name_exists = _local.run_name_exists
+    get_run = _local.get_run
+    get_run_artifact = _local.get_run_artifact
+    latest_runs = _local.latest_runs
+    insert_image_metadata = _local.insert_image_metadata
