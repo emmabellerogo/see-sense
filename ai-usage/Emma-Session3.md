@@ -6664,3 +6664,1656 @@ Before you commit, two things need doing:
 ai-usage/Emma-Session3.md is empty and needs content.
 After the first Render build, check that /healthz reports "storage":"supabase","supabase":true.
 What would you like to do next? I can help fill in the AI usage log, walk through the commit batches, or something else.
+
+
+/clear
+Finish the remaining submission documentation. Preserve existing work.
+
+1. Fix MODEL_CARD.md: the official augmentation shift was 1 pixel, not 2.
+2. Fix Grad-CAM gallery captions to describe the actual vertical example arrangement.
+3. Add the real deployment links to README.md:
+   UI: https://see-sense-glpk38qzwsf9hhvnlkt798.streamlit.app/
+   API: https://see-sense-api-rhkb.onrender.com
+   Use the existing public Supabase project URL if already documented. Do not read or print secret files.
+4. Create a dataset card from the actual generator and frozen protocol, covering classes, generation, noise, splits, augmentation, limitations, and data handling.
+5. Complete the rubric’s ethics discussion: two realistic deployment contexts, two technical safeguards, two governance safeguards, an explicit statement of what we deliberately did not log, and a Christian-worldview reflection on responsible disclosure. Distinguish implemented safeguards from proposed ones. Mark the reflection as a draft for my personal review.
+6. Create a submission checklist covering every rubric category and link to the evidence. Mark missing items honestly.
+7. Prepare contribution-statement and individual video-link placeholders for Emma and Komal. Do not invent contributions, personal beliefs, video links, or completion claims.
+
+Run checks appropriate to the changes. Do not retrain, change permissions, commit, push, or deploy. Report what still requires my action.
+Show more
+12:30 PM
+I'll start by exploring the repo.
+
+
+
+Bash
+IN
+git ls-files | grep -v '^data/' | head -150 && ls && wc -l README.md MODEL_CARD.md
+
+OUT
+.env.example
+.github/workflows/ci.yml
+.gitignore
+.streamlit/secrets.toml.example
+MODEL_CARD.md
+PART2_RESULTS.md
+README.md
+ai-usage/Emma-Session1.md
+ai-usage/Emma-Session3.md
+ai-usage/Komal-Session1.md
+ai-usage/Komal-Session2.md
+api/__init__.py
+api/configs/default.yaml
+api/db.py
+api/experiments.py
+api/local_db.py
+api/main.py
+api/requirements.txt
+api/training.py
+db/migrations/001_init.sql
+db/migrations/002_experiment_tracking.md
+db/migrations/002_experiment_tracking.sql
+db/migrations/003_recent_classifications.md
+db/migrations/003_recent_classifications_view.sql
+db/migrations/003_verify.sql
+db/seed.py
+docs/PART1_HANDOFF.md
+docs/PART2_PROTOCOL.md
+docs/PART2_RESULTS.md
+docs/RUN_API_LOCALLY.md
+docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md
+docs/comparison_queries.sql
+experiments/__init__.py
+experiments/analyze.py
+experiments/configs.py
+experiments/explore.py
+experiments/gradcam_evidence.py
+experiments/results/explore_budget.jsonl
+experiments/results/explore_difficulty.jsonl
+experiments/results/explore_difficulty2.jsonl
+experiments/results/explore_techniques.jsonl
+experiments/results/gradcam/examples.csv
+experiments/results/gradcam/gradcam_correct.png
+experiments/results/gradcam/gradcam_incorrect.png
+experiments/results/official-1-analysis/confusion_matrices.png
+experiments/results/official-1-analysis/loss_curves.png
+experiments/results/official-1-analysis/summary.md
+experiments/results/official-1-analysis/test_metrics_by_seed.png
+experiments/results/official-1-console.txt
+experiments/results/official-1-runs.jsonl
+experiments/results/official-1-sql/q1.csv
+experiments/results/official-1-sql/q2.csv
+experiments/results/official-1-sql/q3.csv
+experiments/results/official-1-sql/q4.csv
+experiments/results/official-1-sql/q5.csv
+experiments/results/official-1-sql/q6.csv
+experiments/results/official-1-sql/q7.csv
+experiments/results/official-supabase-1-analysis/confusion_matrices.png
+experiments/results/official-supabase-1-analysis/loss_curves.png
+experiments/results/official-supabase-1-analysis/summary.md
+experiments/results/official-supabase-1-analysis/test_metrics_by_seed.png
+experiments/results/official-supabase-1-gradcam/examples.csv
+experiments/results/official-supabase-1-gradcam/gradcam_correct.png
+experiments/results/official-supabase-1-gradcam/gradcam_incorrect.png
+experiments/results/official-supabase-1-gradcam/source.json
+experiments/results/official-supabase-1-runs.jsonl
+experiments/results/official-supabase-1-sql/q1.csv
+experiments/results/official-supabase-1-sql/q2.csv
+experiments/results/official-supabase-1-sql/q3.csv
+experiments/results/official-supabase-1-sql/q4.csv
+experiments/results/official-supabase-1-sql/q5.csv
+experiments/results/official-supabase-1-sql/q6.csv
+experiments/results/official-supabase-1-sql/q7.csv
+experiments/run_experiments.py
+experiments/sql_check.mjs
+render.yaml
+requirements-dev.txt
+shared/__init__.py
+shared/data.py
+shared/schemas.py
+tests/__init__.py
+tests/conftest.py
+tests/test_augmentation_safety.py
+tests/test_deploy_readiness.py
+tests/test_experiment_records.py
+tests/test_experiment_runner.py
+tests/test_gradcam_loading.py
+tests/test_healthz.py
+tests/test_local_db.py
+tests/test_model_variants.py
+tests/test_reproducibility.py
+tests/test_schema.py
+tests/test_supabase_roundtrip.py
+tests/test_training.py
+tests/test_ui_concepts_and_card.py
+tests/test_ui_evidence.py
+tests/test_ui_recent.py
+tests/test_ui_tryit.py
+ui/.streamlit/secrets.toml.example
+ui/app.py
+ui/concepts.py
+ui/evidence.py
+ui/recent.py
+ui/requirements.txt
+ui/tryit.py
+MODEL_CARD.md
+PART2_RESULTS.md
+README.md
+ai-usage
+api
+db
+docs
+experiments
+render.yaml
+requirements-dev.txt
+shared
+tests
+ui
+     128 README.md
+     135 MODEL_CARD.md
+     263 total
+Bash
+IN
+cat README.md MODEL_CARD.md; ls -la | head -40; ls *.md docs; git ls-files | grep -i -E 'rubric|data/'|head
+
+OUT
+# See-Sense — CNN Image Classifier with Grad-CAM (three clouds)
+
+**Streamlit UI ⇄ FastAPI model API ⇄ Supabase data.** A small PyTorch CNN classifies
+28×28 grayscale images into four **synthetic** shapes (horizontal bar, vertical bar,
+diagonal line, filled block) and returns a **Grad-CAM** heatmap showing where the
+network looked. It is a teaching and evaluation project, not a general photo classifier.
+
+## Live deployment URLs
+
+Placeholders until the deployment succeeds. Replace them with the real URLs afterwards.
+
+| Tier | Platform | URL |
+|------|----------|-----|
+| UI | Streamlit Community Cloud | `https://<your-app>.streamlit.app` *(placeholder)* |
+| API | Render.com | `https://<your-api>.onrender.com` *(placeholder; free tier sleeps, first call takes ~30–60 s)* |
+| Data | Supabase | `https://<your-project-ref>.supabase.co` *(placeholder)* |
+
+## The five tabs (`ui/app.py`)
+
+1. **Concepts** — convolution, stride/padding/output-size arithmetic with a worked example, receptive-field growth (three stacked 3×3 layers: 3 → 5 → 7), and the Grad-CAM derivation and limits.
+2. **Try It** — classify an uploaded image or a generated shape with the default model `full_improved-seed0` (run ID taken from the saved experiment records); shows prediction, confidence, input and Grad-CAM. Handles cold starts and errors; prediction requests are never retried automatically.
+3. **Compare Models** — the official `official-supabase-1` results (5 seeds × 6 variants), matched-configuration audit, paired ablation differences, loss curves, confusion matrices, and a Grad-CAM gallery (5 correct and 8 incorrect examples with two written failure analyses). These are *saved* results read from `experiments/results/`.
+4. **Recent Classifications** — reads the latest ≤200 rows of the `recent_classifications` view with the anon key and shows a class-distribution histogram.
+5. **Model Card** — [MODEL_CARD.md](MODEL_CARD.md).
+
+Training is not exposed in the UI. It remains available through the API (`POST /train`) and the experiment tools in `experiments/`.
+
+## Official results (group `official-supabase-1`, stored in Supabase)
+
+Test accuracy, mean ± sd over 5 training seeds, on one fixed 2,000-image dataset (noise 1.0; 1,400 train / 200 validation / 400 test):
+
+| Variant | Test accuracy |
+|---|---|
+| full_improved | 95.05% ± 0.67 |
+| no_scheduler | 95.05% ± 0.96 |
+| no_dropout | 94.70% ± 1.34 |
+| no_augmentation | 93.25% ± 1.09 |
+| baseline | 76.80% ± 8.93 |
+| no_batchnorm | 67.45% ± 22.93 |
+
+Removing augmentation reliably lowered accuracy; the data do **not** show that dropout or the LR scheduler clearly improved it. Details: [experiments/results/official-supabase-1-analysis/summary.md](experiments/results/official-supabase-1-analysis/summary.md), [docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md](docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md), [docs/PART2_PROTOCOL.md](docs/PART2_PROTOCOL.md). (`experiments/results/official-1-*` are earlier offline-store runs and are not the official results.)
+
+## Data: persisted vs not persisted
+
+| Persisted in Supabase | Never persisted |
+|---|---|
+| Dataset *parameters* (rows, size, noise, seed) | Image pixels (datasets are regenerated from the seed) |
+| Run metrics, settings, loss histories, confusion matrices | Uploaded files (processed in memory only) |
+| Model checkpoints (`run_artifacts`, not readable with the anon key) | Grad-CAM images |
+| Per prediction: SHA-256 hash, width, height, class, label, confidence (`image_metadata`, not readable with the anon key) | Service-role key in the UI |
+
+The anon key can read only `runs` (policy in 001) and the `recent_classifications` view (003: `id, run_id, class_name, confidence, created_at`, no image hashes). All writes go through the API with the service-role key.
+
+## Architecture
+
+```
+Streamlit Cloud (ui/app.py)  ──HTTPS──►  FastAPI on Render (api/main.py)  ──service-role──►  Supabase Postgres
+ thin client, no torch                    CNN + Grad-CAM, only writer                         datasets · runs · run_artifacts · image_metadata
+        └───────────────── anon key, read-only: runs, recent_classifications view ───────────────────►
+```
+
+## Project structure
+
+```
+MODEL_CARD.md          model card (read by the UI)        render.yaml   Render blueprint
+shared/                Pydantic schemas, shape generator  .github/workflows/ci.yml   pytest on push/PR
+api/                   FastAPI tier: main, training (CNN + Grad-CAM), db, experiments, requirements.txt
+ui/                    Streamlit tier: app.py + concepts/evidence/recent/tryit modules, requirements.txt
+db/migrations/         001_init, 002_experiment_tracking, 003_recent_classifications_view (+ 003_verify.sql)
+experiments/           matched-run runner, analysis, Grad-CAM evidence, results/ (official-supabase-1-*)
+docs/                  protocol, results, failure analysis, comparison_queries.sql
+tests/                 pytest suite
+```
+
+## Setup (local)
+
+Python **3.11** (Render uses 3.11.9; the pinned `pyarrow==17.0.0`/`pandas==2.2.2` UI stack supports 3.9–3.12).
+
+```bash
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt     # API + UI + test tools
+pytest -q                               # live-Supabase test skips without credentials
+```
+
+**Database:** in the Supabase SQL Editor, run in order `db/migrations/001_init.sql`, `002_experiment_tracking.sql`, `003_recent_classifications_view.sql`, then `003_verify.sql` (see `003_recent_classifications.md`). Migrations only add things; they are safe to re-run.
+
+**Secrets (never commit; git-ignored at any depth):**
+
+```bash
+cp .env.example .env                                         # API: SUPABASE_URL + SUPABASE_SERVICE_KEY
+cp ui/.streamlit/secrets.toml.example ui/.streamlit/secrets.toml   # UI: API_URL, SUPABASE_URL (…supabase.co), SUPABASE_ANON_KEY
+```
+
+**Run:**
+
+```bash
+uvicorn api.main:app --reload --port 8000     # terminal 1
+cd ui && streamlit run app.py                 # terminal 2 (Streamlit reads .streamlit/ from the directory you start it in)
+```
+
+To start the UI from the repo root instead, copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml` and run `streamlit run ui/app.py`.
+
+Offline API (no Supabase, development only): `SEE_SENSE_LOCAL_DB=.local_db.json uvicorn api.main:app`. `/healthz` then reports `"status": "offline"` and `"supabase": false`; never use it for official runs. See [docs/RUN_API_LOCALLY.md](docs/RUN_API_LOCALLY.md).
+
+## Deployment
+
+1. **Supabase:** apply the three migrations above.
+2. **Render:** New → Blueprint → this repo (`render.yaml`; CPU-only torch via `api/requirements.txt`). Set `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` in the service settings. Do not set `SEE_SENSE_LOCAL_DB`. Check `GET /healthz` returns `"status":"ok","storage":"supabase","supabase":true`.
+3. **Streamlit Community Cloud:** main file path `ui/app.py` (dependencies from `ui/requirements.txt`), Python 3.11 under Advanced settings, and paste `API_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` into the Secrets box. The repo must include `MODEL_CARD.md`, `docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md` and `experiments/results/official-supabase-1-*`, which the UI reads at runtime.
+
+## API endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/datasets` | Register a synthetic dataset (parameters only) |
+| `POST` | `/train` | Train, persist run + checkpoint, return metrics |
+| `GET`  | `/runs/{run_id}`, `/runs` | Fetch one run / list recent runs |
+| `POST` | `/predict` | Classify an uploaded image, return Grad-CAM, log the hash |
+| `POST` | `/predict_sample` | Generate + classify a sample, return Grad-CAM |
+| `GET`  | `/classes` | Class labels |
+| `GET`  | `/healthz` | Liveness and storage mode (`ok` / `degraded` / `offline`) |
+| `GET`  | `/version` | Build SHA, torch version |
+
+A database outage returns HTTP 503 `{"detail": "database unavailable"}` from prediction/training routes; the UI turns it into a friendly message.
+
+## Tests and CI
+
+`pytest -q` covers data generation, training and reproducibility, experiment records, Grad-CAM evidence loading, upload and sample prediction through the API, health modes, database-outage handling, and the UI modules. GitHub Actions (`.github/workflows/ci.yml`) installs `requirements-dev.txt` on Python 3.11 and runs `pip check` and `pytest` on every push and pull request.
+# Model Card — See-Sense
+
+## Summary
+See-Sense classifies small synthetic images into four shapes and explains each
+prediction with a Grad-CAM heatmap. It is a teaching and evaluation demo and is
+not a general photo classifier. The numbers below come from the official experiment
+group `official-supabase-1` (30 runs: 6 model variants × 5 training seeds),
+stored in Supabase and exported with the SQL in `docs/comparison_queries.sql`.
+
+## Model details
+Two architectures share the same layout: two blocks of
+`Conv2d(3×3, padding 1) → [BatchNorm] → ReLU → MaxPool(2)` with 8 then 16
+channels, followed by a linear layer on the 16×7×7 feature maps.
+
+| Variant | What it is | Parameters |
+|---|---|---|
+| `baseline` | `SmallCNN`: no batch norm, no dropout, no augmentation, constant learning rate | 4,388 |
+| `full_improved` | `ImprovedCNN` with batch norm, dropout 0.3, augmentation and a cosine learning-rate schedule | 4,436 |
+| `no_augmentation`, `no_batchnorm`, `no_dropout`, `no_scheduler` | `full_improved` with exactly one technique removed | 4,436 (4,388 without batch norm) |
+
+- **Augmentation:** random shifts of up to 2 pixels (zero padded) and random
+  horizontal/vertical flips. Flips keep the label, but a flipped diagonal runs the
+  other way, which the data generator never draws.
+- **Training:** Adam, 30 epochs, batch size 32, initial learning rate 0.01,
+  cross-entropy loss, five training seeds (0–4). Each run keeps the weights of its
+  lowest-validation-loss epoch, and the test set is scored once afterwards.
+- **Explainability:** Grad-CAM on the output of the last pooling block (16 maps of
+  7×7), for the predicted class: gradients are averaged into one weight per map,
+  the weighted maps are summed, passed through ReLU, scaled to [0, 1], upsampled to
+  28×28 and overlaid in red. Each 7×7 cell has a 10×10-pixel receptive field.
+- **Served model:** the Try It tab uses `full_improved-seed0` (run ID 4), chosen in
+  advance from the saved experiment records, not by test score.
+
+## Intended use
+- **Primary:** showing how a small CNN, regularization techniques and Grad-CAM
+  behave, with every number traceable to a stored run.
+- **Out of scope:** real photos, medical imaging, surveillance, content moderation or
+  any decision about people. A photo of a face or a cat would still be assigned one
+  of four shape labels, and that label would mean nothing.
+
+## Data
+- Synthetic 28×28 grayscale images in four classes: `horizontal` bar, `vertical`
+  bar, `diagonal` line and filled `block`.
+- Official dataset `shapes-2000-noise1.0`: 2,000 images, Gaussian pixel noise with
+  standard deviation 1.0 (values clipped to [0, 1]), data seed 42. This is the
+  highest noise level the API allows; it was chosen before any test result was
+  viewed because the default easy dataset put every model at 100% validation accuracy.
+- Split (split seed 0): 1,400 train, 200 validation, 400 test. All variants and
+  seeds use the same split, verified by a split hash.
+- Only the generation parameters are stored in Supabase; pixels are regenerated
+  from the seed. The Try It "generated sample" option uses much lower noise (0.1)
+  than the evaluation data, so its predictions are easier than the reported scores.
+- Uploaded images are converted to 28×28 grayscale before classification.
+
+## Evaluation protocol
+- Protocol frozen before the official runs (`docs/PART2_PROTOCOL.md`); the matched-
+  configuration audit (SQL query 1) passed: within each seed all six runs share the
+  dataset, split, budget, optimizer and learning rate.
+- Metrics: test accuracy and macro-F1 on the 400-image test set (one image is
+  0.25 percentage points), plus test loss, training curves and confusion matrices.
+- Ablations remove one technique from `full_improved` while the others stay on, and
+  compare the two on the same seed. They measure a technique's contribution
+  *given the others*, not its effect on its own.
+
+## Results (mean ± sd over 5 seeds)
+| Variant | Test accuracy | Macro-F1 | Test loss |
+|---|---|---|---|
+| full_improved | 95.05% ± 0.67 | 0.9503 ± 0.0070 | 0.1456 |
+| no_scheduler | 95.05% ± 0.96 | 0.9496 ± 0.0103 | 0.1284 |
+| no_dropout | 94.70% ± 1.34 | 0.9464 ± 0.0139 | 0.1420 |
+| no_augmentation | 93.25% ± 1.09 | 0.9323 ± 0.0109 | 0.1737 |
+| baseline | 76.80% ± 8.93 | 0.7655 ± 0.0882 | 0.5686 |
+| no_batchnorm | 67.45% ± 22.93 | 0.6614 ± 0.2413 | 0.7725 |
+
+Paired difference from `full_improved` (same seed, 95% interval, 5 seeds):
+
+| Removed | Mean Δ accuracy | 95% interval |
+|---|---|---|
+| everything (baseline) | −18.25 pp | [−28.89, −7.61] |
+| augmentation | −1.80 pp | [−3.14, −0.46] |
+| batch norm | −27.60 pp | [−56.01, +0.81], includes 0 |
+| dropout | −0.35 pp | [−2.62, +1.92], includes 0 |
+| LR scheduler | −0.00 pp | [−0.93, +0.93], includes 0 |
+
+What the evidence supports:
+- The improved model beat the baseline on every seed, and was far more stable
+  (baseline accuracy ranged from 68% to 91% across seeds).
+- Removing augmentation lowered accuracy on all five seeds. Removing batch norm
+  lowered it on all five, but by very different amounts, so its interval is wide and
+  includes 0.
+- **Dropout and the learning-rate scheduler show no clear accuracy benefit** in
+  these data: their intervals include 0 and the seeds disagree in sign.
+- The most common errors are `block` confused with the bar classes (for example
+  block → horizontal, 33 of the 99 `full_improved` errors).
+
+## Grad-CAM evidence
+`docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md` and the Compare Models tab show 5 correct
+and 8 incorrect test examples from `full_improved-seed0` (run ID 4; 376 of 400 correct,
+matching the stored 94.00%). One correct example is flagged uncertain (39% confidence).
+Two failures have written interpretations: example 924 (horizontal → diagonal, 95%
+confidence) fits heavy noise obscuring the shape, and example 1783 (horizontal → block,
+59%) fits a reliance on background patterns. These are interpretations, not proof.
+
+## Privacy and data handling
+- For every served prediction the API stores the image's **SHA-256 hash, width, height,
+  predicted class, label index and confidence** in `image_metadata`. **Pixels are never
+  stored**, and uploaded files are processed in memory.
+- The public Recent Classifications tab reads the view `recent_classifications` with
+  the **anon key**. The view exposes only `id`, `run_id`, `class_name`, `confidence`
+  and `created_at` for the latest 200 rows. Image hashes are not exposed.
+- `run_artifacts` (model checkpoints) and `image_metadata` are not readable by the anon
+  key. All writes use the service-role key, which stays on the API server and is never
+  in the UI. Run metrics are readable with the anon key.
+
+## Limitations
+- **Synthetic, narrow data:** four clean geometric shapes. Performance says nothing
+  about natural images or other kinds of noise.
+- **One dataset, one split, five seeds.** Intervals from five seeds are rough; the
+  400-image test set limits precision; conclusions about dropout and scheduling
+  cannot be separated from zero.
+- **Training instability:** the baseline and the no-batch-norm variants can fail on
+  some seeds (as low as 33% accuracy), so their averages hide a wide spread.
+- **Grad-CAM is coarse** (7×7 cells) and class-discriminative only; it shows what is
+  associated with a score and can look plausible on a wrong prediction. A confident
+  prediction can still be wrong.
+- Hyperparameters were tuned only on validation data from separate exploration seeds,
+  but they were tuned: the same budget may favour some variants.
+- Results are saved experiment records. The app does not retrain, and the public UI
+  has no training controls.
+
+## Ethical considerations
+Tell non-technical users plainly that this is a demonstration on synthetic data, not a
+validated vision system. Grad-CAM can build trust by showing evidence, but a plausible
+heatmap is not proof of correctness. Report the spread across seeds, not only the best
+run, and do not describe the dropout or scheduler effects as improvements.
+total 112
+drwxr-xr-x@ 23 emmarogoveanu  staff    736 Oct 17 12:18 .
+drwxr-xr-x@ 12 emmarogoveanu  staff    384 Oct 17 12:18 ..
+-rw-r--r--   1 emmarogoveanu  staff    565 Oct 12 21:54 .env
+-rw-r--r--@  1 emmarogoveanu  staff    624 Oct 17 12:18 .env.example
+drwxr-xr-x  14 emmarogoveanu  staff    448 Oct 17 12:18 .git
+drwxr-xr-x@  3 emmarogoveanu  staff     96 Oct 17 12:18 .github
+-rw-r--r--@  1 emmarogoveanu  staff    292 Oct 17 12:18 .gitignore
+drwxr-xr-x   6 emmarogoveanu  staff    192 Oct 17 11:53 .pytest_cache
+drwxr-xr-x@  3 emmarogoveanu  staff     96 Oct 17 12:18 .streamlit
+drwxr-xr-x   8 emmarogoveanu  staff    256 Oct 17 00:09 .venv
+-rw-r--r--@  1 emmarogoveanu  staff   8095 Oct 17 12:18 MODEL_CARD.md
+-rw-r--r--@  1 emmarogoveanu  staff  12731 Oct 17 12:18 PART2_RESULTS.md
+-rw-r--r--@  1 emmarogoveanu  staff   8509 Oct 17 12:18 README.md
+drwxr-xr-x@  6 emmarogoveanu  staff    192 Oct 17 12:18 ai-usage
+drwxr-xr-x@ 11 emmarogoveanu  staff    352 Oct 17 12:18 api
+drwxr-xr-x@  5 emmarogoveanu  staff    160 Oct 17 12:18 db
+drwxr-xr-x   8 emmarogoveanu  staff    256 Oct 17 12:18 docs
+drwxr-xr-x  11 emmarogoveanu  staff    352 Oct 17 12:18 experiments
+-rw-r--r--@  1 emmarogoveanu  staff    985 Oct 17 12:18 render.yaml
+-rw-r--r--@  1 emmarogoveanu  staff    386 Oct 17 12:18 requirements-dev.txt
+drwxr-xr-x@  6 emmarogoveanu  staff    192 Oct 17 12:18 shared
+drwxr-xr-x@ 21 emmarogoveanu  staff    672 Oct 17 12:18 tests
+drwxr-xr-x@ 10 emmarogoveanu  staff    320 Oct 17 12:18 ui
+MODEL_CARD.md
+PART2_RESULTS.md
+README.md
+
+docs:
+PART1_HANDOFF.md
+PART2_PROTOCOL.md
+PART2_RESULTS.md
+RUN_API_LOCALLY.md
+SUPABASE_GRADCAM_FAILURE_ANALYSIS.md
+comparison_queries.sql
+Read data.py
+Bash
+IN
+grep -rn -i "rubric" --include=*.md --include=*.py . --exclude-dir=.venv | head -20; grep -n -i -E "shift|flip|augment|roll|pad" api/training.py | head -40; grep -n -i -E "split|augment|shift|noise|seed" docs/PART2_PROTOCOL.md | head -60; grep -rn -i "supabase.co" --include=*.md --include=*.example --include=*.yaml --include=*.py . --exclude-dir=.venv | head
+
+OUT
+(eval):1: no matches found: --include=*.md
+41:            nn.Conv2d(channels, 8, 3, padding=1),
+44:            nn.Conv2d(8, 16, 3, padding=1),
+78:            layers: List[nn.Module] = [nn.Conv2d(c_in, c_out, 3, padding=1)]
+144:def _augment(xb: torch.Tensor, max_shift: int, gen: torch.Generator) -> torch.Tensor:
+145:    """Label-preserving augmentation for a [N, 1, H, W] batch.
+147:    Random shift of up to ``max_shift`` pixels (zero padded, no wrap-around) plus
+148:    random horizontal / vertical flips. None of these turns a horizontal bar into
+149:    a vertical one (unlike a 90-degree rotation). A flipped diagonal keeps its
+151:    top-left to bottom-right): the generator only draws the second kind, so flips
+155:    padded = torch.nn.functional.pad(xb, (max_shift,) * 4)
+156:    dy = torch.randint(0, 2 * max_shift + 1, (n,), generator=gen)
+157:    dx = torch.randint(0, 2 * max_shift + 1, (n,), generator=gen)
+158:    flip_h = torch.rand(n, generator=gen) < 0.5
+159:    flip_v = torch.rand(n, generator=gen) < 0.5
+162:        a = padded[i, :, dy[i] : dy[i] + h, dx[i] : dx[i] + w]
+163:        if flip_h[i]:
+164:            a = a.flip(2)
+165:        if flip_v[i]:
+166:            a = a.flip(1)
+212:    augment: bool = False,
+213:    augment_max_shift: int = 2,
+221:      * ``train_seed`` -> initial weights, batch order, augmentation, dropout.
+225:    Augmentation touches the training batches only. The validation split picks the
+245:    # Separate generators so turning augmentation on/off never changes batch order.
+265:            if augment:
+266:                xb = _augment(xb, augment_max_shift, aug_gen)
+322:            "augment": augment, "augment_max_shift": augment_max_shift, "scheduler": scheduler,
+343:    A thin wrapper over ``run_experiment`` (no augmentation, no scheduler, split
+12:| Dataset ID / rows / noise / data seed | **new dataset** `shapes-2000-noise1.0`: 2000 rows, noise 1.0, seed 42 (ID 2 in the local run; register it in Supabase with `POST /datasets`, see below) |
+13:| `split_seed`, test fraction, validation fraction | 0, 0.2 (400 images), 0.1 (200 images); train = 1400 |
+14:| Training seeds | 0, 1, 2, 3, 4 (5 seeds → 30 runs) |
+16:| Dropout, augmentation shift, scheduler | 0.3, 1 px (+ flips), cosine |
+24:Exploration used training seeds 100 and 101, never the official seeds, with
+25:`split_seed` 0.
+29:| Rows | Noise | Baseline val acc | Full-improved val acc |
+38:is possible (handoff §2). Noise 1.0 is the highest the API allows and takes
+43:**2. Training budget** (`explore_budget.jsonl`; 2000 rows / noise 1.0; baseline, full_improved, no_scheduler)
+47:- **lr 0.01 with batch 64:** one baseline seed collapsed (val acc 32.5%), so it is unstable.
+60:| Dropout \ shift | 1 px | 2 px | 3 px |
+66:(mean best validation loss over 2 seeds; lower is better)
+68:A smaller shift was better at every dropout level, so the **shift is 1 px**.
+69:Dropout 0.2 and 0.3 are within noise of each other, and 0.5 is worse. **0.3 is
+75:**4. Seeds:** 5 instead of 3. The validation differences between variants are
+77:cheap and gives a better view of seed-to-seed noise.
+84:  --dataset-id 2 --group official-1 --seeds 0,1,2,3,4 \
+85:  --epochs 30 --batch-size 32 --lr 0.01 --split-seed 0 \
+86:  --dropout 0.3 --max-shift 1 --scheduler cosine
+92:  --dataset-id 2 --group official-1 --seeds 0,1,2,3,4 \
+93:  --epochs 30 --batch-size 32 --lr 0.01 --split-seed 0 \
+94:  --dropout 0.3 --max-shift 1 --scheduler cosine \
+102:   `curl -X POST <API>/datasets -H "Content-Type: application/json" -d '{"name":"shapes-2000-noise1.0","n_rows":2000,"noise":1.0,"seed":42}'`
+(eval):1: no matches found: --include=*.md
+Bash
+IN
+cat experiments/results/official-supabase-1-gradcam/examples.csv; grep -n -i -E "caption|row|column|left|right|top|bottom|above|below|panel" ui/evidence.py | head -40; head -c 1500 ai-usage/Emma-Session1.md; wc -l ai-usage/*
+
+OUT
+set,test_index,true,predicted,confidence,p_horizontal,p_vertical,p_diagonal,p_block
+correct,1875,horizontal,horizontal,0.995,0.995,0.000,0.000,0.005
+correct,1236,vertical,vertical,0.952,0.000,0.952,0.000,0.048
+correct,470,diagonal,diagonal,0.999,0.000,0.000,0.999,0.001
+correct,1949,block,block,0.977,0.010,0.007,0.006,0.977
+correct,1314,block,block,0.390,0.081,0.364,0.165,0.390
+incorrect,135,block,horizontal,0.969,0.969,0.003,0.001,0.027
+incorrect,924,horizontal,diagonal,0.954,0.028,0.014,0.954,0.003
+incorrect,1515,block,vertical,0.872,0.008,0.872,0.005,0.114
+incorrect,1783,horizontal,block,0.585,0.356,0.049,0.010,0.585
+incorrect,150,block,diagonal,0.533,0.183,0.005,0.533,0.278
+incorrect,517,diagonal,block,0.526,0.135,0.114,0.225,0.526
+incorrect,733,diagonal,horizontal,0.402,0.402,0.049,0.298,0.251
+incorrect,397,vertical,horizontal,0.397,0.397,0.240,0.002,0.360
+33:UNCERTAIN_BELOW = 0.5  # a correct prediction under this confidence is flagged
+60:            rows = list(csv.DictReader(fh))
+65:    if not rows:
+67:    return rows
+77:def _num(row: dict, col: str, path: Path) -> float:
+79:        return float(row[col])
+81:        raise EvidenceError(f"{_rel(path)}: missing or non-numeric column '{col}'") from None
+85:    """Query 5: one row per variant, mean/sd over seeds."""
+114:    six runs and exactly one value for every configuration column."""
+116:    rows = _read_csv(path)
+117:    config_cols = [c for c in rows[0] if c not in ("train_seed", "n_runs")]
+119:    for r in rows:
+125:    if len(rows) != EXPECTED_SEEDS:
+126:        problems.append(f"expected {EXPECTED_SEEDS} seeds, found {len(rows)}")
+127:    return {"rows": rows, "config_columns": config_cols,
+185:            "uncertain": r["set"] == "correct" and conf < UNCERTAIN_BELOW,
+# AI Usage Record — See-Sense
+
+- **Student:** Emma Rogoveanu
+- **Date:** 10-12-2026
+- **Project part / step:** Part 1
+- **AI tool:** Claude Code in VS Code
+
+
+## Transcript
+
+
+We are working on the existing See-Sense project in this VS Code workspace. This is a two-person class project. I own Part 1: the model and experiment foundation. My partner will run the official experiments in Part 2.
+
+First, inspect the project without changing any files.
+
+Read any repository instructions and check git status. Then inspect the existing CNN, training function, dataset generator, Grad-CAM, API schemas, database migration, and tests.
+
+Explain in plain language:
+1. What the project currently does.
+2. How an image goes from input to prediction and Grad-CAM.
+3. What is missing for a baseline-versus-improved CNN comparison.
+4. Which files we will need to change and why.
+
+The rubric requires matched seeds and training budgets, at least three improvement techniques with controlled ablations, persisted runs, loss curves, test metrics, and confusion matrices.
+
+Keep the explanation short and beginner-friendly. Do not edit, install, train, or deploy anything yet. Stop after the inspection.
+Show more
+8:15 PM
+I'll start by looking at the repo layout and any instruction files.
+
+
+
+Bash Show git status and tracked files
+IN
+git status --short && git ls-files | grep -v -E '\.(png|jpg|jpeg|gif|svg|ico|lock)$' | head -150 && ls -la
+
+OUT
+.env.example
+.gitignore
+MODEL_CARD.md
+README.md
+api/__init__.py
+api/co    4348 ai-usage/Emma-Session1.md
+    6665 ai-usage/Emma-Session3.md
+     228 ai-usage/Komal-Session1.md
+     116 ai-usage/Komal-Session2.md
+   11357 total
+Bash
+IN
+grep -rIl -i "rubric" . --exclude-dir=.venv --exclude-dir=.git | head; echo ---; grep -rIn -i "supabase\.co" . --exclude-dir=.venv --exclude-dir=.git --exclude-dir=ai-usage | grep -v -E "your-project|<" | head; echo ---; grep -rn -i -E "caption|top row|bottom row|left|right" ui/*.py docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md | head -30
+
+OUT
+ai-usage/Emma-Session3.md
+ai-usage/Emma-Session1.md
+---
+README.md:91:cp ui/.streamlit/secrets.toml.example ui/.streamlit/secrets.toml   # UI: API_URL, SUPABASE_URL (…supabase.co), SUPABASE_ANON_KEY
+tests/test_deploy_readiness.py:83:    httpx.ConnectError("secret-host.supabase.co refused"),
+tests/test_ui_recent.py:53:    ConnectionError("https://x.supabase.co timed out"),
+tests/test_ui_recent.py:59:    assert "abc123" not in msg and "supabase.co" not in msg and "Invalid API key" not in msg
+tests/test_ui_recent.py:119:            r.fetch_recent(lambda: FakeQuery(exc=ConnectionError("key=sb-secret-xyz https://h.supabase.co")))
+tests/test_ui_recent.py:121:    assert "sb-secret-xyz" not in caplog.text and "supabase.co" not in caplog.text
+---
+ui/recent.py:42:            "Couldn't load recent classifications right now. The database may be "
+docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md:9:The true image contains a horizontal bar along the top edge. Heavy noise breaks its appearance into bright and dark fragments. The predicted-class Grad-CAM highlights parts of that top region, but the model still predicts diagonal. This suggests the model located relevant evidence but could not reliably distinguish its orientation under severe noise. The true-class heatmap also highlights the top bar. This is consistent with dataset difficulty caused by corrupted visual information, although the model’s feature representation may also contribute.
+ui/app.py:38:st.caption("Streamlit (this UI) → FastAPI (CNN + Grad-CAM) → Supabase (data). Three clouds.")
+ui/app.py:77:    st.caption(
+ui/app.py:105:    st.latex(r"n_{\text{out}} = \left\lfloor \frac{n + 2p - k}{s} \right\rfloor + 1")
+ui/app.py:139:    st.caption(
+ui/app.py:170:        r"3 \xrightarrow{\text{pool}} 3+1\cdot 1 = 4 \xrightarrow{\text{conv}} 4+2\cdot 2 = 8"
+ui/app.py:171:        r" \xrightarrow{\text{pool}} 8+1\cdot 2 = 10"
+ui/app.py:195:    st.latex(r"L^c_{\text{Grad-CAM}} = \mathrm{ReLU}\!\left(\sum_k \alpha_k^c\, A^k\right)")
+ui/app.py:222:        st.caption(f"Ground truth for this generated sample: {resp['true_class']} "
+ui/app.py:225:    ic.image(tryit.decode_png(resp["input_png"]), caption="Input (28×28, enlarged)", width=224)
+ui/app.py:226:    cc.image(tryit.decode_png(resp["cam_png"]), caption="Grad-CAM (red = most influential)", width=224)
+ui/app.py:227:    st.caption(f"Image sha256 {resp['image_sha256'][:16]}… logged to Supabase (no pixels stored).")
+ui/app.py:246:        st.caption(
+ui/app.py:252:        st.caption(
+ui/app.py:303:    st.caption(
+ui/app.py:349:def _show_figure(key: str, caption: str):
+ui/app.py:352:        st.image(str(path), caption=caption, use_column_width=True)
+ui/app.py:387:    st.caption(
+ui/app.py:448:        st.caption(
+ui/app.py:466:        _show_figure(fig, f"Grad-CAM, {set_name} examples (left to right = table order below)")
+ui/app.py:481:    st.caption("Two of the eight incorrect examples have a detailed written analysis.")
+ui/tryit.py:147:        raise TryItError("The prediction service is unavailable right now (it may be "
+Bash
+IN
+grep -n -i "rubric" ai-usage/*.md | head -30; sed -n 440,490p ui/app.py
+
+OUT
+ai-usage/Emma-Session1.md:24:The rubric requires matched seeds and training budgets, at least three improvement techniques with controlled ablations, persisted runs, loss curves, test metrics, and confusion matrices.
+ai-usage/Emma-Session3.md:26:The rubric requires these five tabs:
+ai-usage/Emma-Session3.md:944:All tabs. The current tabs are Concepts, Train, Predict, Run History and Model Card. The rubric wants Concepts, Try It, Compare Models, Recent Classifications and Model Card. Train and Predict need merging into Try It, and Run History goes away.
+ai-usage/Emma-Session3.md:968:Only two incorrect examples have failure interpretations: 924 (dataset difficulty) and 1783 (model limitation). The rubric asks for interpretations on the failures shown. Either write short notes for the other incorrect examples, or show only the two interpreted ones and label them as such. I'd write notes for at least 5.
+ai-usage/Emma-Session3.md:5110:7. Check whether CI, API upload/Grad-CAM tests, and database-outage handling satisfy the rubric. Fix concrete gaps without adding redundant tests.
+ai-usage/Emma-Session3.md:6640:ai-usage/Emma-Session3.md is empty (0 bytes). Fill it in before committing if the rubric needs it.
+
+def _render_gradcam(examples):
+    source = {}
+    try:
+        source = evidence.load_gradcam_source()
+    except evidence.EvidenceError:
+        pass
+    if source:
+        st.caption(
+            f"Source: run `{source.get('run_name')}` (Supabase run id {source.get('run_id')}, "
+            f"dataset id {source.get('dataset_id')}), regenerated test accuracy "
+            f"{source.get('regenerated_accuracy', 0):.2%} matching the stored "
+            f"{source.get('stored_accuracy', 0):.2%}; {source.get('n_correct')} correct and "
+            f"{source.get('n_incorrect')} incorrect of {source.get('n_test')} test images."
+        )
+    interp = None
+    try:
+        interp = evidence.load_failure_interpretations()
+    except evidence.EvidenceError as exc:
+        st.warning(f"Failure interpretations unavailable. {exc}")
+
+    for set_name, label, fig in (
+        ("correct", "Correct predictions (5)", "gradcam_correct"),
+        ("incorrect", "Incorrect predictions (8)", "gradcam_incorrect"),
+    ):
+        st.markdown(f"#### {label}")
+        _show_figure(fig, f"Grad-CAM, {set_name} examples (left to right = table order below)")
+        subset = [e for e in examples if e["set"] == set_name]
+        df = pd.DataFrame(
+            {
+                "Test index": e["test_index"],
+                "True": e["true"],
+                "Predicted": e["predicted"],
+                "Confidence": f"{e['confidence']:.1%}",
+                "Note": f"Correct but uncertain ({e['confidence']:.0%} confidence)" if e["uncertain"] else "",
+            }
+            for e in subset
+        )
+        st.dataframe(df, use_container_width=True, hide_index=True)
+
+    st.markdown("#### Failure interpretations")
+    st.caption("Two of the eight incorrect examples have a detailed written analysis.")
+    if interp:
+        for idx, item in interp["examples"].items():
+            with st.expander(f"Example {idx}: {item['title']}", expanded=True):
+                st.markdown(item["text"])
+        if interp["limits"]:
+            st.markdown("**Interpretation limits**")
+            st.markdown(interp["limits"])
+Bash
+IN
+sed -n 15,70p ai-usage/Emma-Session3.md; grep -n -i -E "ethic|deployment context|worldview|christian|video|contribution|presentation|reflection" ai-usage/*.md docs/*.md PART2_RESULTS.md | head -30
+
+OUT
+/clear
+q1.csv
+Start Part 3 of See-Sense. Inspect only; do not modify files yet.
+
+Read ui/app.py, the API endpoints and schemas, database RLS policies, and these final evidence folders:
+- experiments/results/official-supabase-1-sql
+- experiments/results/official-supabase-1-analysis
+- experiments/results/official-supabase-1-gradcam
+- docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md
+
+The rubric requires these five tabs:
+1. Concepts
+2. Try It
+3. Compare Models
+4. Recent Classifications
+5. Model Card
+
+Identify what already works and what each tab still needs. In particular:
+- Compare Models must use our official Supabase results, not Komal’s offline numbers.
+- Grad-CAM must display at least 5 correct and 5 incorrect examples with the failure interpretations.
+- Recent Classifications must query Supabase with the anon key and show a class-distribution histogram.
+- Concepts needs stride/padding arithmetic, the receptive-field formula and three stacked 3×3 worked example, plus Grad-CAM derivation.
+- The UI must handle API cold starts and database failures gracefully.
+
+Check whether Recent Classifications needs an additional read policy or restricted view. Keep service-role credentials out of the UI.
+
+Report a short gap list and propose the smallest first implementation step. Do not edit, access credentials, deploy, commit, or push. Stop after the inspection.
+Show more
+Bash
+IN
+git ls-files | grep -v -E '\.(png|jpg|pt)$' | head -100; ls experiments/results/official-supabase-1-*; wc -l ui/app.py
+
+OUT
+.env.example
+.gitignore
+MODEL_CARD.md
+PART2_RESULTS.md
+README.md
+ai-usage/Emma-Session1.md
+ai-usage/Komal-Session2.md
+api/__init__.py
+api/configs/default.yaml
+api/db.py
+api/experiments.py
+api/local_db.py
+api/main.py
+api/requirements.txt
+api/training.py
+db/migrations/001_init.sql
+db/migrations/002_experiment_tracking.md
+db/migrations/002_experiment_tracking.sql
+db/seed.py
+docs/PART1_HANDOFF.md
+docs/PART2_PROTOCOL.md
+docs/PART2_RESULTS.md
+docs/PART1_HANDOFF.md:79:- Leave-one-out measures each technique's contribution *given the others are on*.
+docs/PART2_RESULTS.md:42:## 2. Each technique's contribution (SQL query 6)
+docs/PART2_RESULTS.md:65:  techniques help**; any real contribution is smaller than the seed-to-seed
+docs/PART2_RESULTS.md:86:  contribution *given the other three are on*, not its effect on its own.
+ai-usage/Emma-Session1.md:4118:- Leave-one-out measures each technique's contribution *given the others are on*.
+docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md:9:The true image contains a horizontal bar along the top edge. Heavy noise breaks its appearance into bright and dark fragments. The predicted-class Grad-CAM highlights parts of that top region, but the model still predicts diagonal. This suggests the model located relevant evidence but could not reliably distinguish its orientation under severe noise. The true-class heatmap also highlights the top bar. This is consistent with dataset difficulty caused by corrupted visual information, although the model’s feature representation may also contribute.
+ai-usage/Emma-Session3.md:744:The true image contains a horizontal bar along the top edge. Heavy noise breaks its appearance into bright and dark fragments. The predicted-class Grad-CAM highlights parts of that top region, but the model still predicts diagonal. This suggests the model located relevant evidence but could not reliably distinguish its orientation under severe noise. The true-class heatmap also highlights the top bar. This is consistent with dataset difficulty caused by corrupted visual information, although the model’s feature representation may also contribute.
+ai-usage/Emma-Session3.md:1016:4. Explain that ablations measure a technique’s contribution while the other techniques remain enabled. Do not claim dropout or scheduling clearly improved accuracy.
+ai-usage/Emma-Session3.md:1425:        "difference is therefore that technique's contribution *given* the others, "
+ai-usage/Emma-Session3.md:4011:## Ethical considerations
+ai-usage/Emma-Session3.md:4651:                "linear in the feature maps, so $\\alpha_k^c$ is map $k$'s contribution rate and "
+ai-usage/Emma-Session3.md:4652:                "$\\alpha_k^c A^k_{ij}$ its contribution at cell $(i,j)$.")
+ai-usage/Emma-Session3.md:4723:        "$\\\\alpha_k^c A^k_{ij}$ is that map's contribution at cell $(i,j)$ to the score."
+ai-usage/Emma-Session3.md:4791:  compare the two on the same seed. They measure a technique's contribution
+ai-usage/Emma-Session3.md:4860:## Ethical considerations
+PART2_RESULTS.md:42:## 2. Each technique's contribution (SQL query 6)
+PART2_RESULTS.md:65:  techniques help**; any real contribution is smaller than the seed-to-seed
+PART2_RESULTS.md:86:  contribution *given the other three are on*, not its effect on its own.
+Read gradcam_incorrect.png
+Read gradcam_correct.png
+I've confirmed the examples are stacked vertically rather than left to right, so now I'll fix the MODEL_CARD, the caption, and the README links accordingly.
+Bash
+IN
+grep -rn "left to right" --include=*.py --include=*.md . --exclude-dir=.venv --exclude-dir=ai-usage; sed -n 345,356p ui/app.py; grep -n "2 pixel\|2 px\|max_shift\|max-shift" MODEL_CARD.md docs/*.md PART2_RESULTS.md api/configs/default.yaml experiments/configs.py | head -20; grep -n "AUTH\|CORS\|rate\|max_upload\|size" api/main.py | head -20; cat .gitignore
+
+OUT
+Exit code 1
+(eval):1: no matches found: --include=*.py
+Bash
+IN
+grep -rn "left to right" . --include='*.py' --include='*.md' --exclude-dir=.venv --exclude-dir=ai-usage; sed -n 345,356p ui/app.py; grep -n -i "2 pixel\|2 px\|max_shift\|max-shift" MODEL_CARD.md docs/*.md PART2_RESULTS.md api/configs/default.yaml experiments/configs.py | head -20; grep -n -i "cors\|rate\|max_upload\|MAX_\|413" api/main.py | head -20; cat .gitignore
+
+OUT
+ui/app.py:466:        _show_figure(fig, f"Grad-CAM, {set_name} examples (left to right = table order below)")
+def _pct(x: float) -> str:
+    return f"{x * 100:.2f}%"
+
+
+def _show_figure(key: str, caption: str):
+    path = evidence.FIGURES[key]
+    if path.is_file():
+        st.image(str(path), caption=caption, use_column_width=True)
+    else:
+        st.warning(f"Figure not available: {path.name}")
+
+
+MODEL_CARD.md:21:- **Augmentation:** random shifts of up to 2 pixels (zero padded) and random
+docs/PART1_HANDOFF.md:61:| `full_improved` | ImprovedCNN | on | 0.3 | on (shift 2 px + flips) | cosine |
+docs/PART1_HANDOFF.md:70:change before freezing (`--dropout`, `--max-shift`, `--scheduler`).
+docs/PART2_PROTOCOL.md:60:| Dropout \ shift | 1 px | 2 px | 3 px |
+docs/PART2_PROTOCOL.md:86:  --dropout 0.3 --max-shift 1 --scheduler cosine
+docs/PART2_PROTOCOL.md:94:  --dropout 0.3 --max-shift 1 --scheduler cosine \
+experiments/configs.py:43:    "test_size", "val_size", "split_seed", "train_seed", "augment_max_shift",
+experiments/configs.py:59:    augment_max_shift: int = 2    # pixels, where augmentation is on
+experiments/configs.py:65:        if self.augment_max_shift < 1:
+experiments/configs.py:66:            raise ValueError("augment_max_shift must be >= 1, otherwise 'no_augmentation' changes nothing")
+experiments/configs.py:107:        "augment_max_shift": protocol.augment_max_shift,
+24:from fastapi.middleware.cors import CORSMiddleware
+31:from shared.data import CLASS_NAMES, IMG_SIZE, N_CLASSES, generate_one
+78:    CORSMiddleware,
+171:            augment_max_shift=req.augment_max_shift,
+256:    """Generate a synthetic image, classify it, and return a Grad-CAM overlay.
+258:    Lets the UI demonstrate the model without the user uploading a file.
+261:    gray, label = generate_one(img_size=IMG_SIZE, noise=0.1, seed=req.seed, kind=kind)
+# Secrets — never commit these
+.env
+.env.*
+!.env.example
+**/.streamlit/secrets.toml
+!**/.streamlit/secrets.toml.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# OS
+.DS_Store
+
+# Local offline database (SEE_SENSE_LOCAL_DB)
+.local_db.json
+.local_db.json.tmp
+Bash
+IN
+grep -o '"augment_max_shift": *[0-9]*' experiments/results/official-supabase-1-runs.jsonl | sort | uniq -c; grep -n -i "max_shift\|augment_max" experiments/results/official-supabase-1-sql/q1.csv | head -3; head -2 experiments/results/official-supabase-1-sql/q1.csv; sed -n 60,120p api/main.py; grep -n "upload\|UploadFile\|MAX\|Image.open\|status_code" api/main.py | head -30; grep -n -i "ethic" -A12 docs/PART1_HANDOFF.md | head -30; ls ui/.streamlit .streamlit
+
+OUT
+1:train_seed,n_runs,datasets,data_seeds,split_seeds,split_hashes,split_sizes,n_rows,noise,epochs,batch_sizes,initial_lrs,optimizers,max_shifts
+train_seed,n_runs,datasets,data_seeds,split_seeds,split_hashes,split_sizes,n_rows,noise,epochs,batch_sizes,initial_lrs,optimizers,max_shifts
+0,6,1,1,1,1,1,1,1,1,1,1,1,1
+
+
+@app.exception_handler(httpx.TransportError)
+async def _database_unreachable(_request, exc):
+    _log.warning("database unreachable: %s", type(exc).__name__)
+    return JSONResponse(status_code=503, content={"detail": "database unavailable"})
+
+
+@app.exception_handler(APIError)
+async def _database_error(_request, exc):
+    if str(getattr(exc, "code", "")) in _DB_DOWN_CODES:
+        _log.warning("database unavailable: %s", exc.code)
+        return JSONResponse(status_code=503, content={"detail": "database unavailable"})
+    _log.error("database error: code=%s", getattr(exc, "code", None))
+    return JSONResponse(status_code=500, content={"detail": "database error"})
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.environ.get("ALLOWED_ORIGINS", "*").split(","),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+def _git_sha() -> str:
+    if os.environ.get("RENDER_GIT_COMMIT"):
+        return os.environ["RENDER_GIT_COMMIT"][:7]
+    try:
+        return (
+            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+            .decode()
+            .strip()
+        )
+    except Exception:
+        return "unknown"
+
+
+def _project_ref() -> str | None:
+    url = os.environ.get("SUPABASE_URL", "")
+    if url.startswith("https://"):
+        return url.split("//", 1)[1].split(".", 1)[0]
+    return None
+
+
+def _artifact_or_404(run_id: int) -> str:
+    model_b64 = db.get_run_artifact(run_id)
+    if model_b64 is None:
+        raise HTTPException(status_code=404, detail="run_id not found")
+    return model_b64
+
+
+def _to_gray_array(raw: bytes, img_size: int) -> np.ndarray:
+    """Decode arbitrary image bytes to a grayscale [img_size, img_size] uint8 array."""
+    img = Image.open(io.BytesIO(raw)).convert("L").resize((img_size, img_size))
+    return np.asarray(img, dtype=np.uint8)
+
+
+# ---------------------------------------------------------------------------
+# datasets
+# ---------------------------------------------------------------------------
+23:from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+65:    return JSONResponse(status_code=503, content={"detail": "database unavailable"})
+72:        return JSONResponse(status_code=503, content={"detail": "database unavailable"})
+74:    return JSONResponse(status_code=500, content={"detail": "database error"})
+108:        raise HTTPException(status_code=404, detail="run_id not found")
+114:    img = Image.open(io.BytesIO(raw)).convert("L").resize((img_size, img_size))
+143:        raise HTTPException(status_code=404, detail="dataset_id not found")
+150:            status_code=409,
+175:        raise HTTPException(status_code=422, detail=str(exc))
+180:        raise HTTPException(status_code=500, detail=f"inconsistent experiment result: {exc}")
+208:        raise HTTPException(status_code=404, detail="run_id not found")
+238:async def predict(run_id: int = Form(...), file: UploadFile = File(...)) -> PredictResponse:
+239:    """Classify an uploaded image and return a Grad-CAM overlay.
+245:        raise HTTPException(status_code=422, detail="empty file")
+249:        raise HTTPException(status_code=422, detail="could not decode image")
+258:    Lets the UI demonstrate the model without the user uploading a file.
+.streamlit:
+secrets.toml.example
+
+ui/.streamlit:
+secrets.toml
+secrets.toml.example
+Bash
+IN
+grep -o '"augment_max_shift[^,]*' experiments/results/official-supabase-1-runs.jsonl | sort | uniq -c; grep -o 'max_shift[^,]*' experiments/results/official-supabase-1-runs.jsonl | sort | uniq -c | head -3; sed -n 2,3p experiments/results/official-supabase-1-sql/q1.csv; cat render.yaml; grep -n "_log\.\|logging" api/*.py | head -20; sed -n 236,255p api/main.py; grep -n -i "enable row\|policy\|grant\|revoke" db/migrations/*.sql | head -20; grep -n "def \|hash\|sha" api/db.py | grep -i "image\|sha" | head
+
+OUT
+0,6,1,1,1,1,1,1,1,1,1,1,1,1
+1,6,1,1,1,1,1,1,1,1,1,1,1,1
+# Render.com blueprint for the FastAPI model service (Cloud #2).
+# In the Render dashboard: New -> Blueprint -> point at this repo.
+# Set SUPABASE_URL and SUPABASE_SERVICE_KEY as environment variables (secrets)
+# in the service settings after the first deploy. Never set SEE_SENSE_LOCAL_DB on
+# Render: it switches the API to a throwaway local file and /healthz would report
+# "offline" instead of "ok". The free plan sleeps when idle (cold start ~30-60 s);
+# the UI's Try It tab warms the service up with /healthz before predicting.
+services:
+  - type: web
+    name: see-sense-api
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r api/requirements.txt"
+    startCommand: "uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: "*"
+api/main.py:16:import logging
+api/main.py:58:_log = logging.getLogger("see_sense.api")
+api/main.py:64:    _log.warning("database unreachable: %s", type(exc).__name__)
+api/main.py:71:        _log.warning("database unavailable: %s", exc.code)
+api/main.py:73:    _log.error("database error: code=%s", getattr(exc, "code", None))
+
+@app.post("/predict", response_model=PredictResponse, tags=["prediction"])
+async def predict(run_id: int = Form(...), file: UploadFile = File(...)) -> PredictResponse:
+    """Classify an uploaded image and return a Grad-CAM overlay.
+
+    Only the image's sha256 hash + shape + prediction are logged -- never pixels.
+    """
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=422, detail="empty file")
+    try:
+        gray = _to_gray_array(raw, IMG_SIZE)
+    except Exception:
+        raise HTTPException(status_code=422, detail="could not decode image")
+    sha256 = hashlib.sha256(raw).hexdigest()
+    return _predict_array(run_id, gray, sha256, true_class=None)
+
+
+@app.post("/predict_sample", response_model=PredictResponse, tags=["prediction"])
+def predict_sample(req: PredictSampleRequest) -> PredictResponse:
+db/migrations/003_verify.sql:19:-- 2. Grants on the view: expect anon = SELECT only; no authenticated, no write privileges.
+db/migrations/003_verify.sql:20:select grantee, privilege_type
+db/migrations/003_verify.sql:21:from information_schema.role_table_grants
+db/migrations/003_verify.sql:23:  and grantee in ('anon', 'authenticated', 'PUBLIC')
+db/migrations/003_verify.sql:24:order by grantee, privilege_type;
+db/migrations/003_verify.sql:107:select tablename, policyname, roles, cmd
+db/migrations/003_verify.sql:108:from pg_policies where schemaname = 'public' order by tablename, policyname;
+db/migrations/003_recent_classifications_view.sql:4:-- table, column, policy, RLS setting or row is changed, dropped or rewritten.
+db/migrations/003_recent_classifications_view.sql:10:-- WHY A VIEW AND NOT A POLICY ON image_metadata
+db/migrations/003_recent_classifications_view.sql:11:--   RLS is row-level, not column-level. An anon SELECT policy on image_metadata
+db/migrations/003_recent_classifications_view.sql:13:--   enabled with NO anon policy (unchanged), and this view is the only door.
+db/migrations/003_recent_classifications_view.sql:20:--   (policy-less) rights and return nothing -- and fixing that would need the
+db/migrations/003_recent_classifications_view.sql:21:--   column-leaking policy above. (security_invoker needs PostgreSQL 15+, which
+db/migrations/003_recent_classifications_view.sql:45:-- GRANTS. Supabase's default privileges give anon/authenticated broad rights on
+db/migrations/003_recent_classifications_view.sql:46:-- new public objects, so reset first, then grant exactly one thing.
+db/migrations/003_recent_classifications_view.sql:47:revoke all on public.recent_classifications from public, anon, authenticated;
+db/migrations/003_recent_classifications_view.sql:48:grant select on public.recent_classifications to anon;
+db/migrations/003_recent_classifications_view.sql:50:-- granted: the app uses only the anon key.
+db/migrations/002_experiment_tracking.sql:120:-- SELECT-only policy for the anon key (001_init.sql), and new columns inherit
+db/migrations/002_experiment_tracking.sql:126:alter table runs enable row level security;
+8:We store an image's **sha256 hash and shape** in `image_metadata`, never the raw
+38:    "train_seed", "split_sha256", "n_train", "n_val", "n_test", "optimizer",
+131:        "split_sha256": result["split_sha256"],
+231:# image_metadata  (hash + shape + prediction; NO raw pixels)
+233:def insert_image_metadata(
+235:    sha256: str,
+248:                "sha256": sha256,
+266:# credentials. Leave it unset for the real (shared) database.
+Bash
+IN
+grep -o -i '.\{0,20\}shift.\{0,12\}' experiments/results/official-supabase-1-runs.jsonl | sort | uniq -c | head -5; grep -n -i "shift\|1 px" experiments/results/official-supabase-1-analysis/summary.md docs/PART2_RESULTS.md | head; sed -n 120,135p docs/PART2_PROTOCOL.md; sed -n 1,35p docs/PART2_PROTOCOL.md; grep -n "split" shared/*.py api/experiments.py | head
+
+OUT
+docs/PART2_RESULTS.md:190:  shift (1 px) were tuned on 2 exploration seeds only.
+# Part 2: frozen experimental protocol
+
+Frozen on **2026-10-15**, before any official run and before any test metric
+was looked at. Every choice below was made from training and validation
+evidence only. The exploration script (`experiments/explore.py`) deletes test
+metrics before printing, and its raw output is in `experiments/results/explore_*.jsonl`.
+
+## Frozen protocol
+
+| Item | Value |
+|---|---|
+| Dataset ID / rows / noise / data seed | **new dataset** `shapes-2000-noise1.0`: 2000 rows, noise 1.0, seed 42 (ID 2 in the local run; register it in Supabase with `POST /datasets`, see below) |
+| `split_seed`, test fraction, validation fraction | 0, 0.2 (400 images), 0.1 (200 images); train = 1400 |
+| Training seeds | 0, 1, 2, 3, 4 (5 seeds → 30 runs) |
+| Epochs, batch size, initial learning rate (Adam) | 30, 32, 0.01 |
+| Dropout, augmentation shift, scheduler | 0.3, 1 px (+ flips), cosine |
+| Model selection | each run keeps the weights of its lowest-validation-loss epoch; test scored once afterwards (unchanged from Part 1) |
+| Experiment group | `official-1` |
+| Protocol fingerprint (dataset ID 2) | `cf05f9546cbbb0d4eb1cadfe0f7854bee883ffd9899ba5b1388aab3d6d9a578d` |
+| Frozen on (date) | 2026-10-15 |
+
+## Evidence used (validation and training only)
+
+Exploration used training seeds 100 and 101, never the official seeds, with
+`split_seed` 0.
+
+**1. Dataset difficulty** (`explore_difficulty*.jsonl`; lr 0.01, batch 32, 15 epochs)
+
+| Rows | Noise | Baseline val acc | Full-improved val acc |
+|---|---|---|---|
+| 800 | 0.1 (Part 1 default) | 100%, 100% | 100%, 100% |
+| 2000 | 0.5 | 100%, 100% | 100%, 100% |
+| 2000 | 0.9 | 93%, 90% | 98.5%, 97% |
+| 2000 | **1.0** | **85.5%, 91.5%** | **95%, 93.5%** |
+| 1200 | 1.0 | 81.7%, 76.7% | 90.8%, 87.5% |
+api/experiments.py:5:    (bad confusion matrix, histories of the wrong length, splits that do not
+api/experiments.py:7:  * ``same_split`` -- decide whether two saved runs really saw the same examples.
+api/experiments.py:9:Why ``same_split`` looks at more than the split hash: ``split_sha256`` hashes only
+api/experiments.py:11:row count, the fractions and ``split_seed``. Two runs on different datasets
+api/experiments.py:14:AND the same split.
+api/experiments.py:25:    cfg, sizes = result["config"], result["split_sizes"]
+api/experiments.py:29:        raise ValueError(f"split sizes {sizes} do not partition {cfg['n_rows']} rows")
+api/experiments.py:58:def split_identity(run: Mapping[str, Any]) -> Optional[Tuple]:
+api/experiments.py:69:        run.get("split_seed"),
+api/experiments.py:71:        run.get("split_sha256"),
+12:31 PM
+Quick status: the protocol confirms the 1 px shift, and I'm now checking how the split is made before writing the dataset card.
+
+
+
+Bash
+IN
+grep -n -i "def .*split\|permutation\|stratif\|test_size\|val_size\|normal\|/ 255\|mean" api/training.py | head -20; sed -n 20,75p api/training.py | head -5; grep -n "noise" shared/schemas.py | head
+
+OUT
+113:    x = images_uint8.astype(np.float32) / 255.0
+117:def make_splits(
+118:    n: int, test_size: float = 0.2, val_size: float = 0.1, split_seed: int = 0
+122:    The result depends only on ``(n, test_size, val_size, split_seed)``, so two
+125:    n_test, n_val = int(n * test_size), int(n * val_size)
+127:        raise ValueError("test_size/val_size leave an empty train, validation or test split")
+128:    idx = np.random.default_rng(split_seed).permutation(n)
+141:    return float(np.mean(f1s))
+182:    """Mean cross-entropy and predicted classes, in eval mode, without gradients."""
+207:    test_size: float = 0.2,
+208:    val_size: float = 0.1,
+235:    train_idx, val_idx, test_idx = make_splits(len(images), test_size, val_size, split_seed)
+278:        val_accuracy.append(float((v_pred == y[val_idx]).mean()))
+287:        "accuracy": float((preds == y_test_np).mean()),
+320:            "test_size": test_size, "val_size": val_size,
+336:    test_size: float = 0.2,
+348:        lr=lr, batch_size=batch_size, epochs=epochs, test_size=test_size,
+392:    weights = grad.mean(dim=(1, 2))     # [C]
+408:    cam_arr = np.asarray(cam_img).astype(np.float32) / 255.0
+from typing import Dict, List, Tuple
+
+import numpy as np
+import torch
+from PIL import Image
+23:    noise: float = Field(0.1, ge=0.0, le=1.0, description="Pixel noise std.")
+47:    dataset's own generation settings (rows, noise, seed).
+12:31 PM
+Now the edits: the MODEL_CARD fix, the caption fix and the README links.
+
+
+
+Bash
+IN
+python3 - <<'EOF'
+import re
+p='MODEL_CARD.md'; s=open(p).read()
+s=s.replace("random shifts of up to 2 pixels (zero padded)","random shifts of up to 1 pixel (zero padded; frozen protocol value `--max-shift 1`)")
+open(p,'w').write(s)
+p='ui/app.py'; s=open(p).read()
+s=s.replace('''f"Grad-CAM, {set_name} examples (left to right = table order below)"''','''(
+                f"Grad-CAM, {set_name} examples: one example per row, top to bottom = table order below. "
+                + ("Columns: noisy input, true shape before noise, Grad-CAM for the predicted class."
+                   if set_name == "correct" else
+                   "Columns: noisy input, true shape before noise, Grad-CAM for the predicted class, "
+                   "Grad-CAM for the true class.")
+            )''')
+open(p,'w').write(s)
+p='README.md'; s=open(p).read()
+a=s.index("## Live deployment URLs"); b=s.index("## The five tabs")
+new='''## Live deployment URLs
+
+| Tier | Platform | URL |
+|------|----------|-----|
+| UI | Streamlit Community Cloud | https://see-sense-glpk38qzwsf9hhvnlkt798.streamlit.app/ |
+| API | Render.com | https://see-sense-api-rhkb.onrender.com *(free tier sleeps; first call takes ~30–60 s; health check: `/healthz`)* |
+| Data | Supabase | `https://<your-project-ref>.supabase.co` *(placeholder: the project URL is not documented in this repository; fill it in from the Supabase dashboard if you want it listed)* |
+
+'''
+s=s[:a]+new+s[b:]
+open(p,'w').write(s)
+EOF
+git diff --stat; grep -n "left to right\|2 pixel" -r ui MODEL_CARD.md tests | head
+
+OUT
+ MODEL_CARD.md | 2 +-
+ README.md     | 8 +++-----
+ ui/app.py     | 8 +++++++-
+ 3 files changed, 11 insertions(+), 7 deletions(-)
+ui/app.py:165:        "Each extra 3×3 layer adds 2 pixels, so **3 → 5 → 7**: three small layers see a 7×7 patch, "
+Bash
+IN
+.venv/bin/python - <<'EOF'
+import numpy as np, hashlib
+from shared.data import generate_images, CLASS_NAMES
+from api.training import make_splits
+im,l=generate_images(2000,28,1.0,42); l=np.array(l)
+tr,va,te=make_splits(2000,0.2,0.1,0)
+print(len(tr),len(va),len(te))
+for n,ix in (("all",np.arange(2000)),("train",tr),("val",va),("test",te)):
+    print(n,np.bincount(l[ix],minlength=4).tolist())
+print(im.shape, im.dtype, im.mean()/255)
+EOF
+grep -n "split_sha256" api/training.py | head -3
+
+OUT
+1400 200 400
+all [515, 494, 479, 512]
+train [356, 363, 331, 350]
+val [46, 40, 49, 65]
+test [113, 91, 99, 97]
+(2000, 28, 28) uint8 0.3563033363345338
+313:        "split_sha256": hashlib.sha256(
+Write DATASET_CARD.md
+118 lines
+# Dataset Card — See-Sense synthetic shapes
+
+Sources: generator `shared/data.py`, splitting and augmentation in `api/training.py`,
+frozen settings in `docs/PART2_PROTOCOL.md` (frozen 2026-10-15, before any official run).
+Class counts below were obtained by regenerating the official dataset locally with these
+functions; they are not stored anywhere in the repository.
+
+## Summary
+All images are synthetic. No real photographs, people or third-party data are used. The
+data exist so that a small CNN and Grad-CAM can be evaluated on a task whose correct
+answer is known exactly.
+
+## Classes
+Four classes, 28×28 grayscale, label index in this order (`CLASS_NAMES`):
+
+| Index | Class | Clean shape (before noise) |
+|---|---|---|
+| 0 | `horizontal` | Full-width bar. Centre row drawn uniformly from 3–24; half-thickness `t` drawn from {1, 2}, so the bar is 2 or 4 pixels tall. |
+| 1 | `vertical` | Full-height bar, same rule on columns. |
+| 2 | `diagonal` | Line along the main diagonal only (top-left to bottom-right), width 3 or 5 pixels (`t` from {1, 2}, offsets −t…+t). The other diagonal direction is never generated. |
+| 3 | `block` | Filled square, side drawn from 6–11, top-left corner placed uniformly so it fits in the image. |
+
+Shape pixels are 1.0 and background 0.0. Only the block and the bars vary in position;
+the diagonal varies only in thickness.
+
+## Generation
+- `generate_images(n_rows, img_size=28, noise, seed)` draws one random generator from
+  `seed`. For each image it draws the class uniformly at random from the four classes,
+  then the shape parameters, then the noise, in that order. The same arguments always
+  give the same dataset.
+- Classes are sampled independently, so they are only approximately balanced.
+  Official dataset counts (2,000 images): horizontal 515, vertical 494, diagonal 479,
+  block 512.
+- Pixels are never stored. Supabase `datasets` holds only the generation parameters
+  (`n_rows`, `img_size`, `noise`, `seed`); the pixels are regenerated from them at
+  training and evaluation time.
+- `generate_one` (single image, used by the Try It "generated sample" option) is a
+  separate code path with its own seed per image and does not reproduce the
+  `generate_images` sequence.
+
+## Noise
+- Additive Gaussian noise with standard deviation `noise` is added to every pixel of the
+  [0, 1] image, the result is clipped to [0, 1], then converted to 8-bit
+  (`uint8`, 0–255). Inputs to the model are divided by 255.
+- The API accepts `noise` from 0.0 to 1.0.
+- **Official dataset `shapes-2000-noise1.0`:** 2,000 rows, noise 1.0 (the maximum),
+  data seed 42. At this level the noise is as large as the signal, so the shape is
+  heavily obscured (see the Grad-CAM gallery). Noise 1.0 was chosen from training and
+  validation evidence before any test result was seen: easier settings put both models
+  at or near 100% validation accuracy (`docs/PART2_PROTOCOL.md`, section 1).
+- Clipping makes the noise non-Gaussian and non-symmetric at the extremes; background
+  pixels cannot go below 0 and shape pixels cannot go above 1.
+- The Try It "generated sample" uses noise 0.1, so its predictions are easier than the
+  reported test scores.
+
+## Splits
+- `make_splits(n, test_size=0.2, val_size=0.1, split_seed=0)`: one random permutation of
+  the indices from `split_seed`, cut into test, validation and train. It is **not
+  stratified**.
+- Official sizes: **1,400 train, 200 validation, 400 test.** One fixed split for all
+  30 runs. A split hash and matched-configuration audit (SQL query 1) checked that
+  within each training seed all six variants shared dataset, split, budget, optimizer
+  and learning rate.
+- Class counts per split (regenerated locally; chance differences from the lack of
+  stratification are visible):
+
+| Class | Train | Validation | Test |
+|---|---|---|---|
+| horizontal | 356 | 46 | 113 |
+| vertical | 363 | 40 | 91 |
+| diagonal | 331 | 49 | 99 |
+| block | 350 | 65 | 97 |
+
+- The validation split selects each run's best epoch (lowest validation loss). The
+  test split is scored once afterwards. Hyperparameter exploration used training seeds
+  100 and 101 and validation metrics only; the exploration script strips test metrics.
+- The test set is small: one image is 0.25 percentage points of accuracy.
+
+## Augmentation (training batches only)
+Applied only to the training split, and only in variants with augmentation on
+(`full_improved`, `no_scheduler`, `no_dropout`, `no_batchnorm`):
+- Random shift of up to **1 pixel** in each direction, zero padded, no wrap-around
+  (official `--max-shift 1`; 1 px beat 2 and 3 px on validation loss in exploration).
+  The code default of 2 was not used for the official runs.
+- Random horizontal flip and random vertical flip, each with probability 0.5.
+- Caveat: a flipped diagonal runs bottom-left to top-right, a direction the generator
+  never draws. The label is kept, so augmentation teaches the model that both
+  directions are `diagonal`, which is outside the test distribution.
+- Validation and test images are never augmented.
+
+## Limitations
+- Synthetic, four simple shapes with a known rule; says nothing about natural images or
+  other noise types.
+- One dataset, one seed (42), one split. Results across five training seeds do not
+  capture variation from regenerating the data or re-splitting.
+- Classes are not exactly balanced and the split is not stratified.
+- Diagonal images vary only in thickness, so diagonal is the least varied class, while
+  blocks vary in size and position.
+- Upload handling is lossy: a user image is converted to grayscale and resized to
+  28×28 without cropping, so it is far from this distribution. Predictions on real
+  photos are meaningless.
+- At noise 1.0 some images are close to unrecognisable; some errors are expected and
+  not necessarily model faults (see `docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md`).
+
+## Data handling
+- No personal data is collected for training: the dataset is generated from a seed.
+- Stored in Supabase: dataset parameters; run settings, metrics, loss histories,
+  confusion matrices; model checkpoints (`run_artifacts`, not readable with the anon key).
+- Per served prediction the API stores SHA-256 hash, width, height, predicted class,
+  label index and confidence in `image_metadata` (not readable with the anon key).
+  Uploaded files are processed in memory and their pixels are not stored. Note that the
+  width and height are those of the uploaded file before resizing; the SHA-256 is of
+  the raw uploaded bytes.
+- The public UI reads only `runs` and the `recent_classifications` view
+  (`id, run_id, class_name, confidence, created_at`) with the anon key.
+- See `MODEL_CARD.md` (Privacy and data handling) and `docs/ETHICS_AND_DISCLOSURE.md`
+  for the fuller discussion.
+Bash
+IN
+grep -n "_predict_array" -A30 api/main.py | grep -n -i "shape\|width\|height\|insert_image" ; grep -n "no_batchnorm\|no_dropout\|no_scheduler" experiments/configs.py | head
+
+OUT
+4:223-    db.insert_image_metadata(
+7:226-        width=int(gray.shape[1]),
+8:227-        height=int(gray.shape[0]),
+22:241-    Only the image's sha256 hash + shape + prediction are logged -- never pixels.
+9:    no_batchnorm      full_improved with batch norm off
+10:    no_dropout        full_improved with dropout 0
+11:    no_scheduler      full_improved with the LR scheduler off
+27:    "no_batchnorm",
+28:    "no_dropout",
+29:    "no_scheduler",
+35:    "no_batchnorm": "use_batchnorm",
+36:    "no_dropout": "dropout",
+37:    "no_scheduler": "scheduler",
+64:            raise ValueError("dropout must be in (0, 1), otherwise 'no_dropout' changes nothing")
+12:31 PM
+Width and height come from the resized array, so they're always 28×28. I'll correct that sentence.
+
+
+
+Bash
+IN
+python3 - <<'EOF'
+p='docs/DATASET_CARD.md'; s=open(p).read()
+old="Note that the\n  width and height are those of the uploaded file before resizing; the SHA-256 is of\n  the raw uploaded bytes."
+assert old in s
+s=s.replace(old,"Note that width\n  and height are taken after resizing (always 28×28), so they carry no information\n  about the original file; the SHA-256 is of the raw uploaded bytes.")
+open(p,'w').write(s)
+EOF
+sed -n 1,30p ai-usage/Komal-Session1.md | head -12; git log --format='%an %s' | head -20
+
+OUT
+# AI Usage Record — See-Sense
+
+- **Student:** Komal Khan
+- **Date:** 2026-10-14
+- **Session title:** Run the API locally (Part 2 setup) on Windows and add AI-usage records
+- **Project part / step:** Part 2 — Step 1 (get access, run the test suite, dry run), from `docs/PART1_HANDOFF.md` §9
+- **AI tool:** Claude (agentic session in a cloud Linux workspace)
+- **Purpose:** Set up and verify the FastAPI model service on a local machine
+  following the Part 1 handoff, fix anything that stopped it from running locally,
+  and record this AI session.
+- **Files changed (if any):**
+  - `api/db.py` — added `load_dotenv()`; added an opt-in offline switch (`SEE_SENSE_LOCAL_DB`)
+Emma Rogoveanu Merge pull request #2 from emmabellerogo/Part2-updated
+Emma Rogoveanu Merge main into Part2-updated and resolve documentation and health-check conflicts
+Emma Rogoveanu Merge pull request #1 from emmabellerogo/Part2
+Emma Rogoveanu build: prepare cloud deployment and add CI readiness checks
+Emma Rogoveanu feat: complete five-tab dashboard with predictions and experiment evidence
+Emma Rogoveanu db: expose restricted read-only classification history
+Emma Rogoveanu feat: generate Grad-CAM evidence from saved Supabase checkpoints
+Emma Rogoveanu results: add 30 Supabase runs and SQL-backed model comparisons
+Emma Rogoveanu docs: record Emma's experiment and dashboard AI sessions
+KomalKhan776 Add files via upload
+KomalKhan776 Part 2 step 1: run API locally, fix .env loading, add AI usage record
+Emma Rogoveanu add experiment runner and Part 1 handoff
+Emma Rogoveanu persist and validate experiment results through API
+Emma Rogoveanu add improved CNN and reproducible training
+Emma Rogoveanu add experiment tracking fields to runs
+Emma Rogoveanu record Emma's AI usage for Part 1
+Emma Rogoveanu Initial commit: see-sense project
+Bash
+IN
+sed -n 228,262p api/db.py; grep -n -A14 "create table.*image_metadata" db/migrations/001_init.sql; grep -n -i "file.filename\|client.host\|user-agent\|headers" api/*.py ui/*.py | head
+
+OUT
+# ---------------------------------------------------------------------------
+# image_metadata  (hash + shape + prediction; NO raw pixels)
+# ---------------------------------------------------------------------------
+def insert_image_metadata(
+    run_id: int,
+    sha256: str,
+    width: int,
+    height: int,
+    label: int,
+    class_name: str,
+    confidence: float,
+) -> dict:
+    resp = (
+        get_client()
+        .table("image_metadata")
+        .insert(
+            {
+                "run_id": run_id,
+                "sha256": sha256,
+                "width": width,
+                "height": height,
+                "label": label,
+                "class_name": class_name,
+                "confidence": confidence,
+            }
+        )
+        .execute()
+    )
+    return resp.data[0]
+
+
+# ---------------------------------------------------------------------------
+# Optional offline mode (local development only)
+48:create table if not exists image_metadata (
+49-    id          bigint generated always as identity primary key,
+50-    run_id      bigint      not null references runs (id) on delete cascade,
+51-    sha256      text        not null,
+52-    width       integer     not null,
+53-    height      integer     not null,
+54-    label       integer     not null,
+55-    class_name  text        not null,
+56-    confidence  double precision not null,
+57-    created_at  timestamptz not null default now()
+58-);
+59-
+60-create index if not exists idx_runs_dataset_id       on runs (dataset_id);
+61-create index if not exists idx_runs_created_at        on runs (created_at desc);
+62-create index if not exists idx_image_metadata_run_id  on image_metadata (run_id);
+api/main.py:81:    allow_headers=["*"],
+Write ETHICS_AND_DISCLOSURE.md
+110 lines
+# Ethics and responsible disclosure — See-Sense
+
+Status key used throughout:
+- **IMPLEMENTED** — present in this repository today; evidence cited.
+- **PROPOSED** — not implemented; a recommendation only. Nothing marked PROPOSED should be
+  described as done.
+
+See-Sense is a teaching demo that classifies synthetic 28×28 shapes. The discussion
+below asks what would go wrong if a system like it, or its prediction-logging design,
+were reused in the real world.
+
+## 1. Two realistic deployment contexts
+
+### Context A — A classroom or public demo that accepts uploaded images (the current deployment)
+- **Who is affected:** anyone who uploads an image to the public Streamlit app.
+- **Risks:** a user may upload a personal photo (a face, a child, a document). The model
+  will still return one of four shape labels with a confidence, which can look
+  authoritative but is meaningless. The API also stores a SHA-256 hash of the file; a
+  hash is not reversible, but anyone who already holds the same file can check whether it
+  was uploaded, so it is not anonymous in every sense. The public Recent Classifications
+  tab shows class, confidence and time for the latest 200 predictions, so other
+  visitors can see that predictions are happening, but not images or hashes.
+- **Where the code stands:** see safeguards T1–T3 and G1–G2 below. Known gaps are listed
+  in section 4.
+
+### Context B — The same pipeline adapted to a real vision task (for example, a camera-based screening or monitoring tool)
+- **This is not what the project does.** It is the foreseeable misuse the model card
+  already rules out of scope ("medical imaging, surveillance, content moderation or any
+  decision about people").
+- **Risks:** a CNN that scores 95% on four synthetic shapes says nothing about real-world
+  accuracy. Grad-CAM heatmaps look convincing even on wrong predictions (the Grad-CAM
+  gallery contains confident errors, e.g. example 924 at 95% confidence), so a heatmap
+  could lend false credibility to a harmful decision. Logging per-prediction records
+  with timestamps would, in a real deployment, become a record of people's behaviour.
+- **Where the code stands:** the project only argues against this use (model card
+  scope statement, UI wording). It has no technical control that would stop someone
+  retraining the code on real data.
+
+## 2. Technical safeguards
+
+| ID | Safeguard | Status | Evidence |
+|---|---|---|---|
+| T1 | **Store a hash and metadata, never pixels.** Uploaded files are decoded in memory; `image_metadata` holds only SHA-256, width, height, label, class name, confidence and timestamp. Grad-CAM images are not stored. | IMPLEMENTED | `api/db.py` `insert_image_metadata`; `db/migrations/001_init.sql`; `api/main.py` `/predict` |
+| T2 | **Least-privilege database access.** The UI uses only the anon key, which can read `runs` and a restricted view `recent_classifications` (no hashes). `image_metadata` and `run_artifacts` have row-level security with no anon policy. Writes use the service-role key, which stays on the API server and is never in the UI. | IMPLEMENTED | `db/migrations/001`–`003` (`003_verify.sql` checks grants); README "Data" section; `.gitignore` excludes secret files |
+| T3 | **Errors do not leak internals.** Database failures return a generic 503 "database unavailable"; logs record the exception type or code only. Tests check that host names and keys do not appear in user-facing messages or logs. | IMPLEMENTED | `api/main.py` exception handlers; `tests/test_deploy_readiness.py`, `tests/test_ui_recent.py` |
+| T4 | **Upload size limit, content-type check and rate limiting on `/predict`.** | PROPOSED | Not in the code: `/predict` reads the whole upload and has no per-client limit. |
+| T5 | **Restrict CORS to the real UI origin and add an API key or similar for `/train` and `/datasets`.** | PROPOSED | Currently `ALLOWED_ORIGINS="*"` in `render.yaml` and no authentication on any endpoint, including `POST /train`. |
+
+## 3. Governance safeguards
+
+| ID | Safeguard | Status | Evidence |
+|---|---|---|---|
+| G1 | **Honest scope statements.** The model card and UI say the model is a demonstration on synthetic data, name out-of-scope uses, report spread across seeds rather than the best run, and state that dropout and the scheduler showed no clear benefit. | IMPLEMENTED | `MODEL_CARD.md` (Intended use, Limitations, Ethical considerations); README; Compare Models tab |
+| G2 | **Frozen protocol and recorded AI use.** The experimental protocol was frozen before the official runs so results could not be chosen after seeing test scores; AI-assistant sessions are recorded. | IMPLEMENTED | `docs/PART2_PROTOCOL.md`; `ai-usage/` |
+| G3 | **A short in-app privacy notice before upload** (what is stored, that a hash is kept, not to upload personal photos). | PROPOSED | Only a caption after prediction mentions the hash. There is no notice before upload. |
+| G4 | **A retention and deletion policy** for `image_metadata`, and a named contact for reporting problems. | PROPOSED | No retention period is defined; rows are kept indefinitely. No contact or issue channel is documented. |
+
+## 4. Known gaps (stated so they are not hidden)
+- No authentication or rate limiting on any API endpoint; public `POST /train` can be
+  called by anyone who knows the URL and consumes service resources and database rows.
+- CORS is open (`*`).
+- No upload size limit.
+- No retention policy for stored prediction hashes.
+- Platform-level logs (Render, Streamlit Community Cloud, Supabase) are controlled by
+  those providers; this repository does not configure them and we have not checked what
+  they retain. Do not read "we do not log X" below as covering provider infrastructure.
+
+## 5. What we deliberately did not log or store
+In the application code and database schema, the following are **not** collected:
+- Image pixels, thumbnails, or Grad-CAM overlays.
+- Original filenames, EXIF metadata, or the original image dimensions (width and height
+  are recorded after resizing to 28×28, so they are always 28×28).
+- User identifiers, accounts, session IDs, IP addresses, user-agent strings or any
+  free-text input. The API code does not read client address or headers, and the table
+  has no column for them.
+- Error logs include only the exception type or database error code, not request bodies.
+
+What **is** stored per prediction: SHA-256 of the raw uploaded bytes, 28×28 size, predicted
+class, label index, confidence, timestamp, and the run ID used.
+
+## 6. Reflection: responsible disclosure from a Christian worldview
+
+> **DRAFT — for Emma's personal review. This is a placeholder structure, not Emma's
+> beliefs. The text below was drafted by an AI assistant from the project's facts and
+> general themes; Emma should rewrite, replace or delete it in her own words before
+> submission. No personal belief, church tradition or Scripture reading has been
+> assumed or attributed to Emma or Komal.**
+
+Prompts and project facts to reflect on (edit freely):
+
+1. **Truthfulness about what the system is.** The project states plainly that it is a
+   synthetic-data demo and reports weak results (dropout and the scheduler showed no
+   clear benefit; the baseline and no-batch-norm variants were unstable).
+   *Reflection (Emma to write):* How does the commitment to truthful speech connect to
+   reporting the seed spread and not only the best run? [your words here]
+2. **Care for those who might be affected.** The hash-not-pixels design and the
+   out-of-scope list exist because uploaded images might belong to real people.
+   *Reflection (Emma to write):* What does it mean to love one's neighbour when you build
+   something others will use without reading the fine print? [your words here]
+3. **Humility about limits.** Grad-CAM can look plausible while wrong; known gaps in
+   section 4 are published rather than hidden.
+   *Reflection (Emma to write):* What place do confession of limits and accountability
+   have in how you disclose a system's weaknesses? [your words here]
+4. **Disclosure in practice.** Decide what responsible disclosure means for this project:
+   who a user or reviewer should contact, and how quickly a reported problem would be
+   fixed. This is currently undefined (G4). [your words here]
+
+If you cite Scripture or a tradition, add the specific passage and how you read it
+yourself; none has been chosen for you here.
+Bash
+IN
+.venv/bin/python -m pytest -q 2>&1 | tail -8; .venv/bin/python -c "import ast;ast.parse(open('ui/app.py').read())"; git status --short
+
+OUT
+tests/test_deploy_readiness.py::test_health_distinguishes_supabase_offline_and_outage
+  /Users/emmarogoveanu/Documents/GitHub/see-sense/.venv/lib/python3.11/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_loader" in Health has conflict with protected namespace "model_".
+
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+168 passed, 3 warnings in 13.75s
+ M MODEL_CARD.md
+ M README.md
+ M ui/app.py
+?? docs/DATASET_CARD.md
+?? docs/ETHICS_AND_DISCLOSURE.md
+Bash
+IN
+cat > docs/SUBMISSION_CHECKLIST.md <<'EOF'
+# Submission checklist
+
+**Important:** the official rubric document is not in this repository. The categories below
+are reconstructed from the rubric requirements quoted in `ai-usage/Emma-Session1.md` and
+`ai-usage/Emma-Session3.md` and from the task list for this documentation pass. **Compare
+this list against the real rubric and add any category that is missing.**
+
+Status: ✅ evidence in repo · 🟡 partly done / needs your check · ❌ missing · ⏳ needs a person's action.
+"Evidence in repo" means the file exists; it does not mean the grader will accept it.
+
+| # | Rubric item | Status | Evidence / what is missing |
+|---|---|---|---|
+| 1 | CNN baseline vs improved model, matched seeds and training budgets | ✅ | [MODEL_CARD.md](../MODEL_CARD.md), [PART2_PROTOCOL.md](PART2_PROTOCOL.md), `experiments/results/official-supabase-1-sql/q1.csv` (matched-config audit) |
+| 2 | ≥3 improvement techniques with controlled ablations | ✅ | [PART2_RESULTS.md](PART2_RESULTS.md), [summary.md](../experiments/results/official-supabase-1-analysis/summary.md). Honest note: dropout and scheduler show no clear benefit |
+| 3 | Persisted runs, loss curves, test metrics, confusion matrices | ✅ | [official-supabase-1-runs.jsonl](../experiments/results/official-supabase-1-runs.jsonl), `official-supabase-1-analysis/*.png`, `db/migrations/` |
+| 4 | Grad-CAM: ≥5 correct, ≥5 incorrect, with failure interpretations | 🟡 | [gradcam folder](../experiments/results/official-supabase-1-gradcam/), [failure analysis](SUPABASE_GRADCAM_FAILURE_ANALYSIS.md). 5 correct + 8 incorrect shown; only 2 incorrect have written interpretations (924, 1783). Session notes suggested notes for ≥5 — decide whether the rubric requires more |
+| 5 | Tab 1 Concepts (stride/padding arithmetic, receptive field, 3×3 worked example, Grad-CAM derivation) | ✅ | [ui/app.py](../ui/app.py), [ui/concepts.py](../ui/concepts.py), `tests/test_ui_concepts_and_card.py` |
+| 6 | Tab 2 Try It (upload + sample, handles cold start/errors) | ✅ | [ui/tryit.py](../ui/tryit.py), `tests/test_ui_tryit.py` |
+| 7 | Tab 3 Compare Models using official Supabase results | ✅ | [ui/evidence.py](../ui/evidence.py), `tests/test_ui_evidence.py` |
+| 8 | Tab 4 Recent Classifications (anon key, class histogram) | ✅ | [ui/recent.py](../ui/recent.py), [003 migration](../db/migrations/003_recent_classifications_view.sql), `tests/test_ui_recent.py` |
+| 9 | Tab 5 Model Card | ✅ | [MODEL_CARD.md](../MODEL_CARD.md) (augmentation shift corrected to 1 px in this pass) |
+| 10 | Three-cloud deployment, live URLs documented | 🟡 | URLs in [README.md](../README.md). I did not open or test them; the Supabase URL is still a placeholder; ⏳ you should confirm UI and API are live (`/healthz` shows `ok`, `supabase: true`) |
+| 11 | Dataset documentation | ✅ | [DATASET_CARD.md](DATASET_CARD.md) (new) |
+| 12 | Ethics: two deployment contexts, safeguards, what is not logged, worldview reflection | 🟡 | [ETHICS_AND_DISCLOSURE.md](ETHICS_AND_DISCLOSURE.md). Sections 1–5 done; ⏳ section 6 reflection is an AI-drafted scaffold for Emma to rewrite. Several safeguards are marked PROPOSED, not implemented |
+| 13 | Automated tests and CI | 🟡 | `tests/` (168 passed locally in this pass), [ci.yml](../.github/workflows/ci.yml). ⏳ Confirm the latest GitHub Actions run is green; not checked here |
+| 14 | AI-usage records | 🟡 | `ai-usage/` has Emma Sessions 1 and 3 and Komal Sessions 1 and 2. There is no Emma Session 2, and this pass's session is not recorded; ⏳ add it if the rubric requires every session |
+| 15 | Individual contribution statements | ❌ | Placeholders only: [CONTRIBUTIONS.md](CONTRIBUTIONS.md). ⏳ Emma and Komal each write their own |
+| 16 | Individual video links | ❌ | Placeholders only: [CONTRIBUTIONS.md](CONTRIBUTIONS.md). ⏳ Videos not recorded or linked |
+| 17 | Secrets not committed | 🟡 | `.gitignore` excludes `.env` and `secrets.toml`; I did not read those files. ⏳ Confirm no key was ever committed (`git log -p` search) |
+| 18 | Changes committed and pushed | ❌ | Not done in this pass by instruction. Modified/new files are uncommitted; the deployed UI will not show the corrected Grad-CAM caption until pushed and redeployed |
+EOF
+cat > docs/CONTRIBUTIONS.md <<'EOF'
+# Contribution statements and individual videos
+
+**Placeholders only.** Nothing below describes what either person did or believes; each person
+must write their own statement and record their own video. Commit history and `ai-usage/`
+records exist, but they are not a substitute for a personal statement.
+
+## Emma Rogoveanu
+
+**Contribution statement:**
+> TODO (Emma): describe in your own words what you built, decided and learned. Mention which
+> parts of the work were yours and which were done jointly.
+
+**Individual video link:** TODO — not yet recorded or linked: `<paste URL here>`
+
+**Disclosure reflection:** see the draft in [ETHICS_AND_DISCLOSURE.md](ETHICS_AND_DISCLOSURE.md) §6 (for Emma to review).
+
+## Komal Khan
+
+**Contribution statement:**
+> TODO (Komal): describe in your own words what you built, decided and learned. Mention which
+> parts of the work were yours and which were done jointly.
+
+**Individual video link:** TODO — not yet recorded or linked: `<paste URL here>`
+
+## Supporting records (to cite, not to replace the statements)
+- AI-usage records: [Emma Session 1](../ai-usage/Emma-Session1.md), [Emma Session 3](../ai-usage/Emma-Session3.md), [Komal Session 1](../ai-usage/Komal-Session1.md), [Komal Session 2](../ai-usage/Komal-Session2.md)
+- Git history: `git log --format='%an %s'`
+EOF
+python3 - <<'EOF'
+p='README.md'; s=open(p).read()
+s=s.replace("| Model Card | ","| Model Card | ")
+s=s.replace("docs/                  protocol, results, failure analysis, comparison_queries.sql","docs/                  protocol, results, failure analysis, dataset card, ethics, submission checklist")
+open(p,'w').write(s)
+EOF
+git diff README.md | tail -15; grep -rn "docs/ETHICS" docs/DATASET_CARD.md | head -2
+
+OUT
++| UI | Streamlit Community Cloud | https://see-sense-glpk38qzwsf9hhvnlkt798.streamlit.app/ |
++| API | Render.com | https://see-sense-api-rhkb.onrender.com *(free tier sleeps; first call takes ~30–60 s; health check: `/healthz`)* |
++| Data | Supabase | `https://<your-project-ref>.supabase.co` *(placeholder: the project URL is not documented in this repository; fill it in from the Supabase dashboard if you want it listed)* |
+
+ ## The five tabs (`ui/app.py`)
+
+@@ -68,7 +66,7 @@ api/                   FastAPI tier: main, training (CNN + Grad-CAM), db, experi
+ ui/                    Streamlit tier: app.py + concepts/evidence/recent/tryit modules, requirements.txt
+ db/migrations/         001_init, 002_experiment_tracking, 003_recent_classifications_view (+ 003_verify.sql)
+ experiments/           matched-run runner, analysis, Grad-CAM evidence, results/ (official-supabase-1-*)
+-docs/                  protocol, results, failure analysis, comparison_queries.sql
++docs/                  protocol, results, failure analysis, dataset card, ethics, submission checklist
+ tests/                 pytest suite
+ ```
+
+docs/DATASET_CARD.md:116:- See `MODEL_CARD.md` (Privacy and data handling) and `docs/ETHICS_AND_DISCLOSURE.md`
+Bash
+IN
+.venv/bin/python -m pytest -q 2>&1 | tail -1; cd docs && for f in SUBMISSION_CHECKLIST.md CONTRIBUTIONS.md; do grep -o '](\.\./[^)#]*\|](\([A-Z_]*\.md\)' $f | sed 's/](//' | sort -u | while read l; do [ -e "$l" ] || echo "MISSING $l"; done; done
+
+OUT
+168 passed, 3 warnings in 15.46s
+12:33 PM
+All seven items are done, nothing is committed, and the 168 tests pass. I did not retrain, deploy, change permissions or read .env or secrets.toml. All links in the checklist and contributions files resolve.
+
+What changed
+
+MODEL_CARD.md: the augmentation shift now says 1 pixel, which matches docs/PART2_PROTOCOL.md. I left docs/PART1_HANDOFF.md alone because its "2 px" was the Part 1 default.
+Grad-CAM captions (ui/app.py): the gallery now says one example per row, top to bottom, and names the columns. The correct figure has three columns and the incorrect figure has four.
+README.md: the real UI and API links are in. The Supabase URL isn't documented anywhere in the repo, so it stays a placeholder with a note. I didn't open the UI or API links to check they are live.
+docs/DATASET_CARD.md: it covers the classes, generation, noise, splits, augmentation (official shift 1 px, not the code default of 2), limitations and data handling. The class counts per split come from regenerating the dataset locally, and the card says so. It also states that stored width and height are always 28×28, because they are recorded after resizing.
+docs/ETHICS_AND_DISCLOSURE.md:
+Contents: two deployment contexts, three technical and two governance safeguards marked IMPLEMENTED (each with evidence), and three more marked PROPOSED. It also has a known-gaps list and a "deliberately not logged" section.
+Gaps it states plainly: CORS is *, there is no authentication (including on POST /train), no upload size limit, no rate limiting and no retention policy.
+Reflection: section 6 is a draft for your review. It only has prompts and project facts, with [your words here] slots. I put no beliefs or Scripture in it.
+docs/SUBMISSION_CHECKLIST.md: 18 items with evidence links and honest ✅/🟡/❌ statuses.
+docs/CONTRIBUTIONS.md: TODO placeholders for the statement and video link for Emma and for Komal.
+What needs your action
+
+Rubric: the rubric itself isn't in the repo. I rebuilt the checklist categories from your session notes, so please compare it against the real rubric.
+Reflection: rewrite §6 of the ethics doc in your own words.
+Contributions and videos: Emma and Komal each need to write a contribution statement and record and link a video.
+Deployment: confirm the UI and API are live (/healthz should show ok and supabase: true). Add the Supabase URL if you want it listed.
+CI and secrets: confirm the latest GitHub Actions run is green, and that no key was ever committed.
+AI-usage records: there is no Emma Session 2, and this session isn't recorded.
+Grad-CAM interpretations: only 2 of the 8 incorrect examples have written interpretations. Decide whether the rubric needs more.
+Safeguards: decide whether to implement any PROPOSED safeguard, such as restricting CORS, adding an upload size limit, or adding a privacy notice before upload.
+Commit and push: the caption fix and docs reach the deployed app only after you commit, push and redeploy.
+
+

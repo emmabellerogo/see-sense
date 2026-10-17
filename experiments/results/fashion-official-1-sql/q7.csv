@@ -1,0 +1,1801 @@
+run_name,train_seed,true_class,predicted_class,n
+baseline-seed0,0,T-shirt/top,T-shirt/top,855
+baseline-seed0,0,T-shirt/top,Trouser,1
+baseline-seed0,0,T-shirt/top,Pullover,22
+baseline-seed0,0,T-shirt/top,Dress,17
+baseline-seed0,0,T-shirt/top,Coat,5
+baseline-seed0,0,T-shirt/top,Sandal,1
+baseline-seed0,0,T-shirt/top,Shirt,91
+baseline-seed0,0,T-shirt/top,Sneaker,0
+baseline-seed0,0,T-shirt/top,Bag,8
+baseline-seed0,0,T-shirt/top,Ankle boot,0
+baseline-seed0,0,Trouser,T-shirt/top,3
+baseline-seed0,0,Trouser,Trouser,984
+baseline-seed0,0,Trouser,Pullover,0
+baseline-seed0,0,Trouser,Dress,8
+baseline-seed0,0,Trouser,Coat,2
+baseline-seed0,0,Trouser,Sandal,0
+baseline-seed0,0,Trouser,Shirt,3
+baseline-seed0,0,Trouser,Sneaker,0
+baseline-seed0,0,Trouser,Bag,0
+baseline-seed0,0,Trouser,Ankle boot,0
+baseline-seed0,0,Pullover,T-shirt/top,17
+baseline-seed0,0,Pullover,Trouser,1
+baseline-seed0,0,Pullover,Pullover,855
+baseline-seed0,0,Pullover,Dress,9
+baseline-seed0,0,Pullover,Coat,62
+baseline-seed0,0,Pullover,Sandal,0
+baseline-seed0,0,Pullover,Shirt,56
+baseline-seed0,0,Pullover,Sneaker,0
+baseline-seed0,0,Pullover,Bag,0
+baseline-seed0,0,Pullover,Ankle boot,0
+baseline-seed0,0,Dress,T-shirt/top,23
+baseline-seed0,0,Dress,Trouser,12
+baseline-seed0,0,Dress,Pullover,10
+baseline-seed0,0,Dress,Dress,896
+baseline-seed0,0,Dress,Coat,19
+baseline-seed0,0,Dress,Sandal,0
+baseline-seed0,0,Dress,Shirt,36
+baseline-seed0,0,Dress,Sneaker,0
+baseline-seed0,0,Dress,Bag,4
+baseline-seed0,0,Dress,Ankle boot,0
+baseline-seed0,0,Coat,T-shirt/top,2
+baseline-seed0,0,Coat,Trouser,0
+baseline-seed0,0,Coat,Pullover,67
+baseline-seed0,0,Coat,Dress,24
+baseline-seed0,0,Coat,Coat,841
+baseline-seed0,0,Coat,Sandal,0
+baseline-seed0,0,Coat,Shirt,66
+baseline-seed0,0,Coat,Sneaker,0
+baseline-seed0,0,Coat,Bag,0
+baseline-seed0,0,Coat,Ankle boot,0
+baseline-seed0,0,Sandal,T-shirt/top,0
+baseline-seed0,0,Sandal,Trouser,0
+baseline-seed0,0,Sandal,Pullover,0
+baseline-seed0,0,Sandal,Dress,0
+baseline-seed0,0,Sandal,Coat,0
+baseline-seed0,0,Sandal,Sandal,985
+baseline-seed0,0,Sandal,Shirt,1
+baseline-seed0,0,Sandal,Sneaker,11
+baseline-seed0,0,Sandal,Bag,1
+baseline-seed0,0,Sandal,Ankle boot,2
+baseline-seed0,0,Shirt,T-shirt/top,130
+baseline-seed0,0,Shirt,Trouser,3
+baseline-seed0,0,Shirt,Pullover,65
+baseline-seed0,0,Shirt,Dress,32
+baseline-seed0,0,Shirt,Coat,63
+baseline-seed0,0,Shirt,Sandal,0
+baseline-seed0,0,Shirt,Shirt,698
+baseline-seed0,0,Shirt,Sneaker,0
+baseline-seed0,0,Shirt,Bag,9
+baseline-seed0,0,Shirt,Ankle boot,0
+baseline-seed0,0,Sneaker,T-shirt/top,0
+baseline-seed0,0,Sneaker,Trouser,0
+baseline-seed0,0,Sneaker,Pullover,0
+baseline-seed0,0,Sneaker,Dress,0
+baseline-seed0,0,Sneaker,Coat,0
+baseline-seed0,0,Sneaker,Sandal,19
+baseline-seed0,0,Sneaker,Shirt,0
+baseline-seed0,0,Sneaker,Sneaker,968
+baseline-seed0,0,Sneaker,Bag,0
+baseline-seed0,0,Sneaker,Ankle boot,13
+baseline-seed0,0,Bag,T-shirt/top,4
+baseline-seed0,0,Bag,Trouser,2
+baseline-seed0,0,Bag,Pullover,1
+baseline-seed0,0,Bag,Dress,1
+baseline-seed0,0,Bag,Coat,4
+baseline-seed0,0,Bag,Sandal,4
+baseline-seed0,0,Bag,Shirt,5
+baseline-seed0,0,Bag,Sneaker,3
+baseline-seed0,0,Bag,Bag,976
+baseline-seed0,0,Bag,Ankle boot,0
+baseline-seed0,0,Ankle boot,T-shirt/top,0
+baseline-seed0,0,Ankle boot,Trouser,0
+baseline-seed0,0,Ankle boot,Pullover,0
+baseline-seed0,0,Ankle boot,Dress,0
+baseline-seed0,0,Ankle boot,Coat,0
+baseline-seed0,0,Ankle boot,Sandal,7
+baseline-seed0,0,Ankle boot,Shirt,1
+baseline-seed0,0,Ankle boot,Sneaker,48
+baseline-seed0,0,Ankle boot,Bag,1
+baseline-seed0,0,Ankle boot,Ankle boot,943
+full_improved-seed0,0,T-shirt/top,T-shirt/top,832
+full_improved-seed0,0,T-shirt/top,Trouser,1
+full_improved-seed0,0,T-shirt/top,Pullover,19
+full_improved-seed0,0,T-shirt/top,Dress,48
+full_improved-seed0,0,T-shirt/top,Coat,6
+full_improved-seed0,0,T-shirt/top,Sandal,3
+full_improved-seed0,0,T-shirt/top,Shirt,86
+full_improved-seed0,0,T-shirt/top,Sneaker,0
+full_improved-seed0,0,T-shirt/top,Bag,3
+full_improved-seed0,0,T-shirt/top,Ankle boot,2
+full_improved-seed0,0,Trouser,T-shirt/top,0
+full_improved-seed0,0,Trouser,Trouser,973
+full_improved-seed0,0,Trouser,Pullover,0
+full_improved-seed0,0,Trouser,Dress,18
+full_improved-seed0,0,Trouser,Coat,5
+full_improved-seed0,0,Trouser,Sandal,0
+full_improved-seed0,0,Trouser,Shirt,1
+full_improved-seed0,0,Trouser,Sneaker,0
+full_improved-seed0,0,Trouser,Bag,3
+full_improved-seed0,0,Trouser,Ankle boot,0
+full_improved-seed0,0,Pullover,T-shirt/top,11
+full_improved-seed0,0,Pullover,Trouser,0
+full_improved-seed0,0,Pullover,Pullover,825
+full_improved-seed0,0,Pullover,Dress,9
+full_improved-seed0,0,Pullover,Coat,77
+full_improved-seed0,0,Pullover,Sandal,0
+full_improved-seed0,0,Pullover,Shirt,78
+full_improved-seed0,0,Pullover,Sneaker,0
+full_improved-seed0,0,Pullover,Bag,0
+full_improved-seed0,0,Pullover,Ankle boot,0
+full_improved-seed0,0,Dress,T-shirt/top,17
+full_improved-seed0,0,Dress,Trouser,9
+full_improved-seed0,0,Dress,Pullover,10
+full_improved-seed0,0,Dress,Dress,893
+full_improved-seed0,0,Dress,Coat,23
+full_improved-seed0,0,Dress,Sandal,0
+full_improved-seed0,0,Dress,Shirt,48
+full_improved-seed0,0,Dress,Sneaker,0
+full_improved-seed0,0,Dress,Bag,0
+full_improved-seed0,0,Dress,Ankle boot,0
+full_improved-seed0,0,Coat,T-shirt/top,1
+full_improved-seed0,0,Coat,Trouser,2
+full_improved-seed0,0,Coat,Pullover,67
+full_improved-seed0,0,Coat,Dress,41
+full_improved-seed0,0,Coat,Coat,839
+full_improved-seed0,0,Coat,Sandal,0
+full_improved-seed0,0,Coat,Shirt,48
+full_improved-seed0,0,Coat,Sneaker,0
+full_improved-seed0,0,Coat,Bag,2
+full_improved-seed0,0,Coat,Ankle boot,0
+full_improved-seed0,0,Sandal,T-shirt/top,0
+full_improved-seed0,0,Sandal,Trouser,0
+full_improved-seed0,0,Sandal,Pullover,0
+full_improved-seed0,0,Sandal,Dress,0
+full_improved-seed0,0,Sandal,Coat,0
+full_improved-seed0,0,Sandal,Sandal,936
+full_improved-seed0,0,Sandal,Shirt,1
+full_improved-seed0,0,Sandal,Sneaker,44
+full_improved-seed0,0,Sandal,Bag,0
+full_improved-seed0,0,Sandal,Ankle boot,19
+full_improved-seed0,0,Shirt,T-shirt/top,158
+full_improved-seed0,0,Shirt,Trouser,2
+full_improved-seed0,0,Shirt,Pullover,65
+full_improved-seed0,0,Shirt,Dress,43
+full_improved-seed0,0,Shirt,Coat,113
+full_improved-seed0,0,Shirt,Sandal,0
+full_improved-seed0,0,Shirt,Shirt,602
+full_improved-seed0,0,Shirt,Sneaker,0
+full_improved-seed0,0,Shirt,Bag,16
+full_improved-seed0,0,Shirt,Ankle boot,1
+full_improved-seed0,0,Sneaker,T-shirt/top,0
+full_improved-seed0,0,Sneaker,Trouser,0
+full_improved-seed0,0,Sneaker,Pullover,0
+full_improved-seed0,0,Sneaker,Dress,0
+full_improved-seed0,0,Sneaker,Coat,0
+full_improved-seed0,0,Sneaker,Sandal,15
+full_improved-seed0,0,Sneaker,Shirt,0
+full_improved-seed0,0,Sneaker,Sneaker,958
+full_improved-seed0,0,Sneaker,Bag,0
+full_improved-seed0,0,Sneaker,Ankle boot,27
+full_improved-seed0,0,Bag,T-shirt/top,2
+full_improved-seed0,0,Bag,Trouser,1
+full_improved-seed0,0,Bag,Pullover,2
+full_improved-seed0,0,Bag,Dress,2
+full_improved-seed0,0,Bag,Coat,4
+full_improved-seed0,0,Bag,Sandal,1
+full_improved-seed0,0,Bag,Shirt,10
+full_improved-seed0,0,Bag,Sneaker,2
+full_improved-seed0,0,Bag,Bag,974
+full_improved-seed0,0,Bag,Ankle boot,2
+full_improved-seed0,0,Ankle boot,T-shirt/top,0
+full_improved-seed0,0,Ankle boot,Trouser,0
+full_improved-seed0,0,Ankle boot,Pullover,0
+full_improved-seed0,0,Ankle boot,Dress,1
+full_improved-seed0,0,Ankle boot,Coat,0
+full_improved-seed0,0,Ankle boot,Sandal,6
+full_improved-seed0,0,Ankle boot,Shirt,0
+full_improved-seed0,0,Ankle boot,Sneaker,43
+full_improved-seed0,0,Ankle boot,Bag,0
+full_improved-seed0,0,Ankle boot,Ankle boot,950
+no_augmentation-seed0,0,T-shirt/top,T-shirt/top,858
+no_augmentation-seed0,0,T-shirt/top,Trouser,0
+no_augmentation-seed0,0,T-shirt/top,Pullover,15
+no_augmentation-seed0,0,T-shirt/top,Dress,28
+no_augmentation-seed0,0,T-shirt/top,Coat,6
+no_augmentation-seed0,0,T-shirt/top,Sandal,1
+no_augmentation-seed0,0,T-shirt/top,Shirt,85
+no_augmentation-seed0,0,T-shirt/top,Sneaker,0
+no_augmentation-seed0,0,T-shirt/top,Bag,7
+no_augmentation-seed0,0,T-shirt/top,Ankle boot,0
+no_augmentation-seed0,0,Trouser,T-shirt/top,1
+no_augmentation-seed0,0,Trouser,Trouser,977
+no_augmentation-seed0,0,Trouser,Pullover,0
+no_augmentation-seed0,0,Trouser,Dress,16
+no_augmentation-seed0,0,Trouser,Coat,2
+no_augmentation-seed0,0,Trouser,Sandal,0
+no_augmentation-seed0,0,Trouser,Shirt,2
+no_augmentation-seed0,0,Trouser,Sneaker,0
+no_augmentation-seed0,0,Trouser,Bag,2
+no_augmentation-seed0,0,Trouser,Ankle boot,0
+no_augmentation-seed0,0,Pullover,T-shirt/top,17
+no_augmentation-seed0,0,Pullover,Trouser,1
+no_augmentation-seed0,0,Pullover,Pullover,858
+no_augmentation-seed0,0,Pullover,Dress,8
+no_augmentation-seed0,0,Pullover,Coat,56
+no_augmentation-seed0,0,Pullover,Sandal,0
+no_augmentation-seed0,0,Pullover,Shirt,59
+no_augmentation-seed0,0,Pullover,Sneaker,0
+no_augmentation-seed0,0,Pullover,Bag,1
+no_augmentation-seed0,0,Pullover,Ankle boot,0
+no_augmentation-seed0,0,Dress,T-shirt/top,16
+no_augmentation-seed0,0,Dress,Trouser,5
+no_augmentation-seed0,0,Dress,Pullover,14
+no_augmentation-seed0,0,Dress,Dress,913
+no_augmentation-seed0,0,Dress,Coat,20
+no_augmentation-seed0,0,Dress,Sandal,0
+no_augmentation-seed0,0,Dress,Shirt,31
+no_augmentation-seed0,0,Dress,Sneaker,0
+no_augmentation-seed0,0,Dress,Bag,1
+no_augmentation-seed0,0,Dress,Ankle boot,0
+no_augmentation-seed0,0,Coat,T-shirt/top,0
+no_augmentation-seed0,0,Coat,Trouser,2
+no_augmentation-seed0,0,Coat,Pullover,54
+no_augmentation-seed0,0,Coat,Dress,28
+no_augmentation-seed0,0,Coat,Coat,869
+no_augmentation-seed0,0,Coat,Sandal,0
+no_augmentation-seed0,0,Coat,Shirt,46
+no_augmentation-seed0,0,Coat,Sneaker,0
+no_augmentation-seed0,0,Coat,Bag,1
+no_augmentation-seed0,0,Coat,Ankle boot,0
+no_augmentation-seed0,0,Sandal,T-shirt/top,0
+no_augmentation-seed0,0,Sandal,Trouser,0
+no_augmentation-seed0,0,Sandal,Pullover,0
+no_augmentation-seed0,0,Sandal,Dress,0
+no_augmentation-seed0,0,Sandal,Coat,0
+no_augmentation-seed0,0,Sandal,Sandal,978
+no_augmentation-seed0,0,Sandal,Shirt,0
+no_augmentation-seed0,0,Sandal,Sneaker,15
+no_augmentation-seed0,0,Sandal,Bag,1
+no_augmentation-seed0,0,Sandal,Ankle boot,6
+no_augmentation-seed0,0,Shirt,T-shirt/top,140
+no_augmentation-seed0,0,Shirt,Trouser,2
+no_augmentation-seed0,0,Shirt,Pullover,69
+no_augmentation-seed0,0,Shirt,Dress,29
+no_augmentation-seed0,0,Shirt,Coat,78
+no_augmentation-seed0,0,Shirt,Sandal,0
+no_augmentation-seed0,0,Shirt,Shirt,668
+no_augmentation-seed0,0,Shirt,Sneaker,0
+no_augmentation-seed0,0,Shirt,Bag,14
+no_augmentation-seed0,0,Shirt,Ankle boot,0
+no_augmentation-seed0,0,Sneaker,T-shirt/top,0
+no_augmentation-seed0,0,Sneaker,Trouser,0
+no_augmentation-seed0,0,Sneaker,Pullover,0
+no_augmentation-seed0,0,Sneaker,Dress,0
+no_augmentation-seed0,0,Sneaker,Coat,0
+no_augmentation-seed0,0,Sneaker,Sandal,13
+no_augmentation-seed0,0,Sneaker,Shirt,0
+no_augmentation-seed0,0,Sneaker,Sneaker,969
+no_augmentation-seed0,0,Sneaker,Bag,0
+no_augmentation-seed0,0,Sneaker,Ankle boot,18
+no_augmentation-seed0,0,Bag,T-shirt/top,0
+no_augmentation-seed0,0,Bag,Trouser,1
+no_augmentation-seed0,0,Bag,Pullover,3
+no_augmentation-seed0,0,Bag,Dress,4
+no_augmentation-seed0,0,Bag,Coat,2
+no_augmentation-seed0,0,Bag,Sandal,1
+no_augmentation-seed0,0,Bag,Shirt,6
+no_augmentation-seed0,0,Bag,Sneaker,4
+no_augmentation-seed0,0,Bag,Bag,978
+no_augmentation-seed0,0,Bag,Ankle boot,1
+no_augmentation-seed0,0,Ankle boot,T-shirt/top,0
+no_augmentation-seed0,0,Ankle boot,Trouser,0
+no_augmentation-seed0,0,Ankle boot,Pullover,0
+no_augmentation-seed0,0,Ankle boot,Dress,0
+no_augmentation-seed0,0,Ankle boot,Coat,0
+no_augmentation-seed0,0,Ankle boot,Sandal,6
+no_augmentation-seed0,0,Ankle boot,Shirt,0
+no_augmentation-seed0,0,Ankle boot,Sneaker,32
+no_augmentation-seed0,0,Ankle boot,Bag,1
+no_augmentation-seed0,0,Ankle boot,Ankle boot,961
+no_batchnorm-seed0,0,T-shirt/top,T-shirt/top,848
+no_batchnorm-seed0,0,T-shirt/top,Trouser,0
+no_batchnorm-seed0,0,T-shirt/top,Pullover,16
+no_batchnorm-seed0,0,T-shirt/top,Dress,54
+no_batchnorm-seed0,0,T-shirt/top,Coat,11
+no_batchnorm-seed0,0,T-shirt/top,Sandal,2
+no_batchnorm-seed0,0,T-shirt/top,Shirt,63
+no_batchnorm-seed0,0,T-shirt/top,Sneaker,0
+no_batchnorm-seed0,0,T-shirt/top,Bag,5
+no_batchnorm-seed0,0,T-shirt/top,Ankle boot,1
+no_batchnorm-seed0,0,Trouser,T-shirt/top,0
+no_batchnorm-seed0,0,Trouser,Trouser,980
+no_batchnorm-seed0,0,Trouser,Pullover,0
+no_batchnorm-seed0,0,Trouser,Dress,16
+no_batchnorm-seed0,0,Trouser,Coat,2
+no_batchnorm-seed0,0,Trouser,Sandal,0
+no_batchnorm-seed0,0,Trouser,Shirt,0
+no_batchnorm-seed0,0,Trouser,Sneaker,0
+no_batchnorm-seed0,0,Trouser,Bag,2
+no_batchnorm-seed0,0,Trouser,Ankle boot,0
+no_batchnorm-seed0,0,Pullover,T-shirt/top,14
+no_batchnorm-seed0,0,Pullover,Trouser,1
+no_batchnorm-seed0,0,Pullover,Pullover,808
+no_batchnorm-seed0,0,Pullover,Dress,11
+no_batchnorm-seed0,0,Pullover,Coat,89
+no_batchnorm-seed0,0,Pullover,Sandal,0
+no_batchnorm-seed0,0,Pullover,Shirt,77
+no_batchnorm-seed0,0,Pullover,Sneaker,0
+no_batchnorm-seed0,0,Pullover,Bag,0
+no_batchnorm-seed0,0,Pullover,Ankle boot,0
+no_batchnorm-seed0,0,Dress,T-shirt/top,22
+no_batchnorm-seed0,0,Dress,Trouser,9
+no_batchnorm-seed0,0,Dress,Pullover,13
+no_batchnorm-seed0,0,Dress,Dress,876
+no_batchnorm-seed0,0,Dress,Coat,29
+no_batchnorm-seed0,0,Dress,Sandal,0
+no_batchnorm-seed0,0,Dress,Shirt,51
+no_batchnorm-seed0,0,Dress,Sneaker,0
+no_batchnorm-seed0,0,Dress,Bag,0
+no_batchnorm-seed0,0,Dress,Ankle boot,0
+no_batchnorm-seed0,0,Coat,T-shirt/top,1
+no_batchnorm-seed0,0,Coat,Trouser,1
+no_batchnorm-seed0,0,Coat,Pullover,70
+no_batchnorm-seed0,0,Coat,Dress,38
+no_batchnorm-seed0,0,Coat,Coat,818
+no_batchnorm-seed0,0,Coat,Sandal,0
+no_batchnorm-seed0,0,Coat,Shirt,71
+no_batchnorm-seed0,0,Coat,Sneaker,0
+no_batchnorm-seed0,0,Coat,Bag,1
+no_batchnorm-seed0,0,Coat,Ankle boot,0
+no_batchnorm-seed0,0,Sandal,T-shirt/top,0
+no_batchnorm-seed0,0,Sandal,Trouser,0
+no_batchnorm-seed0,0,Sandal,Pullover,0
+no_batchnorm-seed0,0,Sandal,Dress,0
+no_batchnorm-seed0,0,Sandal,Coat,0
+no_batchnorm-seed0,0,Sandal,Sandal,934
+no_batchnorm-seed0,0,Sandal,Shirt,1
+no_batchnorm-seed0,0,Sandal,Sneaker,49
+no_batchnorm-seed0,0,Sandal,Bag,1
+no_batchnorm-seed0,0,Sandal,Ankle boot,15
+no_batchnorm-seed0,0,Shirt,T-shirt/top,188
+no_batchnorm-seed0,0,Shirt,Trouser,2
+no_batchnorm-seed0,0,Shirt,Pullover,72
+no_batchnorm-seed0,0,Shirt,Dress,35
+no_batchnorm-seed0,0,Shirt,Coat,123
+no_batchnorm-seed0,0,Shirt,Sandal,0
+no_batchnorm-seed0,0,Shirt,Shirt,563
+no_batchnorm-seed0,0,Shirt,Sneaker,0
+no_batchnorm-seed0,0,Shirt,Bag,17
+no_batchnorm-seed0,0,Shirt,Ankle boot,0
+no_batchnorm-seed0,0,Sneaker,T-shirt/top,0
+no_batchnorm-seed0,0,Sneaker,Trouser,0
+no_batchnorm-seed0,0,Sneaker,Pullover,0
+no_batchnorm-seed0,0,Sneaker,Dress,0
+no_batchnorm-seed0,0,Sneaker,Coat,0
+no_batchnorm-seed0,0,Sneaker,Sandal,12
+no_batchnorm-seed0,0,Sneaker,Shirt,0
+no_batchnorm-seed0,0,Sneaker,Sneaker,956
+no_batchnorm-seed0,0,Sneaker,Bag,0
+no_batchnorm-seed0,0,Sneaker,Ankle boot,32
+no_batchnorm-seed0,0,Bag,T-shirt/top,2
+no_batchnorm-seed0,0,Bag,Trouser,1
+no_batchnorm-seed0,0,Bag,Pullover,6
+no_batchnorm-seed0,0,Bag,Dress,7
+no_batchnorm-seed0,0,Bag,Coat,3
+no_batchnorm-seed0,0,Bag,Sandal,4
+no_batchnorm-seed0,0,Bag,Shirt,10
+no_batchnorm-seed0,0,Bag,Sneaker,4
+no_batchnorm-seed0,0,Bag,Bag,959
+no_batchnorm-seed0,0,Bag,Ankle boot,4
+no_batchnorm-seed0,0,Ankle boot,T-shirt/top,0
+no_batchnorm-seed0,0,Ankle boot,Trouser,0
+no_batchnorm-seed0,0,Ankle boot,Pullover,0
+no_batchnorm-seed0,0,Ankle boot,Dress,1
+no_batchnorm-seed0,0,Ankle boot,Coat,0
+no_batchnorm-seed0,0,Ankle boot,Sandal,6
+no_batchnorm-seed0,0,Ankle boot,Shirt,0
+no_batchnorm-seed0,0,Ankle boot,Sneaker,46
+no_batchnorm-seed0,0,Ankle boot,Bag,0
+no_batchnorm-seed0,0,Ankle boot,Ankle boot,947
+no_dropout-seed0,0,T-shirt/top,T-shirt/top,844
+no_dropout-seed0,0,T-shirt/top,Trouser,1
+no_dropout-seed0,0,T-shirt/top,Pullover,18
+no_dropout-seed0,0,T-shirt/top,Dress,39
+no_dropout-seed0,0,T-shirt/top,Coat,6
+no_dropout-seed0,0,T-shirt/top,Sandal,1
+no_dropout-seed0,0,T-shirt/top,Shirt,85
+no_dropout-seed0,0,T-shirt/top,Sneaker,0
+no_dropout-seed0,0,T-shirt/top,Bag,5
+no_dropout-seed0,0,T-shirt/top,Ankle boot,1
+no_dropout-seed0,0,Trouser,T-shirt/top,0
+no_dropout-seed0,0,Trouser,Trouser,976
+no_dropout-seed0,0,Trouser,Pullover,0
+no_dropout-seed0,0,Trouser,Dress,15
+no_dropout-seed0,0,Trouser,Coat,6
+no_dropout-seed0,0,Trouser,Sandal,0
+no_dropout-seed0,0,Trouser,Shirt,1
+no_dropout-seed0,0,Trouser,Sneaker,0
+no_dropout-seed0,0,Trouser,Bag,2
+no_dropout-seed0,0,Trouser,Ankle boot,0
+no_dropout-seed0,0,Pullover,T-shirt/top,8
+no_dropout-seed0,0,Pullover,Trouser,1
+no_dropout-seed0,0,Pullover,Pullover,853
+no_dropout-seed0,0,Pullover,Dress,10
+no_dropout-seed0,0,Pullover,Coat,59
+no_dropout-seed0,0,Pullover,Sandal,0
+no_dropout-seed0,0,Pullover,Shirt,69
+no_dropout-seed0,0,Pullover,Sneaker,0
+no_dropout-seed0,0,Pullover,Bag,0
+no_dropout-seed0,0,Pullover,Ankle boot,0
+no_dropout-seed0,0,Dress,T-shirt/top,19
+no_dropout-seed0,0,Dress,Trouser,6
+no_dropout-seed0,0,Dress,Pullover,10
+no_dropout-seed0,0,Dress,Dress,899
+no_dropout-seed0,0,Dress,Coat,22
+no_dropout-seed0,0,Dress,Sandal,0
+no_dropout-seed0,0,Dress,Shirt,44
+no_dropout-seed0,0,Dress,Sneaker,0
+no_dropout-seed0,0,Dress,Bag,0
+no_dropout-seed0,0,Dress,Ankle boot,0
+no_dropout-seed0,0,Coat,T-shirt/top,2
+no_dropout-seed0,0,Coat,Trouser,2
+no_dropout-seed0,0,Coat,Pullover,62
+no_dropout-seed0,0,Coat,Dress,40
+no_dropout-seed0,0,Coat,Coat,839
+no_dropout-seed0,0,Coat,Sandal,0
+no_dropout-seed0,0,Coat,Shirt,55
+no_dropout-seed0,0,Coat,Sneaker,0
+no_dropout-seed0,0,Coat,Bag,0
+no_dropout-seed0,0,Coat,Ankle boot,0
+no_dropout-seed0,0,Sandal,T-shirt/top,0
+no_dropout-seed0,0,Sandal,Trouser,0
+no_dropout-seed0,0,Sandal,Pullover,0
+no_dropout-seed0,0,Sandal,Dress,1
+no_dropout-seed0,0,Sandal,Coat,0
+no_dropout-seed0,0,Sandal,Sandal,955
+no_dropout-seed0,0,Sandal,Shirt,0
+no_dropout-seed0,0,Sandal,Sneaker,30
+no_dropout-seed0,0,Sandal,Bag,0
+no_dropout-seed0,0,Sandal,Ankle boot,14
+no_dropout-seed0,0,Shirt,T-shirt/top,141
+no_dropout-seed0,0,Shirt,Trouser,3
+no_dropout-seed0,0,Shirt,Pullover,63
+no_dropout-seed0,0,Shirt,Dress,29
+no_dropout-seed0,0,Shirt,Coat,104
+no_dropout-seed0,0,Shirt,Sandal,2
+no_dropout-seed0,0,Shirt,Shirt,646
+no_dropout-seed0,0,Shirt,Sneaker,0
+no_dropout-seed0,0,Shirt,Bag,11
+no_dropout-seed0,0,Shirt,Ankle boot,1
+no_dropout-seed0,0,Sneaker,T-shirt/top,0
+no_dropout-seed0,0,Sneaker,Trouser,0
+no_dropout-seed0,0,Sneaker,Pullover,0
+no_dropout-seed0,0,Sneaker,Dress,0
+no_dropout-seed0,0,Sneaker,Coat,0
+no_dropout-seed0,0,Sneaker,Sandal,14
+no_dropout-seed0,0,Sneaker,Shirt,0
+no_dropout-seed0,0,Sneaker,Sneaker,959
+no_dropout-seed0,0,Sneaker,Bag,0
+no_dropout-seed0,0,Sneaker,Ankle boot,27
+no_dropout-seed0,0,Bag,T-shirt/top,2
+no_dropout-seed0,0,Bag,Trouser,1
+no_dropout-seed0,0,Bag,Pullover,2
+no_dropout-seed0,0,Bag,Dress,3
+no_dropout-seed0,0,Bag,Coat,4
+no_dropout-seed0,0,Bag,Sandal,2
+no_dropout-seed0,0,Bag,Shirt,7
+no_dropout-seed0,0,Bag,Sneaker,4
+no_dropout-seed0,0,Bag,Bag,974
+no_dropout-seed0,0,Bag,Ankle boot,1
+no_dropout-seed0,0,Ankle boot,T-shirt/top,0
+no_dropout-seed0,0,Ankle boot,Trouser,0
+no_dropout-seed0,0,Ankle boot,Pullover,0
+no_dropout-seed0,0,Ankle boot,Dress,1
+no_dropout-seed0,0,Ankle boot,Coat,0
+no_dropout-seed0,0,Ankle boot,Sandal,6
+no_dropout-seed0,0,Ankle boot,Shirt,0
+no_dropout-seed0,0,Ankle boot,Sneaker,41
+no_dropout-seed0,0,Ankle boot,Bag,0
+no_dropout-seed0,0,Ankle boot,Ankle boot,952
+no_scheduler-seed0,0,T-shirt/top,T-shirt/top,817
+no_scheduler-seed0,0,T-shirt/top,Trouser,1
+no_scheduler-seed0,0,T-shirt/top,Pullover,18
+no_scheduler-seed0,0,T-shirt/top,Dress,57
+no_scheduler-seed0,0,T-shirt/top,Coat,6
+no_scheduler-seed0,0,T-shirt/top,Sandal,3
+no_scheduler-seed0,0,T-shirt/top,Shirt,93
+no_scheduler-seed0,0,T-shirt/top,Sneaker,0
+no_scheduler-seed0,0,T-shirt/top,Bag,3
+no_scheduler-seed0,0,T-shirt/top,Ankle boot,2
+no_scheduler-seed0,0,Trouser,T-shirt/top,0
+no_scheduler-seed0,0,Trouser,Trouser,975
+no_scheduler-seed0,0,Trouser,Pullover,1
+no_scheduler-seed0,0,Trouser,Dress,17
+no_scheduler-seed0,0,Trouser,Coat,4
+no_scheduler-seed0,0,Trouser,Sandal,0
+no_scheduler-seed0,0,Trouser,Shirt,1
+no_scheduler-seed0,0,Trouser,Sneaker,0
+no_scheduler-seed0,0,Trouser,Bag,2
+no_scheduler-seed0,0,Trouser,Ankle boot,0
+no_scheduler-seed0,0,Pullover,T-shirt/top,10
+no_scheduler-seed0,0,Pullover,Trouser,1
+no_scheduler-seed0,0,Pullover,Pullover,847
+no_scheduler-seed0,0,Pullover,Dress,11
+no_scheduler-seed0,0,Pullover,Coat,67
+no_scheduler-seed0,0,Pullover,Sandal,0
+no_scheduler-seed0,0,Pullover,Shirt,64
+no_scheduler-seed0,0,Pullover,Sneaker,0
+no_scheduler-seed0,0,Pullover,Bag,0
+no_scheduler-seed0,0,Pullover,Ankle boot,0
+no_scheduler-seed0,0,Dress,T-shirt/top,14
+no_scheduler-seed0,0,Dress,Trouser,8
+no_scheduler-seed0,0,Dress,Pullover,14
+no_scheduler-seed0,0,Dress,Dress,905
+no_scheduler-seed0,0,Dress,Coat,17
+no_scheduler-seed0,0,Dress,Sandal,0
+no_scheduler-seed0,0,Dress,Shirt,42
+no_scheduler-seed0,0,Dress,Sneaker,0
+no_scheduler-seed0,0,Dress,Bag,0
+no_scheduler-seed0,0,Dress,Ankle boot,0
+no_scheduler-seed0,0,Coat,T-shirt/top,1
+no_scheduler-seed0,0,Coat,Trouser,1
+no_scheduler-seed0,0,Coat,Pullover,82
+no_scheduler-seed0,0,Coat,Dress,47
+no_scheduler-seed0,0,Coat,Coat,812
+no_scheduler-seed0,0,Coat,Sandal,0
+no_scheduler-seed0,0,Coat,Shirt,56
+no_scheduler-seed0,0,Coat,Sneaker,0
+no_scheduler-seed0,0,Coat,Bag,1
+no_scheduler-seed0,0,Coat,Ankle boot,0
+no_scheduler-seed0,0,Sandal,T-shirt/top,0
+no_scheduler-seed0,0,Sandal,Trouser,0
+no_scheduler-seed0,0,Sandal,Pullover,0
+no_scheduler-seed0,0,Sandal,Dress,0
+no_scheduler-seed0,0,Sandal,Coat,0
+no_scheduler-seed0,0,Sandal,Sandal,946
+no_scheduler-seed0,0,Sandal,Shirt,1
+no_scheduler-seed0,0,Sandal,Sneaker,32
+no_scheduler-seed0,0,Sandal,Bag,0
+no_scheduler-seed0,0,Sandal,Ankle boot,21
+no_scheduler-seed0,0,Shirt,T-shirt/top,140
+no_scheduler-seed0,0,Shirt,Trouser,2
+no_scheduler-seed0,0,Shirt,Pullover,91
+no_scheduler-seed0,0,Shirt,Dress,46
+no_scheduler-seed0,0,Shirt,Coat,103
+no_scheduler-seed0,0,Shirt,Sandal,1
+no_scheduler-seed0,0,Shirt,Shirt,606
+no_scheduler-seed0,0,Shirt,Sneaker,0
+no_scheduler-seed0,0,Shirt,Bag,10
+no_scheduler-seed0,0,Shirt,Ankle boot,1
+no_scheduler-seed0,0,Sneaker,T-shirt/top,0
+no_scheduler-seed0,0,Sneaker,Trouser,0
+no_scheduler-seed0,0,Sneaker,Pullover,0
+no_scheduler-seed0,0,Sneaker,Dress,0
+no_scheduler-seed0,0,Sneaker,Coat,0
+no_scheduler-seed0,0,Sneaker,Sandal,23
+no_scheduler-seed0,0,Sneaker,Shirt,0
+no_scheduler-seed0,0,Sneaker,Sneaker,942
+no_scheduler-seed0,0,Sneaker,Bag,0
+no_scheduler-seed0,0,Sneaker,Ankle boot,35
+no_scheduler-seed0,0,Bag,T-shirt/top,1
+no_scheduler-seed0,0,Bag,Trouser,1
+no_scheduler-seed0,0,Bag,Pullover,4
+no_scheduler-seed0,0,Bag,Dress,5
+no_scheduler-seed0,0,Bag,Coat,3
+no_scheduler-seed0,0,Bag,Sandal,4
+no_scheduler-seed0,0,Bag,Shirt,11
+no_scheduler-seed0,0,Bag,Sneaker,2
+no_scheduler-seed0,0,Bag,Bag,964
+no_scheduler-seed0,0,Bag,Ankle boot,5
+no_scheduler-seed0,0,Ankle boot,T-shirt/top,0
+no_scheduler-seed0,0,Ankle boot,Trouser,0
+no_scheduler-seed0,0,Ankle boot,Pullover,0
+no_scheduler-seed0,0,Ankle boot,Dress,1
+no_scheduler-seed0,0,Ankle boot,Coat,0
+no_scheduler-seed0,0,Ankle boot,Sandal,6
+no_scheduler-seed0,0,Ankle boot,Shirt,0
+no_scheduler-seed0,0,Ankle boot,Sneaker,30
+no_scheduler-seed0,0,Ankle boot,Bag,0
+no_scheduler-seed0,0,Ankle boot,Ankle boot,963
+baseline-seed1,1,T-shirt/top,T-shirt/top,806
+baseline-seed1,1,T-shirt/top,Trouser,2
+baseline-seed1,1,T-shirt/top,Pullover,28
+baseline-seed1,1,T-shirt/top,Dress,23
+baseline-seed1,1,T-shirt/top,Coat,5
+baseline-seed1,1,T-shirt/top,Sandal,2
+baseline-seed1,1,T-shirt/top,Shirt,128
+baseline-seed1,1,T-shirt/top,Sneaker,0
+baseline-seed1,1,T-shirt/top,Bag,6
+baseline-seed1,1,T-shirt/top,Ankle boot,0
+baseline-seed1,1,Trouser,T-shirt/top,1
+baseline-seed1,1,Trouser,Trouser,984
+baseline-seed1,1,Trouser,Pullover,1
+baseline-seed1,1,Trouser,Dress,10
+baseline-seed1,1,Trouser,Coat,2
+baseline-seed1,1,Trouser,Sandal,0
+baseline-seed1,1,Trouser,Shirt,1
+baseline-seed1,1,Trouser,Sneaker,0
+baseline-seed1,1,Trouser,Bag,1
+baseline-seed1,1,Trouser,Ankle boot,0
+baseline-seed1,1,Pullover,T-shirt/top,10
+baseline-seed1,1,Pullover,Trouser,2
+baseline-seed1,1,Pullover,Pullover,866
+baseline-seed1,1,Pullover,Dress,7
+baseline-seed1,1,Pullover,Coat,62
+baseline-seed1,1,Pullover,Sandal,0
+baseline-seed1,1,Pullover,Shirt,53
+baseline-seed1,1,Pullover,Sneaker,0
+baseline-seed1,1,Pullover,Bag,0
+baseline-seed1,1,Pullover,Ankle boot,0
+baseline-seed1,1,Dress,T-shirt/top,15
+baseline-seed1,1,Dress,Trouser,9
+baseline-seed1,1,Dress,Pullover,20
+baseline-seed1,1,Dress,Dress,881
+baseline-seed1,1,Dress,Coat,32
+baseline-seed1,1,Dress,Sandal,0
+baseline-seed1,1,Dress,Shirt,41
+baseline-seed1,1,Dress,Sneaker,0
+baseline-seed1,1,Dress,Bag,2
+baseline-seed1,1,Dress,Ankle boot,0
+baseline-seed1,1,Coat,T-shirt/top,1
+baseline-seed1,1,Coat,Trouser,1
+baseline-seed1,1,Coat,Pullover,85
+baseline-seed1,1,Coat,Dress,26
+baseline-seed1,1,Coat,Coat,838
+baseline-seed1,1,Coat,Sandal,0
+baseline-seed1,1,Coat,Shirt,49
+baseline-seed1,1,Coat,Sneaker,0
+baseline-seed1,1,Coat,Bag,0
+baseline-seed1,1,Coat,Ankle boot,0
+baseline-seed1,1,Sandal,T-shirt/top,0
+baseline-seed1,1,Sandal,Trouser,0
+baseline-seed1,1,Sandal,Pullover,0
+baseline-seed1,1,Sandal,Dress,0
+baseline-seed1,1,Sandal,Coat,0
+baseline-seed1,1,Sandal,Sandal,966
+baseline-seed1,1,Sandal,Shirt,0
+baseline-seed1,1,Sandal,Sneaker,26
+baseline-seed1,1,Sandal,Bag,0
+baseline-seed1,1,Sandal,Ankle boot,8
+baseline-seed1,1,Shirt,T-shirt/top,101
+baseline-seed1,1,Shirt,Trouser,5
+baseline-seed1,1,Shirt,Pullover,97
+baseline-seed1,1,Shirt,Dress,28
+baseline-seed1,1,Shirt,Coat,74
+baseline-seed1,1,Shirt,Sandal,0
+baseline-seed1,1,Shirt,Shirt,687
+baseline-seed1,1,Shirt,Sneaker,0
+baseline-seed1,1,Shirt,Bag,8
+baseline-seed1,1,Shirt,Ankle boot,0
+baseline-seed1,1,Sneaker,T-shirt/top,0
+baseline-seed1,1,Sneaker,Trouser,0
+baseline-seed1,1,Sneaker,Pullover,0
+baseline-seed1,1,Sneaker,Dress,0
+baseline-seed1,1,Sneaker,Coat,0
+baseline-seed1,1,Sneaker,Sandal,11
+baseline-seed1,1,Sneaker,Shirt,0
+baseline-seed1,1,Sneaker,Sneaker,973
+baseline-seed1,1,Sneaker,Bag,0
+baseline-seed1,1,Sneaker,Ankle boot,16
+baseline-seed1,1,Bag,T-shirt/top,1
+baseline-seed1,1,Bag,Trouser,4
+baseline-seed1,1,Bag,Pullover,5
+baseline-seed1,1,Bag,Dress,3
+baseline-seed1,1,Bag,Coat,2
+baseline-seed1,1,Bag,Sandal,1
+baseline-seed1,1,Bag,Shirt,5
+baseline-seed1,1,Bag,Sneaker,5
+baseline-seed1,1,Bag,Bag,974
+baseline-seed1,1,Bag,Ankle boot,0
+baseline-seed1,1,Ankle boot,T-shirt/top,0
+baseline-seed1,1,Ankle boot,Trouser,0
+baseline-seed1,1,Ankle boot,Pullover,0
+baseline-seed1,1,Ankle boot,Dress,0
+baseline-seed1,1,Ankle boot,Coat,0
+baseline-seed1,1,Ankle boot,Sandal,5
+baseline-seed1,1,Ankle boot,Shirt,2
+baseline-seed1,1,Ankle boot,Sneaker,49
+baseline-seed1,1,Ankle boot,Bag,0
+baseline-seed1,1,Ankle boot,Ankle boot,944
+full_improved-seed1,1,T-shirt/top,T-shirt/top,844
+full_improved-seed1,1,T-shirt/top,Trouser,1
+full_improved-seed1,1,T-shirt/top,Pullover,16
+full_improved-seed1,1,T-shirt/top,Dress,44
+full_improved-seed1,1,T-shirt/top,Coat,9
+full_improved-seed1,1,T-shirt/top,Sandal,1
+full_improved-seed1,1,T-shirt/top,Shirt,77
+full_improved-seed1,1,T-shirt/top,Sneaker,1
+full_improved-seed1,1,T-shirt/top,Bag,6
+full_improved-seed1,1,T-shirt/top,Ankle boot,1
+full_improved-seed1,1,Trouser,T-shirt/top,1
+full_improved-seed1,1,Trouser,Trouser,978
+full_improved-seed1,1,Trouser,Pullover,1
+full_improved-seed1,1,Trouser,Dress,14
+full_improved-seed1,1,Trouser,Coat,3
+full_improved-seed1,1,Trouser,Sandal,0
+full_improved-seed1,1,Trouser,Shirt,2
+full_improved-seed1,1,Trouser,Sneaker,0
+full_improved-seed1,1,Trouser,Bag,1
+full_improved-seed1,1,Trouser,Ankle boot,0
+full_improved-seed1,1,Pullover,T-shirt/top,14
+full_improved-seed1,1,Pullover,Trouser,1
+full_improved-seed1,1,Pullover,Pullover,816
+full_improved-seed1,1,Pullover,Dress,7
+full_improved-seed1,1,Pullover,Coat,73
+full_improved-seed1,1,Pullover,Sandal,0
+full_improved-seed1,1,Pullover,Shirt,89
+full_improved-seed1,1,Pullover,Sneaker,0
+full_improved-seed1,1,Pullover,Bag,0
+full_improved-seed1,1,Pullover,Ankle boot,0
+full_improved-seed1,1,Dress,T-shirt/top,10
+full_improved-seed1,1,Dress,Trouser,9
+full_improved-seed1,1,Dress,Pullover,10
+full_improved-seed1,1,Dress,Dress,900
+full_improved-seed1,1,Dress,Coat,24
+full_improved-seed1,1,Dress,Sandal,0
+full_improved-seed1,1,Dress,Shirt,47
+full_improved-seed1,1,Dress,Sneaker,0
+full_improved-seed1,1,Dress,Bag,0
+full_improved-seed1,1,Dress,Ankle boot,0
+full_improved-seed1,1,Coat,T-shirt/top,1
+full_improved-seed1,1,Coat,Trouser,1
+full_improved-seed1,1,Coat,Pullover,66
+full_improved-seed1,1,Coat,Dress,42
+full_improved-seed1,1,Coat,Coat,833
+full_improved-seed1,1,Coat,Sandal,1
+full_improved-seed1,1,Coat,Shirt,55
+full_improved-seed1,1,Coat,Sneaker,0
+full_improved-seed1,1,Coat,Bag,1
+full_improved-seed1,1,Coat,Ankle boot,0
+full_improved-seed1,1,Sandal,T-shirt/top,0
+full_improved-seed1,1,Sandal,Trouser,0
+full_improved-seed1,1,Sandal,Pullover,0
+full_improved-seed1,1,Sandal,Dress,0
+full_improved-seed1,1,Sandal,Coat,0
+full_improved-seed1,1,Sandal,Sandal,952
+full_improved-seed1,1,Sandal,Shirt,0
+full_improved-seed1,1,Sandal,Sneaker,38
+full_improved-seed1,1,Sandal,Bag,0
+full_improved-seed1,1,Sandal,Ankle boot,10
+full_improved-seed1,1,Shirt,T-shirt/top,159
+full_improved-seed1,1,Shirt,Trouser,3
+full_improved-seed1,1,Shirt,Pullover,69
+full_improved-seed1,1,Shirt,Dress,34
+full_improved-seed1,1,Shirt,Coat,114
+full_improved-seed1,1,Shirt,Sandal,0
+full_improved-seed1,1,Shirt,Shirt,610
+full_improved-seed1,1,Shirt,Sneaker,0
+full_improved-seed1,1,Shirt,Bag,11
+full_improved-seed1,1,Shirt,Ankle boot,0
+full_improved-seed1,1,Sneaker,T-shirt/top,0
+full_improved-seed1,1,Sneaker,Trouser,0
+full_improved-seed1,1,Sneaker,Pullover,0
+full_improved-seed1,1,Sneaker,Dress,0
+full_improved-seed1,1,Sneaker,Coat,0
+full_improved-seed1,1,Sneaker,Sandal,9
+full_improved-seed1,1,Sneaker,Shirt,0
+full_improved-seed1,1,Sneaker,Sneaker,961
+full_improved-seed1,1,Sneaker,Bag,0
+full_improved-seed1,1,Sneaker,Ankle boot,30
+full_improved-seed1,1,Bag,T-shirt/top,1
+full_improved-seed1,1,Bag,Trouser,1
+full_improved-seed1,1,Bag,Pullover,3
+full_improved-seed1,1,Bag,Dress,6
+full_improved-seed1,1,Bag,Coat,7
+full_improved-seed1,1,Bag,Sandal,3
+full_improved-seed1,1,Bag,Shirt,9
+full_improved-seed1,1,Bag,Sneaker,4
+full_improved-seed1,1,Bag,Bag,961
+full_improved-seed1,1,Bag,Ankle boot,5
+full_improved-seed1,1,Ankle boot,T-shirt/top,0
+full_improved-seed1,1,Ankle boot,Trouser,0
+full_improved-seed1,1,Ankle boot,Pullover,0
+full_improved-seed1,1,Ankle boot,Dress,1
+full_improved-seed1,1,Ankle boot,Coat,0
+full_improved-seed1,1,Ankle boot,Sandal,5
+full_improved-seed1,1,Ankle boot,Shirt,0
+full_improved-seed1,1,Ankle boot,Sneaker,39
+full_improved-seed1,1,Ankle boot,Bag,0
+full_improved-seed1,1,Ankle boot,Ankle boot,955
+no_augmentation-seed1,1,T-shirt/top,T-shirt/top,868
+no_augmentation-seed1,1,T-shirt/top,Trouser,1
+no_augmentation-seed1,1,T-shirt/top,Pullover,16
+no_augmentation-seed1,1,T-shirt/top,Dress,21
+no_augmentation-seed1,1,T-shirt/top,Coat,3
+no_augmentation-seed1,1,T-shirt/top,Sandal,1
+no_augmentation-seed1,1,T-shirt/top,Shirt,85
+no_augmentation-seed1,1,T-shirt/top,Sneaker,0
+no_augmentation-seed1,1,T-shirt/top,Bag,5
+no_augmentation-seed1,1,T-shirt/top,Ankle boot,0
+no_augmentation-seed1,1,Trouser,T-shirt/top,0
+no_augmentation-seed1,1,Trouser,Trouser,973
+no_augmentation-seed1,1,Trouser,Pullover,1
+no_augmentation-seed1,1,Trouser,Dress,20
+no_augmentation-seed1,1,Trouser,Coat,1
+no_augmentation-seed1,1,Trouser,Sandal,0
+no_augmentation-seed1,1,Trouser,Shirt,3
+no_augmentation-seed1,1,Trouser,Sneaker,0
+no_augmentation-seed1,1,Trouser,Bag,2
+no_augmentation-seed1,1,Trouser,Ankle boot,0
+no_augmentation-seed1,1,Pullover,T-shirt/top,14
+no_augmentation-seed1,1,Pullover,Trouser,0
+no_augmentation-seed1,1,Pullover,Pullover,855
+no_augmentation-seed1,1,Pullover,Dress,12
+no_augmentation-seed1,1,Pullover,Coat,61
+no_augmentation-seed1,1,Pullover,Sandal,0
+no_augmentation-seed1,1,Pullover,Shirt,58
+no_augmentation-seed1,1,Pullover,Sneaker,0
+no_augmentation-seed1,1,Pullover,Bag,0
+no_augmentation-seed1,1,Pullover,Ankle boot,0
+no_augmentation-seed1,1,Dress,T-shirt/top,12
+no_augmentation-seed1,1,Dress,Trouser,4
+no_augmentation-seed1,1,Dress,Pullover,10
+no_augmentation-seed1,1,Dress,Dress,913
+no_augmentation-seed1,1,Dress,Coat,25
+no_augmentation-seed1,1,Dress,Sandal,0
+no_augmentation-seed1,1,Dress,Shirt,36
+no_augmentation-seed1,1,Dress,Sneaker,0
+no_augmentation-seed1,1,Dress,Bag,0
+no_augmentation-seed1,1,Dress,Ankle boot,0
+no_augmentation-seed1,1,Coat,T-shirt/top,1
+no_augmentation-seed1,1,Coat,Trouser,1
+no_augmentation-seed1,1,Coat,Pullover,56
+no_augmentation-seed1,1,Coat,Dress,29
+no_augmentation-seed1,1,Coat,Coat,859
+no_augmentation-seed1,1,Coat,Sandal,0
+no_augmentation-seed1,1,Coat,Shirt,54
+no_augmentation-seed1,1,Coat,Sneaker,0
+no_augmentation-seed1,1,Coat,Bag,0
+no_augmentation-seed1,1,Coat,Ankle boot,0
+no_augmentation-seed1,1,Sandal,T-shirt/top,0
+no_augmentation-seed1,1,Sandal,Trouser,0
+no_augmentation-seed1,1,Sandal,Pullover,0
+no_augmentation-seed1,1,Sandal,Dress,0
+no_augmentation-seed1,1,Sandal,Coat,0
+no_augmentation-seed1,1,Sandal,Sandal,975
+no_augmentation-seed1,1,Sandal,Shirt,0
+no_augmentation-seed1,1,Sandal,Sneaker,19
+no_augmentation-seed1,1,Sandal,Bag,1
+no_augmentation-seed1,1,Sandal,Ankle boot,5
+no_augmentation-seed1,1,Shirt,T-shirt/top,123
+no_augmentation-seed1,1,Shirt,Trouser,1
+no_augmentation-seed1,1,Shirt,Pullover,70
+no_augmentation-seed1,1,Shirt,Dress,27
+no_augmentation-seed1,1,Shirt,Coat,74
+no_augmentation-seed1,1,Shirt,Sandal,0
+no_augmentation-seed1,1,Shirt,Shirt,694
+no_augmentation-seed1,1,Shirt,Sneaker,0
+no_augmentation-seed1,1,Shirt,Bag,11
+no_augmentation-seed1,1,Shirt,Ankle boot,0
+no_augmentation-seed1,1,Sneaker,T-shirt/top,0
+no_augmentation-seed1,1,Sneaker,Trouser,0
+no_augmentation-seed1,1,Sneaker,Pullover,0
+no_augmentation-seed1,1,Sneaker,Dress,0
+no_augmentation-seed1,1,Sneaker,Coat,0
+no_augmentation-seed1,1,Sneaker,Sandal,9
+no_augmentation-seed1,1,Sneaker,Shirt,0
+no_augmentation-seed1,1,Sneaker,Sneaker,969
+no_augmentation-seed1,1,Sneaker,Bag,1
+no_augmentation-seed1,1,Sneaker,Ankle boot,21
+no_augmentation-seed1,1,Bag,T-shirt/top,1
+no_augmentation-seed1,1,Bag,Trouser,2
+no_augmentation-seed1,1,Bag,Pullover,3
+no_augmentation-seed1,1,Bag,Dress,4
+no_augmentation-seed1,1,Bag,Coat,1
+no_augmentation-seed1,1,Bag,Sandal,2
+no_augmentation-seed1,1,Bag,Shirt,6
+no_augmentation-seed1,1,Bag,Sneaker,4
+no_augmentation-seed1,1,Bag,Bag,977
+no_augmentation-seed1,1,Bag,Ankle boot,0
+no_augmentation-seed1,1,Ankle boot,T-shirt/top,0
+no_augmentation-seed1,1,Ankle boot,Trouser,0
+no_augmentation-seed1,1,Ankle boot,Pullover,0
+no_augmentation-seed1,1,Ankle boot,Dress,0
+no_augmentation-seed1,1,Ankle boot,Coat,0
+no_augmentation-seed1,1,Ankle boot,Sandal,5
+no_augmentation-seed1,1,Ankle boot,Shirt,1
+no_augmentation-seed1,1,Ankle boot,Sneaker,33
+no_augmentation-seed1,1,Ankle boot,Bag,0
+no_augmentation-seed1,1,Ankle boot,Ankle boot,961
+no_batchnorm-seed1,1,T-shirt/top,T-shirt/top,817
+no_batchnorm-seed1,1,T-shirt/top,Trouser,2
+no_batchnorm-seed1,1,T-shirt/top,Pullover,24
+no_batchnorm-seed1,1,T-shirt/top,Dress,61
+no_batchnorm-seed1,1,T-shirt/top,Coat,7
+no_batchnorm-seed1,1,T-shirt/top,Sandal,2
+no_batchnorm-seed1,1,T-shirt/top,Shirt,80
+no_batchnorm-seed1,1,T-shirt/top,Sneaker,0
+no_batchnorm-seed1,1,T-shirt/top,Bag,6
+no_batchnorm-seed1,1,T-shirt/top,Ankle boot,1
+no_batchnorm-seed1,1,Trouser,T-shirt/top,0
+no_batchnorm-seed1,1,Trouser,Trouser,975
+no_batchnorm-seed1,1,Trouser,Pullover,0
+no_batchnorm-seed1,1,Trouser,Dress,17
+no_batchnorm-seed1,1,Trouser,Coat,4
+no_batchnorm-seed1,1,Trouser,Sandal,1
+no_batchnorm-seed1,1,Trouser,Shirt,1
+no_batchnorm-seed1,1,Trouser,Sneaker,0
+no_batchnorm-seed1,1,Trouser,Bag,2
+no_batchnorm-seed1,1,Trouser,Ankle boot,0
+no_batchnorm-seed1,1,Pullover,T-shirt/top,12
+no_batchnorm-seed1,1,Pullover,Trouser,1
+no_batchnorm-seed1,1,Pullover,Pullover,792
+no_batchnorm-seed1,1,Pullover,Dress,9
+no_batchnorm-seed1,1,Pullover,Coat,83
+no_batchnorm-seed1,1,Pullover,Sandal,0
+no_batchnorm-seed1,1,Pullover,Shirt,103
+no_batchnorm-seed1,1,Pullover,Sneaker,0
+no_batchnorm-seed1,1,Pullover,Bag,0
+no_batchnorm-seed1,1,Pullover,Ankle boot,0
+no_batchnorm-seed1,1,Dress,T-shirt/top,11
+no_batchnorm-seed1,1,Dress,Trouser,9
+no_batchnorm-seed1,1,Dress,Pullover,10
+no_batchnorm-seed1,1,Dress,Dress,887
+no_batchnorm-seed1,1,Dress,Coat,32
+no_batchnorm-seed1,1,Dress,Sandal,0
+no_batchnorm-seed1,1,Dress,Shirt,51
+no_batchnorm-seed1,1,Dress,Sneaker,0
+no_batchnorm-seed1,1,Dress,Bag,0
+no_batchnorm-seed1,1,Dress,Ankle boot,0
+no_batchnorm-seed1,1,Coat,T-shirt/top,1
+no_batchnorm-seed1,1,Coat,Trouser,1
+no_batchnorm-seed1,1,Coat,Pullover,58
+no_batchnorm-seed1,1,Coat,Dress,44
+no_batchnorm-seed1,1,Coat,Coat,836
+no_batchnorm-seed1,1,Coat,Sandal,0
+no_batchnorm-seed1,1,Coat,Shirt,59
+no_batchnorm-seed1,1,Coat,Sneaker,0
+no_batchnorm-seed1,1,Coat,Bag,1
+no_batchnorm-seed1,1,Coat,Ankle boot,0
+no_batchnorm-seed1,1,Sandal,T-shirt/top,0
+no_batchnorm-seed1,1,Sandal,Trouser,0
+no_batchnorm-seed1,1,Sandal,Pullover,0
+no_batchnorm-seed1,1,Sandal,Dress,1
+no_batchnorm-seed1,1,Sandal,Coat,1
+no_batchnorm-seed1,1,Sandal,Sandal,929
+no_batchnorm-seed1,1,Sandal,Shirt,1
+no_batchnorm-seed1,1,Sandal,Sneaker,51
+no_batchnorm-seed1,1,Sandal,Bag,0
+no_batchnorm-seed1,1,Sandal,Ankle boot,17
+no_batchnorm-seed1,1,Shirt,T-shirt/top,157
+no_batchnorm-seed1,1,Shirt,Trouser,2
+no_batchnorm-seed1,1,Shirt,Pullover,72
+no_batchnorm-seed1,1,Shirt,Dress,44
+no_batchnorm-seed1,1,Shirt,Coat,117
+no_batchnorm-seed1,1,Shirt,Sandal,0
+no_batchnorm-seed1,1,Shirt,Shirt,595
+no_batchnorm-seed1,1,Shirt,Sneaker,0
+no_batchnorm-seed1,1,Shirt,Bag,13
+no_batchnorm-seed1,1,Shirt,Ankle boot,0
+no_batchnorm-seed1,1,Sneaker,T-shirt/top,0
+no_batchnorm-seed1,1,Sneaker,Trouser,0
+no_batchnorm-seed1,1,Sneaker,Pullover,0
+no_batchnorm-seed1,1,Sneaker,Dress,0
+no_batchnorm-seed1,1,Sneaker,Coat,0
+no_batchnorm-seed1,1,Sneaker,Sandal,11
+no_batchnorm-seed1,1,Sneaker,Shirt,0
+no_batchnorm-seed1,1,Sneaker,Sneaker,952
+no_batchnorm-seed1,1,Sneaker,Bag,0
+no_batchnorm-seed1,1,Sneaker,Ankle boot,37
+no_batchnorm-seed1,1,Bag,T-shirt/top,3
+no_batchnorm-seed1,1,Bag,Trouser,1
+no_batchnorm-seed1,1,Bag,Pullover,6
+no_batchnorm-seed1,1,Bag,Dress,4
+no_batchnorm-seed1,1,Bag,Coat,2
+no_batchnorm-seed1,1,Bag,Sandal,2
+no_batchnorm-seed1,1,Bag,Shirt,12
+no_batchnorm-seed1,1,Bag,Sneaker,3
+no_batchnorm-seed1,1,Bag,Bag,963
+no_batchnorm-seed1,1,Bag,Ankle boot,4
+no_batchnorm-seed1,1,Ankle boot,T-shirt/top,0
+no_batchnorm-seed1,1,Ankle boot,Trouser,0
+no_batchnorm-seed1,1,Ankle boot,Pullover,0
+no_batchnorm-seed1,1,Ankle boot,Dress,1
+no_batchnorm-seed1,1,Ankle boot,Coat,0
+no_batchnorm-seed1,1,Ankle boot,Sandal,3
+no_batchnorm-seed1,1,Ankle boot,Shirt,1
+no_batchnorm-seed1,1,Ankle boot,Sneaker,39
+no_batchnorm-seed1,1,Ankle boot,Bag,0
+no_batchnorm-seed1,1,Ankle boot,Ankle boot,956
+no_dropout-seed1,1,T-shirt/top,T-shirt/top,846
+no_dropout-seed1,1,T-shirt/top,Trouser,0
+no_dropout-seed1,1,T-shirt/top,Pullover,18
+no_dropout-seed1,1,T-shirt/top,Dress,32
+no_dropout-seed1,1,T-shirt/top,Coat,7
+no_dropout-seed1,1,T-shirt/top,Sandal,1
+no_dropout-seed1,1,T-shirt/top,Shirt,90
+no_dropout-seed1,1,T-shirt/top,Sneaker,1
+no_dropout-seed1,1,T-shirt/top,Bag,4
+no_dropout-seed1,1,T-shirt/top,Ankle boot,1
+no_dropout-seed1,1,Trouser,T-shirt/top,1
+no_dropout-seed1,1,Trouser,Trouser,980
+no_dropout-seed1,1,Trouser,Pullover,0
+no_dropout-seed1,1,Trouser,Dress,15
+no_dropout-seed1,1,Trouser,Coat,2
+no_dropout-seed1,1,Trouser,Sandal,0
+no_dropout-seed1,1,Trouser,Shirt,0
+no_dropout-seed1,1,Trouser,Sneaker,0
+no_dropout-seed1,1,Trouser,Bag,2
+no_dropout-seed1,1,Trouser,Ankle boot,0
+no_dropout-seed1,1,Pullover,T-shirt/top,13
+no_dropout-seed1,1,Pullover,Trouser,2
+no_dropout-seed1,1,Pullover,Pullover,827
+no_dropout-seed1,1,Pullover,Dress,10
+no_dropout-seed1,1,Pullover,Coat,58
+no_dropout-seed1,1,Pullover,Sandal,0
+no_dropout-seed1,1,Pullover,Shirt,90
+no_dropout-seed1,1,Pullover,Sneaker,0
+no_dropout-seed1,1,Pullover,Bag,0
+no_dropout-seed1,1,Pullover,Ankle boot,0
+no_dropout-seed1,1,Dress,T-shirt/top,18
+no_dropout-seed1,1,Dress,Trouser,8
+no_dropout-seed1,1,Dress,Pullover,12
+no_dropout-seed1,1,Dress,Dress,905
+no_dropout-seed1,1,Dress,Coat,27
+no_dropout-seed1,1,Dress,Sandal,0
+no_dropout-seed1,1,Dress,Shirt,28
+no_dropout-seed1,1,Dress,Sneaker,0
+no_dropout-seed1,1,Dress,Bag,1
+no_dropout-seed1,1,Dress,Ankle boot,1
+no_dropout-seed1,1,Coat,T-shirt/top,1
+no_dropout-seed1,1,Coat,Trouser,1
+no_dropout-seed1,1,Coat,Pullover,62
+no_dropout-seed1,1,Coat,Dress,31
+no_dropout-seed1,1,Coat,Coat,835
+no_dropout-seed1,1,Coat,Sandal,1
+no_dropout-seed1,1,Coat,Shirt,68
+no_dropout-seed1,1,Coat,Sneaker,0
+no_dropout-seed1,1,Coat,Bag,1
+no_dropout-seed1,1,Coat,Ankle boot,0
+no_dropout-seed1,1,Sandal,T-shirt/top,0
+no_dropout-seed1,1,Sandal,Trouser,0
+no_dropout-seed1,1,Sandal,Pullover,0
+no_dropout-seed1,1,Sandal,Dress,0
+no_dropout-seed1,1,Sandal,Coat,0
+no_dropout-seed1,1,Sandal,Sandal,953
+no_dropout-seed1,1,Sandal,Shirt,1
+no_dropout-seed1,1,Sandal,Sneaker,36
+no_dropout-seed1,1,Sandal,Bag,0
+no_dropout-seed1,1,Sandal,Ankle boot,10
+no_dropout-seed1,1,Shirt,T-shirt/top,152
+no_dropout-seed1,1,Shirt,Trouser,2
+no_dropout-seed1,1,Shirt,Pullover,64
+no_dropout-seed1,1,Shirt,Dress,26
+no_dropout-seed1,1,Shirt,Coat,95
+no_dropout-seed1,1,Shirt,Sandal,0
+no_dropout-seed1,1,Shirt,Shirt,651
+no_dropout-seed1,1,Shirt,Sneaker,0
+no_dropout-seed1,1,Shirt,Bag,9
+no_dropout-seed1,1,Shirt,Ankle boot,1
+no_dropout-seed1,1,Sneaker,T-shirt/top,0
+no_dropout-seed1,1,Sneaker,Trouser,0
+no_dropout-seed1,1,Sneaker,Pullover,0
+no_dropout-seed1,1,Sneaker,Dress,0
+no_dropout-seed1,1,Sneaker,Coat,0
+no_dropout-seed1,1,Sneaker,Sandal,8
+no_dropout-seed1,1,Sneaker,Shirt,0
+no_dropout-seed1,1,Sneaker,Sneaker,968
+no_dropout-seed1,1,Sneaker,Bag,0
+no_dropout-seed1,1,Sneaker,Ankle boot,24
+no_dropout-seed1,1,Bag,T-shirt/top,2
+no_dropout-seed1,1,Bag,Trouser,2
+no_dropout-seed1,1,Bag,Pullover,3
+no_dropout-seed1,1,Bag,Dress,4
+no_dropout-seed1,1,Bag,Coat,5
+no_dropout-seed1,1,Bag,Sandal,3
+no_dropout-seed1,1,Bag,Shirt,6
+no_dropout-seed1,1,Bag,Sneaker,5
+no_dropout-seed1,1,Bag,Bag,965
+no_dropout-seed1,1,Bag,Ankle boot,5
+no_dropout-seed1,1,Ankle boot,T-shirt/top,0
+no_dropout-seed1,1,Ankle boot,Trouser,0
+no_dropout-seed1,1,Ankle boot,Pullover,0
+no_dropout-seed1,1,Ankle boot,Dress,1
+no_dropout-seed1,1,Ankle boot,Coat,0
+no_dropout-seed1,1,Ankle boot,Sandal,5
+no_dropout-seed1,1,Ankle boot,Shirt,0
+no_dropout-seed1,1,Ankle boot,Sneaker,38
+no_dropout-seed1,1,Ankle boot,Bag,0
+no_dropout-seed1,1,Ankle boot,Ankle boot,956
+no_scheduler-seed1,1,T-shirt/top,T-shirt/top,847
+no_scheduler-seed1,1,T-shirt/top,Trouser,0
+no_scheduler-seed1,1,T-shirt/top,Pullover,15
+no_scheduler-seed1,1,T-shirt/top,Dress,40
+no_scheduler-seed1,1,T-shirt/top,Coat,10
+no_scheduler-seed1,1,T-shirt/top,Sandal,2
+no_scheduler-seed1,1,T-shirt/top,Shirt,80
+no_scheduler-seed1,1,T-shirt/top,Sneaker,0
+no_scheduler-seed1,1,T-shirt/top,Bag,4
+no_scheduler-seed1,1,T-shirt/top,Ankle boot,2
+no_scheduler-seed1,1,Trouser,T-shirt/top,0
+no_scheduler-seed1,1,Trouser,Trouser,976
+no_scheduler-seed1,1,Trouser,Pullover,1
+no_scheduler-seed1,1,Trouser,Dress,18
+no_scheduler-seed1,1,Trouser,Coat,3
+no_scheduler-seed1,1,Trouser,Sandal,0
+no_scheduler-seed1,1,Trouser,Shirt,0
+no_scheduler-seed1,1,Trouser,Sneaker,0
+no_scheduler-seed1,1,Trouser,Bag,2
+no_scheduler-seed1,1,Trouser,Ankle boot,0
+no_scheduler-seed1,1,Pullover,T-shirt/top,17
+no_scheduler-seed1,1,Pullover,Trouser,0
+no_scheduler-seed1,1,Pullover,Pullover,800
+no_scheduler-seed1,1,Pullover,Dress,8
+no_scheduler-seed1,1,Pullover,Coat,91
+no_scheduler-seed1,1,Pullover,Sandal,0
+no_scheduler-seed1,1,Pullover,Shirt,84
+no_scheduler-seed1,1,Pullover,Sneaker,0
+no_scheduler-seed1,1,Pullover,Bag,0
+no_scheduler-seed1,1,Pullover,Ankle boot,0
+no_scheduler-seed1,1,Dress,T-shirt/top,7
+no_scheduler-seed1,1,Dress,Trouser,7
+no_scheduler-seed1,1,Dress,Pullover,9
+no_scheduler-seed1,1,Dress,Dress,908
+no_scheduler-seed1,1,Dress,Coat,31
+no_scheduler-seed1,1,Dress,Sandal,0
+no_scheduler-seed1,1,Dress,Shirt,38
+no_scheduler-seed1,1,Dress,Sneaker,0
+no_scheduler-seed1,1,Dress,Bag,0
+no_scheduler-seed1,1,Dress,Ankle boot,0
+no_scheduler-seed1,1,Coat,T-shirt/top,1
+no_scheduler-seed1,1,Coat,Trouser,0
+no_scheduler-seed1,1,Coat,Pullover,51
+no_scheduler-seed1,1,Coat,Dress,33
+no_scheduler-seed1,1,Coat,Coat,877
+no_scheduler-seed1,1,Coat,Sandal,1
+no_scheduler-seed1,1,Coat,Shirt,36
+no_scheduler-seed1,1,Coat,Sneaker,0
+no_scheduler-seed1,1,Coat,Bag,1
+no_scheduler-seed1,1,Coat,Ankle boot,0
+no_scheduler-seed1,1,Sandal,T-shirt/top,0
+no_scheduler-seed1,1,Sandal,Trouser,0
+no_scheduler-seed1,1,Sandal,Pullover,0
+no_scheduler-seed1,1,Sandal,Dress,0
+no_scheduler-seed1,1,Sandal,Coat,0
+no_scheduler-seed1,1,Sandal,Sandal,958
+no_scheduler-seed1,1,Sandal,Shirt,0
+no_scheduler-seed1,1,Sandal,Sneaker,30
+no_scheduler-seed1,1,Sandal,Bag,0
+no_scheduler-seed1,1,Sandal,Ankle boot,12
+no_scheduler-seed1,1,Shirt,T-shirt/top,150
+no_scheduler-seed1,1,Shirt,Trouser,2
+no_scheduler-seed1,1,Shirt,Pullover,66
+no_scheduler-seed1,1,Shirt,Dress,34
+no_scheduler-seed1,1,Shirt,Coat,129
+no_scheduler-seed1,1,Shirt,Sandal,0
+no_scheduler-seed1,1,Shirt,Shirt,610
+no_scheduler-seed1,1,Shirt,Sneaker,0
+no_scheduler-seed1,1,Shirt,Bag,9
+no_scheduler-seed1,1,Shirt,Ankle boot,0
+no_scheduler-seed1,1,Sneaker,T-shirt/top,0
+no_scheduler-seed1,1,Sneaker,Trouser,0
+no_scheduler-seed1,1,Sneaker,Pullover,0
+no_scheduler-seed1,1,Sneaker,Dress,0
+no_scheduler-seed1,1,Sneaker,Coat,0
+no_scheduler-seed1,1,Sneaker,Sandal,10
+no_scheduler-seed1,1,Sneaker,Shirt,0
+no_scheduler-seed1,1,Sneaker,Sneaker,947
+no_scheduler-seed1,1,Sneaker,Bag,0
+no_scheduler-seed1,1,Sneaker,Ankle boot,43
+no_scheduler-seed1,1,Bag,T-shirt/top,1
+no_scheduler-seed1,1,Bag,Trouser,1
+no_scheduler-seed1,1,Bag,Pullover,4
+no_scheduler-seed1,1,Bag,Dress,6
+no_scheduler-seed1,1,Bag,Coat,7
+no_scheduler-seed1,1,Bag,Sandal,2
+no_scheduler-seed1,1,Bag,Shirt,8
+no_scheduler-seed1,1,Bag,Sneaker,2
+no_scheduler-seed1,1,Bag,Bag,965
+no_scheduler-seed1,1,Bag,Ankle boot,4
+no_scheduler-seed1,1,Ankle boot,T-shirt/top,0
+no_scheduler-seed1,1,Ankle boot,Trouser,0
+no_scheduler-seed1,1,Ankle boot,Pullover,0
+no_scheduler-seed1,1,Ankle boot,Dress,1
+no_scheduler-seed1,1,Ankle boot,Coat,0
+no_scheduler-seed1,1,Ankle boot,Sandal,5
+no_scheduler-seed1,1,Ankle boot,Shirt,0
+no_scheduler-seed1,1,Ankle boot,Sneaker,32
+no_scheduler-seed1,1,Ankle boot,Bag,0
+no_scheduler-seed1,1,Ankle boot,Ankle boot,962
+baseline-seed2,2,T-shirt/top,T-shirt/top,812
+baseline-seed2,2,T-shirt/top,Trouser,1
+baseline-seed2,2,T-shirt/top,Pullover,13
+baseline-seed2,2,T-shirt/top,Dress,24
+baseline-seed2,2,T-shirt/top,Coat,4
+baseline-seed2,2,T-shirt/top,Sandal,2
+baseline-seed2,2,T-shirt/top,Shirt,135
+baseline-seed2,2,T-shirt/top,Sneaker,0
+baseline-seed2,2,T-shirt/top,Bag,9
+baseline-seed2,2,T-shirt/top,Ankle boot,0
+baseline-seed2,2,Trouser,T-shirt/top,1
+baseline-seed2,2,Trouser,Trouser,984
+baseline-seed2,2,Trouser,Pullover,0
+baseline-seed2,2,Trouser,Dress,11
+baseline-seed2,2,Trouser,Coat,1
+baseline-seed2,2,Trouser,Sandal,0
+baseline-seed2,2,Trouser,Shirt,1
+baseline-seed2,2,Trouser,Sneaker,0
+baseline-seed2,2,Trouser,Bag,2
+baseline-seed2,2,Trouser,Ankle boot,0
+baseline-seed2,2,Pullover,T-shirt/top,16
+baseline-seed2,2,Pullover,Trouser,2
+baseline-seed2,2,Pullover,Pullover,804
+baseline-seed2,2,Pullover,Dress,12
+baseline-seed2,2,Pullover,Coat,77
+baseline-seed2,2,Pullover,Sandal,0
+baseline-seed2,2,Pullover,Shirt,86
+baseline-seed2,2,Pullover,Sneaker,0
+baseline-seed2,2,Pullover,Bag,3
+baseline-seed2,2,Pullover,Ankle boot,0
+baseline-seed2,2,Dress,T-shirt/top,15
+baseline-seed2,2,Dress,Trouser,7
+baseline-seed2,2,Dress,Pullover,7
+baseline-seed2,2,Dress,Dress,913
+baseline-seed2,2,Dress,Coat,21
+baseline-seed2,2,Dress,Sandal,0
+baseline-seed2,2,Dress,Shirt,35
+baseline-seed2,2,Dress,Sneaker,0
+baseline-seed2,2,Dress,Bag,2
+baseline-seed2,2,Dress,Ankle boot,0
+baseline-seed2,2,Coat,T-shirt/top,1
+baseline-seed2,2,Coat,Trouser,2
+baseline-seed2,2,Coat,Pullover,38
+baseline-seed2,2,Coat,Dress,29
+baseline-seed2,2,Coat,Coat,841
+baseline-seed2,2,Coat,Sandal,0
+baseline-seed2,2,Coat,Shirt,87
+baseline-seed2,2,Coat,Sneaker,0
+baseline-seed2,2,Coat,Bag,2
+baseline-seed2,2,Coat,Ankle boot,0
+baseline-seed2,2,Sandal,T-shirt/top,0
+baseline-seed2,2,Sandal,Trouser,0
+baseline-seed2,2,Sandal,Pullover,0
+baseline-seed2,2,Sandal,Dress,0
+baseline-seed2,2,Sandal,Coat,0
+baseline-seed2,2,Sandal,Sandal,978
+baseline-seed2,2,Sandal,Shirt,1
+baseline-seed2,2,Sandal,Sneaker,13
+baseline-seed2,2,Sandal,Bag,2
+baseline-seed2,2,Sandal,Ankle boot,6
+baseline-seed2,2,Shirt,T-shirt/top,88
+baseline-seed2,2,Shirt,Trouser,2
+baseline-seed2,2,Shirt,Pullover,40
+baseline-seed2,2,Shirt,Dress,33
+baseline-seed2,2,Shirt,Coat,70
+baseline-seed2,2,Shirt,Sandal,0
+baseline-seed2,2,Shirt,Shirt,752
+baseline-seed2,2,Shirt,Sneaker,0
+baseline-seed2,2,Shirt,Bag,15
+baseline-seed2,2,Shirt,Ankle boot,0
+baseline-seed2,2,Sneaker,T-shirt/top,0
+baseline-seed2,2,Sneaker,Trouser,0
+baseline-seed2,2,Sneaker,Pullover,0
+baseline-seed2,2,Sneaker,Dress,0
+baseline-seed2,2,Sneaker,Coat,0
+baseline-seed2,2,Sneaker,Sandal,10
+baseline-seed2,2,Sneaker,Shirt,0
+baseline-seed2,2,Sneaker,Sneaker,969
+baseline-seed2,2,Sneaker,Bag,1
+baseline-seed2,2,Sneaker,Ankle boot,20
+baseline-seed2,2,Bag,T-shirt/top,2
+baseline-seed2,2,Bag,Trouser,1
+baseline-seed2,2,Bag,Pullover,1
+baseline-seed2,2,Bag,Dress,3
+baseline-seed2,2,Bag,Coat,1
+baseline-seed2,2,Bag,Sandal,2
+baseline-seed2,2,Bag,Shirt,1
+baseline-seed2,2,Bag,Sneaker,2
+baseline-seed2,2,Bag,Bag,987
+baseline-seed2,2,Bag,Ankle boot,0
+baseline-seed2,2,Ankle boot,T-shirt/top,0
+baseline-seed2,2,Ankle boot,Trouser,0
+baseline-seed2,2,Ankle boot,Pullover,0
+baseline-seed2,2,Ankle boot,Dress,0
+baseline-seed2,2,Ankle boot,Coat,0
+baseline-seed2,2,Ankle boot,Sandal,9
+baseline-seed2,2,Ankle boot,Shirt,1
+baseline-seed2,2,Ankle boot,Sneaker,32
+baseline-seed2,2,Ankle boot,Bag,0
+baseline-seed2,2,Ankle boot,Ankle boot,958
+full_improved-seed2,2,T-shirt/top,T-shirt/top,834
+full_improved-seed2,2,T-shirt/top,Trouser,0
+full_improved-seed2,2,T-shirt/top,Pullover,13
+full_improved-seed2,2,T-shirt/top,Dress,56
+full_improved-seed2,2,T-shirt/top,Coat,10
+full_improved-seed2,2,T-shirt/top,Sandal,1
+full_improved-seed2,2,T-shirt/top,Shirt,81
+full_improved-seed2,2,T-shirt/top,Sneaker,0
+full_improved-seed2,2,T-shirt/top,Bag,4
+full_improved-seed2,2,T-shirt/top,Ankle boot,1
+full_improved-seed2,2,Trouser,T-shirt/top,0
+full_improved-seed2,2,Trouser,Trouser,973
+full_improved-seed2,2,Trouser,Pullover,0
+full_improved-seed2,2,Trouser,Dress,18
+full_improved-seed2,2,Trouser,Coat,6
+full_improved-seed2,2,Trouser,Sandal,0
+full_improved-seed2,2,Trouser,Shirt,1
+full_improved-seed2,2,Trouser,Sneaker,0
+full_improved-seed2,2,Trouser,Bag,2
+full_improved-seed2,2,Trouser,Ankle boot,0
+full_improved-seed2,2,Pullover,T-shirt/top,10
+full_improved-seed2,2,Pullover,Trouser,2
+full_improved-seed2,2,Pullover,Pullover,834
+full_improved-seed2,2,Pullover,Dress,10
+full_improved-seed2,2,Pullover,Coat,70
+full_improved-seed2,2,Pullover,Sandal,0
+full_improved-seed2,2,Pullover,Shirt,73
+full_improved-seed2,2,Pullover,Sneaker,0
+full_improved-seed2,2,Pullover,Bag,1
+full_improved-seed2,2,Pullover,Ankle boot,0
+full_improved-seed2,2,Dress,T-shirt/top,13
+full_improved-seed2,2,Dress,Trouser,5
+full_improved-seed2,2,Dress,Pullover,9
+full_improved-seed2,2,Dress,Dress,902
+full_improved-seed2,2,Dress,Coat,25
+full_improved-seed2,2,Dress,Sandal,0
+full_improved-seed2,2,Dress,Shirt,46
+full_improved-seed2,2,Dress,Sneaker,0
+full_improved-seed2,2,Dress,Bag,0
+full_improved-seed2,2,Dress,Ankle boot,0
+full_improved-seed2,2,Coat,T-shirt/top,1
+full_improved-seed2,2,Coat,Trouser,1
+full_improved-seed2,2,Coat,Pullover,54
+full_improved-seed2,2,Coat,Dress,44
+full_improved-seed2,2,Coat,Coat,842
+full_improved-seed2,2,Coat,Sandal,1
+full_improved-seed2,2,Coat,Shirt,56
+full_improved-seed2,2,Coat,Sneaker,0
+full_improved-seed2,2,Coat,Bag,1
+full_improved-seed2,2,Coat,Ankle boot,0
+full_improved-seed2,2,Sandal,T-shirt/top,0
+full_improved-seed2,2,Sandal,Trouser,0
+full_improved-seed2,2,Sandal,Pullover,0
+full_improved-seed2,2,Sandal,Dress,0
+full_improved-seed2,2,Sandal,Coat,0
+full_improved-seed2,2,Sandal,Sandal,935
+full_improved-seed2,2,Sandal,Shirt,1
+full_improved-seed2,2,Sandal,Sneaker,51
+full_improved-seed2,2,Sandal,Bag,0
+full_improved-seed2,2,Sandal,Ankle boot,13
+full_improved-seed2,2,Shirt,T-shirt/top,145
+full_improved-seed2,2,Shirt,Trouser,2
+full_improved-seed2,2,Shirt,Pullover,61
+full_improved-seed2,2,Shirt,Dress,40
+full_improved-seed2,2,Shirt,Coat,110
+full_improved-seed2,2,Shirt,Sandal,0
+full_improved-seed2,2,Shirt,Shirt,633
+full_improved-seed2,2,Shirt,Sneaker,0
+full_improved-seed2,2,Shirt,Bag,9
+full_improved-seed2,2,Shirt,Ankle boot,0
+full_improved-seed2,2,Sneaker,T-shirt/top,0
+full_improved-seed2,2,Sneaker,Trouser,0
+full_improved-seed2,2,Sneaker,Pullover,0
+full_improved-seed2,2,Sneaker,Dress,0
+full_improved-seed2,2,Sneaker,Coat,0
+full_improved-seed2,2,Sneaker,Sandal,10
+full_improved-seed2,2,Sneaker,Shirt,0
+full_improved-seed2,2,Sneaker,Sneaker,963
+full_improved-seed2,2,Sneaker,Bag,0
+full_improved-seed2,2,Sneaker,Ankle boot,27
+full_improved-seed2,2,Bag,T-shirt/top,0
+full_improved-seed2,2,Bag,Trouser,1
+full_improved-seed2,2,Bag,Pullover,2
+full_improved-seed2,2,Bag,Dress,5
+full_improved-seed2,2,Bag,Coat,5
+full_improved-seed2,2,Bag,Sandal,3
+full_improved-seed2,2,Bag,Shirt,6
+full_improved-seed2,2,Bag,Sneaker,3
+full_improved-seed2,2,Bag,Bag,973
+full_improved-seed2,2,Bag,Ankle boot,2
+full_improved-seed2,2,Ankle boot,T-shirt/top,0
+full_improved-seed2,2,Ankle boot,Trouser,0
+full_improved-seed2,2,Ankle boot,Pullover,0
+full_improved-seed2,2,Ankle boot,Dress,1
+full_improved-seed2,2,Ankle boot,Coat,0
+full_improved-seed2,2,Ankle boot,Sandal,4
+full_improved-seed2,2,Ankle boot,Shirt,0
+full_improved-seed2,2,Ankle boot,Sneaker,45
+full_improved-seed2,2,Ankle boot,Bag,0
+full_improved-seed2,2,Ankle boot,Ankle boot,950
+no_augmentation-seed2,2,T-shirt/top,T-shirt/top,859
+no_augmentation-seed2,2,T-shirt/top,Trouser,0
+no_augmentation-seed2,2,T-shirt/top,Pullover,15
+no_augmentation-seed2,2,T-shirt/top,Dress,26
+no_augmentation-seed2,2,T-shirt/top,Coat,3
+no_augmentation-seed2,2,T-shirt/top,Sandal,4
+no_augmentation-seed2,2,T-shirt/top,Shirt,87
+no_augmentation-seed2,2,T-shirt/top,Sneaker,0
+no_augmentation-seed2,2,T-shirt/top,Bag,6
+no_augmentation-seed2,2,T-shirt/top,Ankle boot,0
+no_augmentation-seed2,2,Trouser,T-shirt/top,0
+no_augmentation-seed2,2,Trouser,Trouser,975
+no_augmentation-seed2,2,Trouser,Pullover,1
+no_augmentation-seed2,2,Trouser,Dress,16
+no_augmentation-seed2,2,Trouser,Coat,4
+no_augmentation-seed2,2,Trouser,Sandal,0
+no_augmentation-seed2,2,Trouser,Shirt,3
+no_augmentation-seed2,2,Trouser,Sneaker,0
+no_augmentation-seed2,2,Trouser,Bag,1
+no_augmentation-seed2,2,Trouser,Ankle boot,0
+no_augmentation-seed2,2,Pullover,T-shirt/top,17
+no_augmentation-seed2,2,Pullover,Trouser,1
+no_augmentation-seed2,2,Pullover,Pullover,850
+no_augmentation-seed2,2,Pullover,Dress,6
+no_augmentation-seed2,2,Pullover,Coat,67
+no_augmentation-seed2,2,Pullover,Sandal,0
+no_augmentation-seed2,2,Pullover,Shirt,59
+no_augmentation-seed2,2,Pullover,Sneaker,0
+no_augmentation-seed2,2,Pullover,Bag,0
+no_augmentation-seed2,2,Pullover,Ankle boot,0
+no_augmentation-seed2,2,Dress,T-shirt/top,16
+no_augmentation-seed2,2,Dress,Trouser,3
+no_augmentation-seed2,2,Dress,Pullover,9
+no_augmentation-seed2,2,Dress,Dress,916
+no_augmentation-seed2,2,Dress,Coat,21
+no_augmentation-seed2,2,Dress,Sandal,0
+no_augmentation-seed2,2,Dress,Shirt,34
+no_augmentation-seed2,2,Dress,Sneaker,0
+no_augmentation-seed2,2,Dress,Bag,1
+no_augmentation-seed2,2,Dress,Ankle boot,0
+no_augmentation-seed2,2,Coat,T-shirt/top,1
+no_augmentation-seed2,2,Coat,Trouser,1
+no_augmentation-seed2,2,Coat,Pullover,54
+no_augmentation-seed2,2,Coat,Dress,33
+no_augmentation-seed2,2,Coat,Coat,853
+no_augmentation-seed2,2,Coat,Sandal,0
+no_augmentation-seed2,2,Coat,Shirt,57
+no_augmentation-seed2,2,Coat,Sneaker,0
+no_augmentation-seed2,2,Coat,Bag,1
+no_augmentation-seed2,2,Coat,Ankle boot,0
+no_augmentation-seed2,2,Sandal,T-shirt/top,0
+no_augmentation-seed2,2,Sandal,Trouser,0
+no_augmentation-seed2,2,Sandal,Pullover,0
+no_augmentation-seed2,2,Sandal,Dress,0
+no_augmentation-seed2,2,Sandal,Coat,0
+no_augmentation-seed2,2,Sandal,Sandal,976
+no_augmentation-seed2,2,Sandal,Shirt,0
+no_augmentation-seed2,2,Sandal,Sneaker,18
+no_augmentation-seed2,2,Sandal,Bag,0
+no_augmentation-seed2,2,Sandal,Ankle boot,6
+no_augmentation-seed2,2,Shirt,T-shirt/top,128
+no_augmentation-seed2,2,Shirt,Trouser,3
+no_augmentation-seed2,2,Shirt,Pullover,65
+no_augmentation-seed2,2,Shirt,Dress,30
+no_augmentation-seed2,2,Shirt,Coat,90
+no_augmentation-seed2,2,Shirt,Sandal,0
+no_augmentation-seed2,2,Shirt,Shirt,672
+no_augmentation-seed2,2,Shirt,Sneaker,0
+no_augmentation-seed2,2,Shirt,Bag,12
+no_augmentation-seed2,2,Shirt,Ankle boot,0
+no_augmentation-seed2,2,Sneaker,T-shirt/top,0
+no_augmentation-seed2,2,Sneaker,Trouser,0
+no_augmentation-seed2,2,Sneaker,Pullover,0
+no_augmentation-seed2,2,Sneaker,Dress,0
+no_augmentation-seed2,2,Sneaker,Coat,0
+no_augmentation-seed2,2,Sneaker,Sandal,11
+no_augmentation-seed2,2,Sneaker,Shirt,0
+no_augmentation-seed2,2,Sneaker,Sneaker,970
+no_augmentation-seed2,2,Sneaker,Bag,0
+no_augmentation-seed2,2,Sneaker,Ankle boot,19
+no_augmentation-seed2,2,Bag,T-shirt/top,0
+no_augmentation-seed2,2,Bag,Trouser,0
+no_augmentation-seed2,2,Bag,Pullover,2
+no_augmentation-seed2,2,Bag,Dress,5
+no_augmentation-seed2,2,Bag,Coat,3
+no_augmentation-seed2,2,Bag,Sandal,1
+no_augmentation-seed2,2,Bag,Shirt,3
+no_augmentation-seed2,2,Bag,Sneaker,4
+no_augmentation-seed2,2,Bag,Bag,982
+no_augmentation-seed2,2,Bag,Ankle boot,0
+no_augmentation-seed2,2,Ankle boot,T-shirt/top,0
+no_augmentation-seed2,2,Ankle boot,Trouser,0
+no_augmentation-seed2,2,Ankle boot,Pullover,0
+no_augmentation-seed2,2,Ankle boot,Dress,0
+no_augmentation-seed2,2,Ankle boot,Coat,0
+no_augmentation-seed2,2,Ankle boot,Sandal,5
+no_augmentation-seed2,2,Ankle boot,Shirt,0
+no_augmentation-seed2,2,Ankle boot,Sneaker,29
+no_augmentation-seed2,2,Ankle boot,Bag,1
+no_augmentation-seed2,2,Ankle boot,Ankle boot,965
+no_batchnorm-seed2,2,T-shirt/top,T-shirt/top,836
+no_batchnorm-seed2,2,T-shirt/top,Trouser,0
+no_batchnorm-seed2,2,T-shirt/top,Pullover,17
+no_batchnorm-seed2,2,T-shirt/top,Dress,53
+no_batchnorm-seed2,2,T-shirt/top,Coat,7
+no_batchnorm-seed2,2,T-shirt/top,Sandal,5
+no_batchnorm-seed2,2,T-shirt/top,Shirt,73
+no_batchnorm-seed2,2,T-shirt/top,Sneaker,0
+no_batchnorm-seed2,2,T-shirt/top,Bag,8
+no_batchnorm-seed2,2,T-shirt/top,Ankle boot,1
+no_batchnorm-seed2,2,Trouser,T-shirt/top,0
+no_batchnorm-seed2,2,Trouser,Trouser,976
+no_batchnorm-seed2,2,Trouser,Pullover,1
+no_batchnorm-seed2,2,Trouser,Dress,15
+no_batchnorm-seed2,2,Trouser,Coat,6
+no_batchnorm-seed2,2,Trouser,Sandal,0
+no_batchnorm-seed2,2,Trouser,Shirt,0
+no_batchnorm-seed2,2,Trouser,Sneaker,0
+no_batchnorm-seed2,2,Trouser,Bag,2
+no_batchnorm-seed2,2,Trouser,Ankle boot,0
+no_batchnorm-seed2,2,Pullover,T-shirt/top,9
+no_batchnorm-seed2,2,Pullover,Trouser,1
+no_batchnorm-seed2,2,Pullover,Pullover,811
+no_batchnorm-seed2,2,Pullover,Dress,11
+no_batchnorm-seed2,2,Pullover,Coat,89
+no_batchnorm-seed2,2,Pullover,Sandal,0
+no_batchnorm-seed2,2,Pullover,Shirt,79
+no_batchnorm-seed2,2,Pullover,Sneaker,0
+no_batchnorm-seed2,2,Pullover,Bag,0
+no_batchnorm-seed2,2,Pullover,Ankle boot,0
+no_batchnorm-seed2,2,Dress,T-shirt/top,16
+no_batchnorm-seed2,2,Dress,Trouser,9
+no_batchnorm-seed2,2,Dress,Pullover,9
+no_batchnorm-seed2,2,Dress,Dress,888
+no_batchnorm-seed2,2,Dress,Coat,31
+no_batchnorm-seed2,2,Dress,Sandal,0
+no_batchnorm-seed2,2,Dress,Shirt,46
+no_batchnorm-seed2,2,Dress,Sneaker,0
+no_batchnorm-seed2,2,Dress,Bag,0
+no_batchnorm-seed2,2,Dress,Ankle boot,1
+no_batchnorm-seed2,2,Coat,T-shirt/top,1
+no_batchnorm-seed2,2,Coat,Trouser,1
+no_batchnorm-seed2,2,Coat,Pullover,55
+no_batchnorm-seed2,2,Coat,Dress,40
+no_batchnorm-seed2,2,Coat,Coat,835
+no_batchnorm-seed2,2,Coat,Sandal,0
+no_batchnorm-seed2,2,Coat,Shirt,67
+no_batchnorm-seed2,2,Coat,Sneaker,0
+no_batchnorm-seed2,2,Coat,Bag,1
+no_batchnorm-seed2,2,Coat,Ankle boot,0
+no_batchnorm-seed2,2,Sandal,T-shirt/top,1
+no_batchnorm-seed2,2,Sandal,Trouser,0
+no_batchnorm-seed2,2,Sandal,Pullover,0
+no_batchnorm-seed2,2,Sandal,Dress,0
+no_batchnorm-seed2,2,Sandal,Coat,1
+no_batchnorm-seed2,2,Sandal,Sandal,939
+no_batchnorm-seed2,2,Sandal,Shirt,1
+no_batchnorm-seed2,2,Sandal,Sneaker,45
+no_batchnorm-seed2,2,Sandal,Bag,0
+no_batchnorm-seed2,2,Sandal,Ankle boot,13
+no_batchnorm-seed2,2,Shirt,T-shirt/top,169
+no_batchnorm-seed2,2,Shirt,Trouser,1
+no_batchnorm-seed2,2,Shirt,Pullover,78
+no_batchnorm-seed2,2,Shirt,Dress,37
+no_batchnorm-seed2,2,Shirt,Coat,119
+no_batchnorm-seed2,2,Shirt,Sandal,0
+no_batchnorm-seed2,2,Shirt,Shirt,586
+no_batchnorm-seed2,2,Shirt,Sneaker,0
+no_batchnorm-seed2,2,Shirt,Bag,10
+no_batchnorm-seed2,2,Shirt,Ankle boot,0
+no_batchnorm-seed2,2,Sneaker,T-shirt/top,0
+no_batchnorm-seed2,2,Sneaker,Trouser,0
+no_batchnorm-seed2,2,Sneaker,Pullover,0
+no_batchnorm-seed2,2,Sneaker,Dress,0
+no_batchnorm-seed2,2,Sneaker,Coat,0
+no_batchnorm-seed2,2,Sneaker,Sandal,12
+no_batchnorm-seed2,2,Sneaker,Shirt,0
+no_batchnorm-seed2,2,Sneaker,Sneaker,963
+no_batchnorm-seed2,2,Sneaker,Bag,1
+no_batchnorm-seed2,2,Sneaker,Ankle boot,24
+no_batchnorm-seed2,2,Bag,T-shirt/top,4
+no_batchnorm-seed2,2,Bag,Trouser,0
+no_batchnorm-seed2,2,Bag,Pullover,2
+no_batchnorm-seed2,2,Bag,Dress,5
+no_batchnorm-seed2,2,Bag,Coat,4
+no_batchnorm-seed2,2,Bag,Sandal,4
+no_batchnorm-seed2,2,Bag,Shirt,9
+no_batchnorm-seed2,2,Bag,Sneaker,3
+no_batchnorm-seed2,2,Bag,Bag,966
+no_batchnorm-seed2,2,Bag,Ankle boot,3
+no_batchnorm-seed2,2,Ankle boot,T-shirt/top,0
+no_batchnorm-seed2,2,Ankle boot,Trouser,0
+no_batchnorm-seed2,2,Ankle boot,Pullover,0
+no_batchnorm-seed2,2,Ankle boot,Dress,1
+no_batchnorm-seed2,2,Ankle boot,Coat,0
+no_batchnorm-seed2,2,Ankle boot,Sandal,5
+no_batchnorm-seed2,2,Ankle boot,Shirt,0
+no_batchnorm-seed2,2,Ankle boot,Sneaker,48
+no_batchnorm-seed2,2,Ankle boot,Bag,0
+no_batchnorm-seed2,2,Ankle boot,Ankle boot,946
+no_dropout-seed2,2,T-shirt/top,T-shirt/top,837
+no_dropout-seed2,2,T-shirt/top,Trouser,1
+no_dropout-seed2,2,T-shirt/top,Pullover,15
+no_dropout-seed2,2,T-shirt/top,Dress,47
+no_dropout-seed2,2,T-shirt/top,Coat,9
+no_dropout-seed2,2,T-shirt/top,Sandal,1
+no_dropout-seed2,2,T-shirt/top,Shirt,82
+no_dropout-seed2,2,T-shirt/top,Sneaker,0
+no_dropout-seed2,2,T-shirt/top,Bag,7
+no_dropout-seed2,2,T-shirt/top,Ankle boot,1
+no_dropout-seed2,2,Trouser,T-shirt/top,0
+no_dropout-seed2,2,Trouser,Trouser,975
+no_dropout-seed2,2,Trouser,Pullover,0
+no_dropout-seed2,2,Trouser,Dress,18
+no_dropout-seed2,2,Trouser,Coat,4
+no_dropout-seed2,2,Trouser,Sandal,0
+no_dropout-seed2,2,Trouser,Shirt,2
+no_dropout-seed2,2,Trouser,Sneaker,0
+no_dropout-seed2,2,Trouser,Bag,1
+no_dropout-seed2,2,Trouser,Ankle boot,0
+no_dropout-seed2,2,Pullover,T-shirt/top,8
+no_dropout-seed2,2,Pullover,Trouser,1
+no_dropout-seed2,2,Pullover,Pullover,834
+no_dropout-seed2,2,Pullover,Dress,12
+no_dropout-seed2,2,Pullover,Coat,60
+no_dropout-seed2,2,Pullover,Sandal,0
+no_dropout-seed2,2,Pullover,Shirt,85
+no_dropout-seed2,2,Pullover,Sneaker,0
+no_dropout-seed2,2,Pullover,Bag,0
+no_dropout-seed2,2,Pullover,Ankle boot,0
+no_dropout-seed2,2,Dress,T-shirt/top,14
+no_dropout-seed2,2,Dress,Trouser,12
+no_dropout-seed2,2,Dress,Pullover,9
+no_dropout-seed2,2,Dress,Dress,904
+no_dropout-seed2,2,Dress,Coat,22
+no_dropout-seed2,2,Dress,Sandal,0
+no_dropout-seed2,2,Dress,Shirt,38
+no_dropout-seed2,2,Dress,Sneaker,0
+no_dropout-seed2,2,Dress,Bag,0
+no_dropout-seed2,2,Dress,Ankle boot,1
+no_dropout-seed2,2,Coat,T-shirt/top,1
+no_dropout-seed2,2,Coat,Trouser,2
+no_dropout-seed2,2,Coat,Pullover,66
+no_dropout-seed2,2,Coat,Dress,38
+no_dropout-seed2,2,Coat,Coat,830
+no_dropout-seed2,2,Coat,Sandal,1
+no_dropout-seed2,2,Coat,Shirt,62
+no_dropout-seed2,2,Coat,Sneaker,0
+no_dropout-seed2,2,Coat,Bag,0
+no_dropout-seed2,2,Coat,Ankle boot,0
+no_dropout-seed2,2,Sandal,T-shirt/top,0
+no_dropout-seed2,2,Sandal,Trouser,0
+no_dropout-seed2,2,Sandal,Pullover,0
+no_dropout-seed2,2,Sandal,Dress,0
+no_dropout-seed2,2,Sandal,Coat,0
+no_dropout-seed2,2,Sandal,Sandal,959
+no_dropout-seed2,2,Sandal,Shirt,1
+no_dropout-seed2,2,Sandal,Sneaker,31
+no_dropout-seed2,2,Sandal,Bag,0
+no_dropout-seed2,2,Sandal,Ankle boot,9
+no_dropout-seed2,2,Shirt,T-shirt/top,126
+no_dropout-seed2,2,Shirt,Trouser,3
+no_dropout-seed2,2,Shirt,Pullover,63
+no_dropout-seed2,2,Shirt,Dress,33
+no_dropout-seed2,2,Shirt,Coat,98
+no_dropout-seed2,2,Shirt,Sandal,0
+no_dropout-seed2,2,Shirt,Shirt,669
+no_dropout-seed2,2,Shirt,Sneaker,0
+no_dropout-seed2,2,Shirt,Bag,7
+no_dropout-seed2,2,Shirt,Ankle boot,1
+no_dropout-seed2,2,Sneaker,T-shirt/top,0
+no_dropout-seed2,2,Sneaker,Trouser,0
+no_dropout-seed2,2,Sneaker,Pullover,0
+no_dropout-seed2,2,Sneaker,Dress,0
+no_dropout-seed2,2,Sneaker,Coat,0
+no_dropout-seed2,2,Sneaker,Sandal,13
+no_dropout-seed2,2,Sneaker,Shirt,0
+no_dropout-seed2,2,Sneaker,Sneaker,965
+no_dropout-seed2,2,Sneaker,Bag,0
+no_dropout-seed2,2,Sneaker,Ankle boot,22
+no_dropout-seed2,2,Bag,T-shirt/top,1
+no_dropout-seed2,2,Bag,Trouser,2
+no_dropout-seed2,2,Bag,Pullover,2
+no_dropout-seed2,2,Bag,Dress,4
+no_dropout-seed2,2,Bag,Coat,4
+no_dropout-seed2,2,Bag,Sandal,3
+no_dropout-seed2,2,Bag,Shirt,6
+no_dropout-seed2,2,Bag,Sneaker,3
+no_dropout-seed2,2,Bag,Bag,973
+no_dropout-seed2,2,Bag,Ankle boot,2
+no_dropout-seed2,2,Ankle boot,T-shirt/top,0
+no_dropout-seed2,2,Ankle boot,Trouser,0
+no_dropout-seed2,2,Ankle boot,Pullover,0
+no_dropout-seed2,2,Ankle boot,Dress,1
+no_dropout-seed2,2,Ankle boot,Coat,0
+no_dropout-seed2,2,Ankle boot,Sandal,11
+no_dropout-seed2,2,Ankle boot,Shirt,0
+no_dropout-seed2,2,Ankle boot,Sneaker,36
+no_dropout-seed2,2,Ankle boot,Bag,0
+no_dropout-seed2,2,Ankle boot,Ankle boot,952
+no_scheduler-seed2,2,T-shirt/top,T-shirt/top,825
+no_scheduler-seed2,2,T-shirt/top,Trouser,0
+no_scheduler-seed2,2,T-shirt/top,Pullover,11
+no_scheduler-seed2,2,T-shirt/top,Dress,74
+no_scheduler-seed2,2,T-shirt/top,Coat,7
+no_scheduler-seed2,2,T-shirt/top,Sandal,1
+no_scheduler-seed2,2,T-shirt/top,Shirt,78
+no_scheduler-seed2,2,T-shirt/top,Sneaker,0
+no_scheduler-seed2,2,T-shirt/top,Bag,3
+no_scheduler-seed2,2,T-shirt/top,Ankle boot,1
+no_scheduler-seed2,2,Trouser,T-shirt/top,0
+no_scheduler-seed2,2,Trouser,Trouser,977
+no_scheduler-seed2,2,Trouser,Pullover,0
+no_scheduler-seed2,2,Trouser,Dress,15
+no_scheduler-seed2,2,Trouser,Coat,5
+no_scheduler-seed2,2,Trouser,Sandal,0
+no_scheduler-seed2,2,Trouser,Shirt,1
+no_scheduler-seed2,2,Trouser,Sneaker,0
+no_scheduler-seed2,2,Trouser,Bag,2
+no_scheduler-seed2,2,Trouser,Ankle boot,0
+no_scheduler-seed2,2,Pullover,T-shirt/top,12
+no_scheduler-seed2,2,Pullover,Trouser,2
+no_scheduler-seed2,2,Pullover,Pullover,837
+no_scheduler-seed2,2,Pullover,Dress,11
+no_scheduler-seed2,2,Pullover,Coat,72
+no_scheduler-seed2,2,Pullover,Sandal,0
+no_scheduler-seed2,2,Pullover,Shirt,64
+no_scheduler-seed2,2,Pullover,Sneaker,0
+no_scheduler-seed2,2,Pullover,Bag,2
+no_scheduler-seed2,2,Pullover,Ankle boot,0
+no_scheduler-seed2,2,Dress,T-shirt/top,10
+no_scheduler-seed2,2,Dress,Trouser,5
+no_scheduler-seed2,2,Dress,Pullover,8
+no_scheduler-seed2,2,Dress,Dress,908
+no_scheduler-seed2,2,Dress,Coat,32
+no_scheduler-seed2,2,Dress,Sandal,0
+no_scheduler-seed2,2,Dress,Shirt,36
+no_scheduler-seed2,2,Dress,Sneaker,0
+no_scheduler-seed2,2,Dress,Bag,0
+no_scheduler-seed2,2,Dress,Ankle boot,1
+no_scheduler-seed2,2,Coat,T-shirt/top,1
+no_scheduler-seed2,2,Coat,Trouser,1
+no_scheduler-seed2,2,Coat,Pullover,59
+no_scheduler-seed2,2,Coat,Dress,42
+no_scheduler-seed2,2,Coat,Coat,848
+no_scheduler-seed2,2,Coat,Sandal,1
+no_scheduler-seed2,2,Coat,Shirt,46
+no_scheduler-seed2,2,Coat,Sneaker,0
+no_scheduler-seed2,2,Coat,Bag,2
+no_scheduler-seed2,2,Coat,Ankle boot,0
+no_scheduler-seed2,2,Sandal,T-shirt/top,0
+no_scheduler-seed2,2,Sandal,Trouser,0
+no_scheduler-seed2,2,Sandal,Pullover,0
+no_scheduler-seed2,2,Sandal,Dress,0
+no_scheduler-seed2,2,Sandal,Coat,0
+no_scheduler-seed2,2,Sandal,Sandal,962
+no_scheduler-seed2,2,Sandal,Shirt,1
+no_scheduler-seed2,2,Sandal,Sneaker,28
+no_scheduler-seed2,2,Sandal,Bag,0
+no_scheduler-seed2,2,Sandal,Ankle boot,9
+no_scheduler-seed2,2,Shirt,T-shirt/top,151
+no_scheduler-seed2,2,Shirt,Trouser,2
+no_scheduler-seed2,2,Shirt,Pullover,63
+no_scheduler-seed2,2,Shirt,Dress,52
+no_scheduler-seed2,2,Shirt,Coat,128
+no_scheduler-seed2,2,Shirt,Sandal,0
+no_scheduler-seed2,2,Shirt,Shirt,590
+no_scheduler-seed2,2,Shirt,Sneaker,0
+no_scheduler-seed2,2,Shirt,Bag,14
+no_scheduler-seed2,2,Shirt,Ankle boot,0
+no_scheduler-seed2,2,Sneaker,T-shirt/top,0
+no_scheduler-seed2,2,Sneaker,Trouser,0
+no_scheduler-seed2,2,Sneaker,Pullover,0
+no_scheduler-seed2,2,Sneaker,Dress,0
+no_scheduler-seed2,2,Sneaker,Coat,0
+no_scheduler-seed2,2,Sneaker,Sandal,14
+no_scheduler-seed2,2,Sneaker,Shirt,0
+no_scheduler-seed2,2,Sneaker,Sneaker,968
+no_scheduler-seed2,2,Sneaker,Bag,0
+no_scheduler-seed2,2,Sneaker,Ankle boot,18
+no_scheduler-seed2,2,Bag,T-shirt/top,2
+no_scheduler-seed2,2,Bag,Trouser,1
+no_scheduler-seed2,2,Bag,Pullover,2
+no_scheduler-seed2,2,Bag,Dress,3
+no_scheduler-seed2,2,Bag,Coat,3
+no_scheduler-seed2,2,Bag,Sandal,3
+no_scheduler-seed2,2,Bag,Shirt,4
+no_scheduler-seed2,2,Bag,Sneaker,2
+no_scheduler-seed2,2,Bag,Bag,979
+no_scheduler-seed2,2,Bag,Ankle boot,1
+no_scheduler-seed2,2,Ankle boot,T-shirt/top,0
+no_scheduler-seed2,2,Ankle boot,Trouser,0
+no_scheduler-seed2,2,Ankle boot,Pullover,0
+no_scheduler-seed2,2,Ankle boot,Dress,1
+no_scheduler-seed2,2,Ankle boot,Coat,0
+no_scheduler-seed2,2,Ankle boot,Sandal,5
+no_scheduler-seed2,2,Ankle boot,Shirt,0
+no_scheduler-seed2,2,Ankle boot,Sneaker,47
+no_scheduler-seed2,2,Ankle boot,Bag,0
+no_scheduler-seed2,2,Ankle boot,Ankle boot,947

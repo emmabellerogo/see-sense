@@ -1,0 +1,10 @@
+== baseline: 54000 train / 6000 validation images, 2 epochs, torch threads=2
+   epoch  1: train loss 0.6135 acc 0.8533 | val loss 0.4127 acc 0.8480 | 20.9s
+   epoch  2: train loss 0.3828 acc 0.8682 | val loss 0.3714 acc 0.8667 | 23.8s
+== full_improved: 54000 train / 6000 validation images, 2 epochs, torch threads=2
+   epoch  1: train loss 0.7684 acc 0.8332 | val loss 0.4592 acc 0.8297 | 34.7s
+   epoch  2: train loss 0.5589 acc 0.8469 | val loss 0.4166 acc 0.8483 | 29.1s
+
+pilot wall-clock 111.0s for 2 variants x 2 epochs
+  baseline          22.33 s/epoch
+  full_improved     31.92 s/epoch

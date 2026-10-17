@@ -55,3 +55,34 @@ Negative accuracy delta = scored lower than the full model. Accuracy deltas in p
 | no_batchnorm | 651 | block → horizontal: 139; vertical → horizontal: 81; block → vertical: 75 |
 | no_dropout | 106 | block → horizontal: 33; block → vertical: 24; vertical → block: 15 |
 | no_scheduler | 99 | block → vertical: 30; block → horizontal: 28; vertical → block: 13 |
+
+### Per-class test precision and recall (mean ± sd over seeds; from query 7)
+
+Computed from each run's saved confusion matrix. Precision = correct / predicted as that class; recall = correct / truly that class. A class never predicted by a run has precision scored as 0 (shown with *).
+
+| Variant | Class | Precision | Recall |
+|---|---|---|---|
+| baseline | horizontal | 74.9% ± 13.1 | 73.6% ± 14.4 |
+| baseline | vertical | 72.6% ± 11.5 | 69.9% ± 15.4 |
+| baseline | diagonal | 96.7% ± 1.9 | 99.4% ± 0.9 |
+| baseline | block | 64.3% ± 13.4 | 63.9% ± 11.8 |
+| full_improved | horizontal | 93.5% ± 1.7 | 95.6% ± 0.9 |
+| full_improved | vertical | 95.9% ± 1.9 | 97.1% ± 1.8 |
+| full_improved | diagonal | 96.3% ± 1.0 | 99.6% ± 0.9 |
+| full_improved | block | 94.9% ± 1.1 | 87.8% ± 3.2 |
+| no_augmentation | horizontal | 91.8% ± 2.0 | 93.3% ± 2.7 |
+| no_augmentation | vertical | 94.2% ± 3.0 | 95.8% ± 2.1 |
+| no_augmentation | diagonal | 97.6% ± 0.9 | 99.4% ± 0.6 |
+| no_augmentation | block | 89.4% ± 2.9 | 84.5% ± 1.9 |
+| no_batchnorm | horizontal | 64.1% ± 23.1 | 72.2% ± 18.4 |
+| no_batchnorm | vertical | 61.5% ± 26.4 | 64.6% ± 34.3 |
+| no_batchnorm | diagonal | 86.6% ± 7.6 | 80.8% ± 35.6 |
+| no_batchnorm | block | 63.1% ± 24.7 | 50.9% ± 19.2 |
+| no_dropout | horizontal | 94.1% ± 0.7 | 95.4% ± 1.7 |
+| no_dropout | vertical | 94.4% ± 2.0 | 96.5% ± 2.4 |
+| no_dropout | diagonal | 96.7% ± 1.6 | 99.8% ± 0.5 |
+| no_dropout | block | 93.7% ± 3.7 | 87.0% ± 2.6 |
+| no_scheduler | horizontal | 95.1% ± 1.6 | 96.1% ± 0.5 |
+| no_scheduler | vertical | 93.8% ± 3.5 | 97.1% ± 1.3 |
+| no_scheduler | diagonal | 97.4% ± 0.5 | 99.4% ± 0.6 |
+| no_scheduler | block | 93.8% ± 0.7 | 87.4% ± 4.7 |

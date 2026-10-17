@@ -1,0 +1,4 @@
+train_seed,n_runs,datasets,split_seeds,split_hashes,split_sizes,dataset_names,val_sizes,train_limits,preprocessings,epochs,batch_sizes,initial_lrs,optimizers,max_shifts
+0,6,1,1,1,1,1,1,1,1,1,1,1,1,1
+1,6,1,1,1,1,1,1,1,1,1,1,1,1,1
+2,6,1,1,1,1,1,1,1,1,1,1,1,1,1

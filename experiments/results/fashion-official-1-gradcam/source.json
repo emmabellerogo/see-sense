@@ -1,0 +1,33 @@
+{
+  "dataset": "fashion-mnist",
+  "class_names": [
+    "T-shirt/top",
+    "Trouser",
+    "Pullover",
+    "Dress",
+    "Coat",
+    "Sandal",
+    "Shirt",
+    "Sneaker",
+    "Bag",
+    "Ankle boot"
+  ],
+  "selection_rule": "correct: first correctly classified test image of each class in test order; incorrect: wrong predictions by descending confidence, one per distinct (true, predicted) pair first, then the next most confident, up to 10.",
+  "n_test": 10000,
+  "n_correct": 8782,
+  "n_incorrect": 1218,
+  "regenerated_accuracy": 0.8782,
+  "temperature": 0.8705441487903772,
+  "checkpoint": {
+    "artifact_version": 3,
+    "dataset": "fashion-mnist"
+  },
+  "source": "supabase-or-local-store",
+  "experiment_group": "fashion-official-1",
+  "run_name": "full_improved-seed0",
+  "run_id": 54,
+  "dataset_id": 24,
+  "stored_accuracy": 0.8782,
+  "split_sha256": "786ed8107e43ef83d70d4905a8813c26927b352362675804427894557914b7b9",
+  "run_created_at": "2026-10-17T21:24:23.99621+00:00"
+}
