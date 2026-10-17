@@ -49,25 +49,26 @@ def test_project_cnn_trace_matches_the_real_network():
     assert [r["j"] for r in rows] == [1, 1, 2, 2, 4]
 
 
-def test_parameter_count_matches_supabase_baseline():
-    assert c.our_cnn_param_count() == 4388
+def test_parameter_count_for_ten_classes():
+    # conv 80 + 1,168; linear 16*7*7*10 + 10 = 7,850
+    assert c.our_cnn_param_count() == 9098
+    assert c.our_cnn_param_count(n_classes=4) == 4388  # the historical four-class model
 
 
 def test_architecture_matches_code():
     """The Concepts table must describe the network that is actually trained."""
     torch = pytest.importorskip("torch")
     from api.training import ImprovedCNN, SmallCNN
-    model = SmallCNN(28, 4)
+    model = SmallCNN(28, 10)
     assert sum(p.numel() for p in model.parameters()) == c.our_cnn_param_count()
     assert model.features(torch.zeros(1, 1, 28, 28)).shape[1:] == (16, 7, 7)
-    assert sum(p.numel() for p in ImprovedCNN(28, 4).parameters()) == 4436
+    assert sum(p.numel() for p in ImprovedCNN(28, 10).parameters()) == 9146
 
 
 def test_model_card_loads_from_any_working_directory(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     text = ev.load_model_card()
-    for must in ("official-supabase-1", "95.05%", "76.80%", "full_improved-seed0",
-                 "recent_classifications", "not a general photo classifier"):
+    for must in ("Fashion-MNIST", "not a general photo classifier", "synthetic", "temperature scaling"):
         assert must in text
 
 
@@ -79,7 +80,23 @@ def test_model_card_missing_or_empty_is_a_friendly_error(tmp_path):
         ev.load_model_card(tmp_path / "empty.md")
 
 
-def test_model_card_numbers_match_saved_results():
+def test_model_card_fashion_numbers_match_the_saved_results():
+    """Every variant's accuracy quoted in the card's Fashion-MNIST section equals the saved query-4 CSV."""
+    import csv
+    import statistics as st
+
+    text = ev.load_model_card()
+    section = text.split("# Historical:", 1)[0]
+    assert "Status: DRAFT" in section
+    by = {}
+    for r in csv.DictReader(open(ev.FASHION.sql_dir / "q4.csv")):
+        by.setdefault(r["run_name"].rsplit("-seed", 1)[0], []).append(float(r["test_accuracy"]))
+    assert len(by) == 6 and all(len(v) == 3 for v in by.values())
+    for variant, accs in by.items():
+        assert f"{100 * st.mean(accs):.2f}%" in section, variant
+
+
+def test_historical_numbers_in_the_card_match_the_saved_synthetic_results():
     text = ev.load_model_card()
     for r in ev.load_variant_summary():
         assert f"{r['mean_test_accuracy'] * 100:.2f}%" in text, r["variant"]

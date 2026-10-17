@@ -14,6 +14,7 @@ from experiments.configs import (
 )
 
 PROTO = Protocol(dataset_id=1, epochs=2, batch_size=32, lr=0.01, split_seed=3)
+CM10 = [[10 if i == j else 0 for j in range(10)] for i in range(10)]
 
 
 def _argv(*extra, seeds="0", group="g"):
@@ -94,7 +95,7 @@ def test_fingerprint_is_stable_and_sensitive():
 # ------------------------------------------------- end to end (real API code, fake DB)
 @pytest.fixture
 def api(client):
-    client.post("/datasets", json={"name": "d", "n_rows": 200, "noise": 0.1, "seed": 42})
+    assert client.post("/datasets", json={"name": "fm"}).status_code == 200
     return ApiViaTestClient(client)
 
 
@@ -107,11 +108,12 @@ def test_runner_persists_all_variants_for_every_seed(api, client, tmp_path):
     assert {r["run_name"] for r in rows} == {f"{v}-seed{s}" for v in VARIANTS for s in (0, 1)}
     for seed in (0, 1):
         group = [r for r in rows if r["train_seed"] == seed]
-        assert len({(r["dataset_id"], r["split_sha256"], r["split_seed"], r["data_seed"]) for r in group}) == 1
+        assert len({(r["dataset_id"], r["split_sha256"], r["split_seed"]) for r in group}) == 1
+        assert all(len(r["train_accuracy_history"]) == 2 and r["calibration"]["temperature"] > 0 for r in group)
         assert {(r["epochs"], r["batch_size"], r["lr"], r["optimizer"]) for r in group} == {(2, 32, 0.01, "adam")}
         assert all(r["experiment_group"] == "g" for r in group)
     base = next(r for r in rows if r["run_name"] == "baseline-seed0")
-    assert base["use_batchnorm"] is False and base["dropout"] == 0.0 and base["param_count"] == 4388
+    assert base["use_batchnorm"] is False and base["dropout"] == 0.0 and base["param_count"] == 9098
     assert next(r for r in rows if r["run_name"] == "no_batchnorm-seed0")["use_batchnorm"] is False
     # Test metrics stay out of the console and the out-file by default.
     text = "\n".join(lines)
@@ -162,12 +164,14 @@ def _good_row(payload, run_id=1, **over):
         "dropout": 0.0 if base else payload["dropout"], "augment": payload["augment"],
         "augment_max_shift": payload["augment_max_shift"], "scheduler": payload["scheduler"],
         "data_seed": 42, "split_seed": payload["split_seed"], "train_seed": payload["train_seed"],
-        "split_sha256": "h" * 64, "n_train": 140, "n_val": 20, "n_test": 40,
-        "config": {"n_rows": 200, "img_size": 28, "noise": 0.1, "test_size": 0.2, "val_size": 0.1},
-        "confusion_matrix": [[10, 0, 0, 0], [0, 10, 0, 0], [0, 0, 10, 0], [0, 0, 0, 10]],
+        "split_sha256": "h" * 64, "n_train": 450, "n_val": 50, "n_test": 100,
+        "config": {"dataset": "fashion-mnist", "n_classes": 10, "val_size": 0.1, "train_limit": payload.get("train_limit")},
+        "confusion_matrix": CM10,
         "train_loss_history": [0.5] * n, "val_loss_history": [0.4] * n,
-        "val_accuracy_history": [0.9] * n, "lr_history": [0.01] * n,
-        "best_epoch": 0, "param_count": 4436, "train_seconds": 1.0,
+        "val_accuracy_history": [0.9] * n, "train_accuracy_history": [0.95] * n, "lr_history": [0.01] * n,
+        "calibration": {"method": "temperature_scaling", "temperature": 1.3},
+        "test_per_class": {"precision": [1.0] * 10, "recall": [1.0] * 10},
+        "best_epoch": 0, "param_count": 9146, "train_seconds": 1.0,
     }
     row.update(over)
     return row
@@ -215,6 +219,26 @@ def test_missing_history_or_confusion_matrix_is_flagged():
     assert "val_loss_history" in res[0]["error"]
     res = rx.run_plan(_scripted(confusion_matrix=None), plan, log=lambda m: None)
     assert "confusion matrix" in res[0]["error"]
+    res = rx.run_plan(_scripted(train_accuracy_history=None), plan, log=lambda m: None)
+    assert "train_accuracy_history" in res[0]["error"]
+
+
+def test_runs_that_are_not_ten_class_fashion_mnist_or_lack_calibration_are_flagged():
+    plan = build_plan(PROTO, "g", [0], ["baseline"])
+    legacy = {"n_rows": 2000, "n_classes": 4, "noise": 1.0}  # a historical synthetic-shape row
+    assert "10-class Fashion-MNIST" in rx.run_plan(_scripted(config=legacy), plan, log=lambda m: None)[0]["error"]
+    assert "calibration" in rx.run_plan(_scripted(calibration=None), plan, log=lambda m: None)[0]["error"]
+    assert "calibration" in rx.run_plan(_scripted(test_per_class=None), plan, log=lambda m: None)[0]["error"]
+
+
+def test_subset_runs_record_and_verify_the_train_limit():
+    proto = Protocol(dataset_id=1, epochs=2, batch_size=32, lr=0.01, split_seed=3, train_limit=500)
+    plan = build_plan(proto, "g", [0], ["baseline"])
+    assert plan[0]["train_limit"] == 500
+    assert rx.run_plan(_scripted(), plan, log=lambda m: None)[0]["status"] == "saved"
+    wrong = rx.run_plan(_scripted(config={"dataset": "fashion-mnist", "n_classes": 10, "train_limit": None}),
+                        plan, log=lambda m: None)
+    assert "train_limit" in wrong[0]["error"]
 
 
 def test_runs_that_did_not_share_a_split_are_reported():
@@ -225,8 +249,8 @@ def test_runs_that_did_not_share_a_split_are_reported():
     assert len(rx.check_splits(res)) == 1
     # Different dataset settings with an identical hash are also not "the same split".
     api = _scripted(per_run=lambda p: {"config": {
-        "n_rows": 200, "img_size": 28, "noise": 0.1 if p["model_variant"] == "baseline" else 0.4,
-        "test_size": 0.2, "val_size": 0.1}})
+        "dataset": "fashion-mnist", "n_classes": 10,
+        "val_size": 0.1 if p["model_variant"] == "baseline" else 0.2, "train_limit": None}})
     assert len(rx.check_splits(rx.run_plan(api, plan, log=lambda m: None))) == 1
     assert rx.check_splits(rx.run_plan(_scripted(), plan, log=lambda m: None)) == []
 

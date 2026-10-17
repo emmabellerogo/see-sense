@@ -1,15 +1,16 @@
-"""Synthetic image dataset generator (Fashion-MNIST shaped).
+"""HISTORICAL: the synthetic four-shape dataset generator the project started with.
 
-Lives in ``shared`` so BOTH the API tier (to train) and the db/seed script import
-the same generating function. Instead of downloading CIFAR-10 / Fashion-MNIST
-(a network + size cost that is unfriendly to free-tier builds), we synthesize
-small grayscale images whose class is defined by a simple geometric pattern with
-a KNOWN rule, so the numerical pytest test can assert the CNN recovers it and a
-Grad-CAM heatmap has something real to localize.
+This is NOT the project's dataset. The assignment asks for CIFAR-10 or Fashion-MNIST, and the project's
+dataset is now Fashion-MNIST (``shared/fashion.py``). The starter shipped this generator, and the first
+version of the project (experiment group ``official-supabase-1``) was built on it. It is kept, unchanged,
+only so that
 
-Only dataset *parameters* (n_rows, img_size, noise, seed) are persisted to
-Supabase; the pixels are regenerated deterministically from the seed at train
-time. No real images are stored.
+  * those saved results and their four-class checkpoints stay reproducible, identifiable and loadable
+    (``api.training.load_artifact`` labels them ``synthetic_shapes``), and
+  * a few tests can build legacy-format checkpoints.
+
+Nothing in training, serving or the UI generates these images any more. Only dataset *parameters*
+(n_rows, img_size, noise, seed) were ever persisted to Supabase; no real images are involved.
 """
 from __future__ import annotations
 

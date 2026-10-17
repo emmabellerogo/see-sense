@@ -19,3 +19,7 @@ venv/
 # Local offline database (SEE_SENSE_LOCAL_DB)
 .local_db.json
 .local_db.json.tmp
+
+# Local dataset downloads and training artifacts
+/data/
+/pilot-output/

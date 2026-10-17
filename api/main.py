@@ -20,7 +20,7 @@ import subprocess
 import numpy as np
 import httpx
 import torch
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from postgrest.exceptions import APIError
@@ -28,7 +28,8 @@ from PIL import Image
 
 from api import db
 from api.training import predict_with_cam, run_experiment
-from shared.data import CLASS_NAMES, IMG_SIZE, N_CLASSES, generate_one
+from shared import fashion
+from shared.fashion import CLASS_NAMES, IMG_SIZE, N_CLASSES
 from shared.schemas import (
     ClassesResponse,
     ClassMetrics,
@@ -36,8 +37,9 @@ from shared.schemas import (
     DatasetCreate,
     ExperimentFields,
     Health,
+    PredictionRecord,
+    PredictionRunInfo,
     PredictResponse,
-    PredictSampleRequest,
     Run,
     TrainRequest,
     TrainResponse,
@@ -46,8 +48,8 @@ from shared.schemas import (
 
 app = FastAPI(
     title="See-Sense API",
-    description="CNN image classifier + Grad-CAM for the three-cloud stack.",
-    version="1.0.0",
+    description="Fashion-MNIST CNN classifier + Grad-CAM for the three-cloud stack.",
+    version="2.0.0",
 )
 
 # ---------------------------------------------------------------------------
@@ -109,8 +111,15 @@ def _artifact_or_404(run_id: int) -> str:
     return model_b64
 
 
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # same cap the UI enforces before sending
+
+
 def _to_gray_array(raw: bytes, img_size: int) -> np.ndarray:
-    """Decode arbitrary image bytes to a grayscale [img_size, img_size] uint8 array."""
+    """Decode arbitrary image bytes to a grayscale [img_size, img_size] uint8 array.
+
+    Same preprocessing the checkpoint declares: grayscale, resize to 28x28. Fashion-MNIST
+    items are light on a dark background; photos are NOT inverted or otherwise adjusted.
+    """
     img = Image.open(io.BytesIO(raw)).convert("L").resize((img_size, img_size))
     return np.asarray(img, dtype=np.uint8)
 
@@ -120,16 +129,26 @@ def _to_gray_array(raw: bytes, img_size: int) -> np.ndarray:
 # ---------------------------------------------------------------------------
 @app.post("/datasets", response_model=Dataset, tags=["datasets"])
 def create_dataset(req: DatasetCreate) -> Dataset:
-    """Register a synthetic image dataset (parameters only; pixels come from seed)."""
+    """Register the local Fashion-MNIST files (identity only; pixels are never stored).
+
+    Needs the files on THIS machine (training tool). The deployed inference service does
+    not have them and answers 503.
+    """
+    try:
+        data = fashion.load(include_test=True)
+    except fashion.DatasetUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    identity = {
+        "name": fashion.DATASET_NAME, "source": "fashion_mnist", "url": fashion.MIRRORS[0],
+        "file_sha256": data.file_sha256, "official_train_images": len(data.y_train),
+        "official_test_images": len(data.y_test),
+        "normalization": {"scale": "x/255", "mean": fashion.NORM_MEAN, "std": fashion.NORM_STD},
+    }
     row = db.insert_dataset(
-        name=req.name,
-        n_rows=req.n_rows,
-        img_size=IMG_SIZE,
-        n_classes=N_CLASSES,
-        noise=req.noise,
-        seed=req.seed,
+        name=req.name, n_rows=len(data.y_train), img_size=IMG_SIZE, n_classes=N_CLASSES,
+        noise=0.0, seed=0, source="fashion_mnist", class_names=list(CLASS_NAMES), identity=identity,
     )
-    return Dataset(**{k: row[k] for k in Dataset.model_fields})
+    return Dataset(**{k: row.get(k) for k in Dataset.model_fields})
 
 
 # ---------------------------------------------------------------------------
@@ -137,10 +156,15 @@ def create_dataset(req: DatasetCreate) -> Dataset:
 # ---------------------------------------------------------------------------
 @app.post("/train", response_model=TrainResponse, tags=["training"])
 def train(req: TrainRequest) -> TrainResponse:
-    """Train with the registered dataset's settings; save the run, metadata and checkpoint."""
+    """Train on the registered Fashion-MNIST dataset; save the run, metadata and checkpoint."""
     dataset = db.get_dataset(req.dataset_id)
     if dataset is None:
         raise HTTPException(status_code=404, detail="dataset_id not found")
+    if dataset.get("source", "synthetic_shapes") != "fashion_mnist":
+        raise HTTPException(
+            status_code=422,
+            detail="this is a historical synthetic-shape dataset; it is kept for old runs and cannot be retrained",
+        )
     if (
         req.experiment_group
         and req.run_name
@@ -153,16 +177,11 @@ def train(req: TrainRequest) -> TrainResponse:
 
     try:
         result = run_experiment(
-            n_rows=dataset["n_rows"],
-            img_size=dataset["img_size"],
-            noise=dataset["noise"],
-            data_seed=dataset["seed"],
             split_seed=req.split_seed,
             train_seed=req.train_seed,
             lr=req.lr,
             batch_size=req.batch_size,
             epochs=req.epochs,
-            test_size=req.test_size,
             val_size=req.val_size,
             arch=req.model_variant,
             use_batchnorm=req.use_batchnorm,
@@ -170,7 +189,10 @@ def train(req: TrainRequest) -> TrainResponse:
             augment=req.augment,
             augment_max_shift=req.augment_max_shift,
             scheduler=req.scheduler,
+            train_limit=req.train_limit,
         )
+    except fashion.DatasetUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
     except ValueError as exc:  # e.g. split fractions leave an empty partition
         raise HTTPException(status_code=422, detail=str(exc))
 
@@ -218,31 +240,48 @@ def list_runs() -> list[Run]:
 # prediction  (Grad-CAM)
 # ---------------------------------------------------------------------------
 def _predict_array(run_id: int, gray: np.ndarray, sha256: str, true_class: str | None):
+    """Classify, then log. Logging is REQUIRED: if it fails the caller gets an error, not a result.
+
+    ``db.log_prediction`` writes `image_metadata` and `predictions` in one transaction, so a
+    failure leaves neither row. We never answer 200 with ``logged: true`` unless both exist.
+    """
     model_b64 = _artifact_or_404(run_id)
     result = predict_with_cam(model_b64, gray)
-    db.insert_image_metadata(
-        run_id=run_id,
-        sha256=sha256,
-        width=int(gray.shape[1]),
-        height=int(gray.shape[0]),
-        label=result["label"],
-        class_name=result["class_name"],
-        confidence=result["confidence"],
-    )
+    try:
+        prediction_id = db.log_prediction(
+            run_id=run_id,
+            sha256=sha256,
+            width=int(gray.shape[1]),
+            height=int(gray.shape[0]),
+            label=result["label"],
+            class_name=result["class_name"],
+            probabilities=result["probs"],
+            confidence=result["confidence"],
+        )
+    except db.PredictionLogUnavailable as exc:
+        _log.error("prediction logging unavailable (migrations 004/005 not applied?): %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="prediction logging is unavailable, so the image was not classified",
+        )
     return PredictResponse(
-        run_id=run_id, image_sha256=sha256, true_class=true_class, **result
+        run_id=run_id, image_sha256=sha256, true_class=true_class,
+        logged=True, prediction_id=prediction_id, **result,
     )
 
 
 @app.post("/predict", response_model=PredictResponse, tags=["prediction"])
 async def predict(run_id: int = Form(...), file: UploadFile = File(...)) -> PredictResponse:
-    """Classify an uploaded image and return a Grad-CAM overlay.
+    """Classify an uploaded image and return top-5 probabilities and a Grad-CAM overlay.
 
-    Only the image's sha256 hash + shape + prediction are logged -- never pixels.
+    Only the image's sha256 hash, shape and prediction (including the probability
+    vector, in `predictions`) are logged -- never pixels.
     """
     raw = await file.read()
     if not raw:
         raise HTTPException(status_code=422, detail="empty file")
+    if len(raw) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="file larger than 5 MB")
     try:
         gray = _to_gray_array(raw, IMG_SIZE)
     except Exception:
@@ -251,16 +290,30 @@ async def predict(run_id: int = Form(...), file: UploadFile = File(...)) -> Pred
     return _predict_array(run_id, gray, sha256, true_class=None)
 
 
-@app.post("/predict_sample", response_model=PredictResponse, tags=["prediction"])
-def predict_sample(req: PredictSampleRequest) -> PredictResponse:
-    """Generate a synthetic image, classify it, and return a Grad-CAM overlay.
+def _prediction_record(row: dict) -> PredictionRecord:
+    run = row.get("runs")
+    return PredictionRecord(
+        **{k: row[k] for k in PredictionRecord.model_fields if k != "run"},
+        run=PredictionRunInfo(**run) if isinstance(run, dict) else None,
+    )
 
-    Lets the UI demonstrate the model without the user uploading a file.
+
+@app.get("/predictions", response_model=list[PredictionRecord], tags=["prediction"])
+def list_predictions(limit: int = Query(50, ge=1, le=200)) -> list[PredictionRecord]:
+    """Recent predictions (newest first), each joined to the run that served it.
+
+    Public, so it never includes image hashes or checkpoints.
     """
-    kind = req.true_class if (req.true_class is None or req.true_class < N_CLASSES) else None
-    gray, label = generate_one(img_size=IMG_SIZE, noise=0.1, seed=req.seed, kind=kind)
-    sha256 = hashlib.sha256(gray.tobytes()).hexdigest()
-    return _predict_array(req.run_id, gray, sha256, true_class=CLASS_NAMES[label])
+    return [_prediction_record(r) for r in db.list_predictions(limit=limit)]
+
+
+@app.get("/predictions/{prediction_id}", response_model=PredictionRecord, tags=["prediction"])
+def get_prediction(prediction_id: int) -> PredictionRecord:
+    """One logged prediction with its producing run. Follow ``served_by_run_id`` to GET /runs/{id}."""
+    row = db.get_prediction(prediction_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="prediction_id not found")
+    return _prediction_record(row)
 
 
 # ---------------------------------------------------------------------------
@@ -268,7 +321,7 @@ def predict_sample(req: PredictSampleRequest) -> PredictResponse:
 # ---------------------------------------------------------------------------
 @app.get("/classes", response_model=ClassesResponse, tags=["meta"])
 def classes() -> ClassesResponse:
-    """Return the class labels the model predicts over."""
+    """Return the Fashion-MNIST class labels, in the order of every probability vector."""
     return ClassesResponse(classes=CLASS_NAMES, n_classes=N_CLASSES)
 
 

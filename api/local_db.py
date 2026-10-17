@@ -10,9 +10,9 @@ NOT the project's source of truth: official runs belong in Supabase so the team,
 the dashboard and ``docs/comparison_queries.sql`` can see them. Unset the
 variable to go back to Supabase.
 
-On first use the file is seeded with dataset id 1 using the same settings as the
-shared Supabase project (800 rows, noise 0.1, seed 42), so commands from
-``docs/PART1_HANDOFF.md`` work unchanged.
+On first use the file is seeded with dataset id 1 = Fashion-MNIST (parameters only; the
+training tool reads the pixels from local files). The earlier synthetic-shape datasets
+exist only in the shared Supabase project and are not retrainable.
 """
 from __future__ import annotations
 
@@ -26,12 +26,17 @@ from typing import Any, List, Mapping, Optional
 _LOCK = threading.Lock()
 
 DEFAULT_DATASET = {
-    "name": "default-shapes",
-    "n_rows": 800,
+    "name": "fashion-mnist",
+    "n_rows": 60000,
     "img_size": 28,
-    "n_classes": 4,
-    "noise": 0.1,
-    "seed": 42,
+    "n_classes": 10,
+    "noise": 0.0,
+    "seed": 0,
+    "source": "fashion_mnist",
+    "class_names": [
+        "T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
+        "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot",
+    ],
 }
 
 
@@ -45,7 +50,8 @@ class LocalStore:
     def __init__(self, path: str | os.PathLike):
         self.path = Path(path)
         if not self.path.exists():
-            self._write({"datasets": [], "runs": [], "run_artifacts": [], "image_metadata": []})
+            self._write({"datasets": [], "runs": [], "run_artifacts": [], "image_metadata": [],
+                          "predictions": []})
             self.insert_dataset(**DEFAULT_DATASET)
 
     # -- file helpers ------------------------------------------------------
@@ -69,13 +75,15 @@ class LocalStore:
         except Exception:
             return False
 
-    def insert_dataset(self, name, n_rows, img_size, n_classes, noise, seed) -> dict:
+    def insert_dataset(self, name, n_rows, img_size, n_classes, noise=0.0, seed=0,
+                       source=None, class_names=None, identity=None) -> dict:
         with _LOCK:
             data = self._read()
             row = {
                 "id": self._next_id(data["datasets"]), "name": name, "n_rows": n_rows,
                 "img_size": img_size, "n_classes": n_classes, "noise": noise,
                 "seed": seed, "created_at": _now(),
+                "source": source, "class_names": class_names, "identity": identity,
             }
             data["datasets"].append(row)
             self._write(data)
@@ -129,15 +137,43 @@ class LocalStore:
     def latest_runs(self, limit: int = 50) -> List[dict]:
         return list(reversed(self._read()["runs"]))[:limit]
 
-    def insert_image_metadata(self, run_id, sha256, width, height, label, class_name,
-                              confidence) -> dict:
+    def log_prediction(self, run_id, sha256, width, height, label, class_name, probabilities,
+                       confidence) -> int:
+        """Both rows are added in one file write, mirroring the atomic Postgres function."""
         with _LOCK:
             data = self._read()
-            row = {
+            data.setdefault("predictions", [])
+            if not any(r["id"] == run_id for r in data["runs"]):
+                raise ValueError(f"unknown run_id {run_id}")  # foreign key
+            now = _now()
+            data["image_metadata"].append({
                 "id": self._next_id(data["image_metadata"]), "run_id": run_id,
                 "sha256": sha256, "width": width, "height": height, "label": label,
-                "class_name": class_name, "confidence": confidence, "created_at": _now(),
+                "class_name": class_name, "confidence": confidence, "created_at": now,
+            })
+            row = {
+                "id": self._next_id(data["predictions"]), "image_sha256": sha256,
+                "predicted_label": label, "predicted_class": class_name,
+                "probabilities": list(probabilities), "confidence": confidence,
+                "served_by_run_id": run_id, "created_at": now,
             }
-            data["image_metadata"].append(row)
+            data["predictions"].append(row)
             self._write(data)
-            return row
+            return row["id"]
+
+    def _with_run(self, row: dict, runs: dict) -> dict:
+        run = runs.get(row["served_by_run_id"]) or {}
+        public = {k: v for k, v in row.items() if k != "image_sha256"}
+        return {**public, "runs": {k: run.get(k) for k in (
+            "run_name", "experiment_group", "model_variant", "accuracy", "macro_f1")}}
+
+    def list_predictions(self, limit: int = 50) -> List[dict]:
+        data = self._read()
+        runs = {r["id"]: r for r in data["runs"]}
+        return [self._with_run(r, runs) for r in reversed(data.get("predictions", []))][:limit]
+
+    def get_prediction(self, prediction_id: int) -> Optional[dict]:
+        data = self._read()
+        runs = {r["id"]: r for r in data["runs"]}
+        row = next((r for r in data.get("predictions", []) if r["id"] == prediction_id), None)
+        return self._with_run(row, runs) if row else None

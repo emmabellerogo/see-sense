@@ -1,0 +1,11 @@
+{
+  "dataset": "fashion-mnist",
+  "n_classes": 10,
+  "experiment_group": "fashion-official-1",
+  "run_name": "full_improved-seed0",
+  "served_run_id": 54,
+  "chosen_on": "2026-10-17",
+  "chosen_before_official_results": true,
+  "rationale": "The served model is the project's full improved configuration trained with the lowest training seed (0). It was fixed here on 2026-10-17, before any official Fashion-MNIST run or test result existed, so it is not selected by test score. Do not change run_name after results exist.",
+  "how_to_fill_served_run_id": "After the official runs finish, copy the run_id of the 'full_improved-seed0' record from experiments/results/fashion-official-1-runs.jsonl into served_run_id. tests/test_ui_tryit.py and the UI verify it against those records and against GET /runs/{id}. Filled with 54 on 2026-10-17 after the 18 official runs (ids 53-70) were saved; verified against Supabase (group fashion-official-1, dataset 24, ten class names, mean 0.286 / std 0.353). If it is ever null Try It reports that no Fashion-MNIST model is configured instead of serving a different model."
+}
