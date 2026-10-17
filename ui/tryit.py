@@ -21,6 +21,13 @@ SERVED_MODEL_CONFIG = REPO_ROOT / "config" / "served_model.json"
 SAMPLES_DIR = Path(__file__).resolve().parent / "assets" / "samples"
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
+# Shown above the uploader. Uploads are never inverted, cropped or rejected for this reason.
+UPLOAD_WARNING = (
+    "This model expects Fashion-MNIST-style images: a centered, light clothing item on a dark background. "
+    "Ordinary photos, especially those with light backgrounds, may receive incorrect high-confidence predictions."
+)
+UPLOAD_SAMPLES_HINT = "To see the model behave as evaluated, use the bundled held-out examples in Option B below."
 PREDICT_TIMEOUT = 60       # seconds; Render free tier cold start can take ~30-50 s
 WARMUP_TIMEOUT = 5
 WARMUP_ATTEMPTS = 6

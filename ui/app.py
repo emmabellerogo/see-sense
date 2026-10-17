@@ -305,6 +305,8 @@ with try_tab:
             )
             run_id = served["run_id"]
             st.subheader("Option A — upload an image")
+            st.warning(tryit.UPLOAD_WARNING)
+            st.caption(tryit.UPLOAD_SAMPLES_HINT)
             up = st.file_uploader("PNG / JPG (best: one light-coloured clothing item on a dark background)",
                                   type=["png", "jpg", "jpeg"])
             if up is not None and st.button("Classify upload", type="primary"):
