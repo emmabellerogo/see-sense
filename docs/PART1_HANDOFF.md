@@ -228,4 +228,4 @@ during exploration. Queries 1 to 3 are the safe ones before freezing; keep to th
 | Protocol fingerprint | `cf05f9546cbbb0d4eb1cadfe0f7854bee883ffd9899ba5b1388aab3d6d9a578d` (dataset ID 2; changes only if the Supabase dataset ID differs) |
 | Frozen on (date) | 2026-10-15 |
 
-Results: [PART2_RESULTS.md](PART2_RESULTS.md).
+Results of the earlier synthetic-shape experiment (historical): [PART2_RESULTS_HISTORICAL_SYNTHETIC.md](PART2_RESULTS_HISTORICAL_SYNTHETIC.md). The final Fashion-MNIST report is [PART2_RESULTS.md](PART2_RESULTS.md).

@@ -1,5 +1,7 @@
 # Part 2: frozen experimental protocol
 
+> **HISTORICAL (synthetic shapes).** This is the frozen protocol of the first, four-class experiment. The Fashion-MNIST protocol is `docs/FASHION_PROTOCOL.md` (draft until frozen).
+
 Frozen on **2026-10-15**, before any official run and before any test metric
 was looked at. Every choice below was made from training and validation
 evidence only. The exploration script (`experiments/explore.py`) deletes test
