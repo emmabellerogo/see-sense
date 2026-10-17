@@ -1,0 +1,165 @@
+{
+  "dataset": "fashion-mnist",
+  "partition": "official test (t10k)",
+  "rule": "first 2 images of each class in official test order; not chosen by model output",
+  "class_names": [
+    "T-shirt/top",
+    "Trouser",
+    "Pullover",
+    "Dress",
+    "Coat",
+    "Sandal",
+    "Shirt",
+    "Sneaker",
+    "Bag",
+    "Ankle boot"
+  ],
+  "dataset_file_sha256": {
+    "train-images-idx3-ubyte.gz": "3aede38d61863908ad78613f6a32ed271626dd12800ba2636569512369268a84",
+    "train-labels-idx1-ubyte.gz": "a04f17134ac03560a47e3764e11b92fc97de4d1bfaf8ba1a3aa29af54cc90845",
+    "t10k-images-idx3-ubyte.gz": "346e55b948d973a97e58d2351dde16a484bd415d4595297633bb08f03db6a073",
+    "t10k-labels-idx1-ubyte.gz": "67da17c76eaffca5446c3361aaab5c3cd6d1c2608764d35dfb1850b086bf8dd5"
+  },
+  "samples": [
+    {
+      "file": "0-t-shirt-top-1.png",
+      "test_index": 19,
+      "label": 0,
+      "class_name": "T-shirt/top",
+      "png_sha256": "36bd405d94e788e58c6fd7cf7b735b2ab21c08dc9f8657afb78eb70f86d1fea7"
+    },
+    {
+      "file": "0-t-shirt-top-2.png",
+      "test_index": 27,
+      "label": 0,
+      "class_name": "T-shirt/top",
+      "png_sha256": "3fa4829c6e40edd174448f29d6fc0dfe026264fccc5676e39705b9785574934b"
+    },
+    {
+      "file": "1-trouser-1.png",
+      "test_index": 2,
+      "label": 1,
+      "class_name": "Trouser",
+      "png_sha256": "7eb35722ead618c72e99e99259a69e28dcdfbe69f805e6d54b08255f536f01ce"
+    },
+    {
+      "file": "1-trouser-2.png",
+      "test_index": 3,
+      "label": 1,
+      "class_name": "Trouser",
+      "png_sha256": "510b959726f6956e7ef62c26fb41287ddef3f19ef1423440099eb78109f10015"
+    },
+    {
+      "file": "2-pullover-1.png",
+      "test_index": 1,
+      "label": 2,
+      "class_name": "Pullover",
+      "png_sha256": "35c05dd38a83630502bce2d11cc7219b2ac0d5ebee01abc6b03baa5395308da7"
+    },
+    {
+      "file": "2-pullover-2.png",
+      "test_index": 16,
+      "label": 2,
+      "class_name": "Pullover",
+      "png_sha256": "e9bf8ba3d70303464fcaeb56e3379286783372b2c60a3e777f02523d41e24454"
+    },
+    {
+      "file": "3-dress-1.png",
+      "test_index": 13,
+      "label": 3,
+      "class_name": "Dress",
+      "png_sha256": "6d298dc75cf01add2de42abd3d9c3b640025d0fed9d30b13b433d13f33f43a98"
+    },
+    {
+      "file": "3-dress-2.png",
+      "test_index": 29,
+      "label": 3,
+      "class_name": "Dress",
+      "png_sha256": "9c8ea7fc77fe569bd2a0165c7ae12ed62a1770931fe6f36ff6a0e55b86fbf9c0"
+    },
+    {
+      "file": "4-coat-1.png",
+      "test_index": 6,
+      "label": 4,
+      "class_name": "Coat",
+      "png_sha256": "0621575b224473edf413d2329d9e890dac731d34591424e019a2c1719a1e1a89"
+    },
+    {
+      "file": "4-coat-2.png",
+      "test_index": 10,
+      "label": 4,
+      "class_name": "Coat",
+      "png_sha256": "74d44148462f5c5182eef59ecd811c46c6a821d0b2e1edad4a8ca979c00fa885"
+    },
+    {
+      "file": "5-sandal-1.png",
+      "test_index": 8,
+      "label": 5,
+      "class_name": "Sandal",
+      "png_sha256": "180b03586f7e5085237cb4de1de398340548983e79a5c4bf7c6ee905ec4f2414"
+    },
+    {
+      "file": "5-sandal-2.png",
+      "test_index": 11,
+      "label": 5,
+      "class_name": "Sandal",
+      "png_sha256": "b6f210f5e891665957714fbca63a8d21d49446c337e857ae1773cb98c152206a"
+    },
+    {
+      "file": "6-shirt-1.png",
+      "test_index": 4,
+      "label": 6,
+      "class_name": "Shirt",
+      "png_sha256": "7991ca73b4da5ecdb28d54be0c5204f468d43644f23770a635854670db03bf2e"
+    },
+    {
+      "file": "6-shirt-2.png",
+      "test_index": 7,
+      "label": 6,
+      "class_name": "Shirt",
+      "png_sha256": "2628f990ca4f3a49cbef8bcd5b6ca7651d642fe0e92039d0ef575e4387e2e3c5"
+    },
+    {
+      "file": "7-sneaker-1.png",
+      "test_index": 9,
+      "label": 7,
+      "class_name": "Sneaker",
+      "png_sha256": "3e2574967deb3cff3d3bf3422ca7b0870dd029f1c1a5384abbf230931adccd25"
+    },
+    {
+      "file": "7-sneaker-2.png",
+      "test_index": 12,
+      "label": 7,
+      "class_name": "Sneaker",
+      "png_sha256": "b63fe0c6bdc0043e4e4bbed84624ae0c7b6ccf90af37234e32ccfe9781ec5d1a"
+    },
+    {
+      "file": "8-bag-1.png",
+      "test_index": 18,
+      "label": 8,
+      "class_name": "Bag",
+      "png_sha256": "442d82fd1ac5526da62c7a80a803ae888b88bd03655df66c563235ac5606b937"
+    },
+    {
+      "file": "8-bag-2.png",
+      "test_index": 30,
+      "label": 8,
+      "class_name": "Bag",
+      "png_sha256": "c9ba98cbc2b8645a40309f8a7b49a287066ee34bc8fabd4be4818bfcc1ba9220"
+    },
+    {
+      "file": "9-ankle-boot-1.png",
+      "test_index": 0,
+      "label": 9,
+      "class_name": "Ankle boot",
+      "png_sha256": "e1239e8e08d17e8b75752e017e62ed7060a0866b6dab3e3f1debaf5ad7316e1b"
+    },
+    {
+      "file": "9-ankle-boot-2.png",
+      "test_index": 23,
+      "label": 9,
+      "class_name": "Ankle boot",
+      "png_sha256": "2ec4b3d4a1ef129e85a0a6b450c67ff3fb3b195e5a3b978e8fce5abde971550b"
+    }
+  ]
+}

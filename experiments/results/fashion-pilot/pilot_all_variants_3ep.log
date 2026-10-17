@@ -1,0 +1,32 @@
+== baseline: 54000 train / 6000 validation images, 3 epochs, torch threads=4
+   epoch  1: train loss 0.6135 acc 0.8533 | val loss 0.4127 acc 0.8480 | 13.1s
+   epoch  2: train loss 0.3828 acc 0.8682 | val loss 0.3714 acc 0.8667 | 10.1s
+   epoch  3: train loss 0.3378 acc 0.8922 | val loss 0.3179 acc 0.8872 | 9.9s
+== full_improved: 54000 train / 6000 validation images, 3 epochs, torch threads=4
+   epoch  1: train loss 0.7684 acc 0.8332 | val loss 0.4592 acc 0.8297 | 14.3s
+   epoch  2: train loss 0.5568 acc 0.8500 | val loss 0.4089 acc 0.8517 | 16.1s
+   epoch  3: train loss 0.5123 acc 0.8601 | val loss 0.3891 acc 0.8592 | 12.6s
+== no_augmentation: 54000 train / 6000 validation images, 3 epochs, torch threads=4
+   epoch  1: train loss 0.5484 acc 0.8714 | val loss 0.3691 acc 0.8660 | 12.4s
+   epoch  2: train loss 0.3868 acc 0.8818 | val loss 0.3396 acc 0.8770 | 16.9s
+   epoch  3: train loss 0.3556 acc 0.8930 | val loss 0.3123 acc 0.8893 | 14.4s
+== no_batchnorm: 54000 train / 6000 validation images, 3 epochs, torch threads=4
+   epoch  1: train loss 0.8906 acc 0.7934 | val loss 0.5453 acc 0.7923 | 11.6s
+   epoch  2: train loss 0.6299 acc 0.8164 | val loss 0.4868 acc 0.8152 | 11.6s
+   epoch  3: train loss 0.5811 acc 0.8355 | val loss 0.4556 acc 0.8303 | 33.9s
+== no_dropout: 54000 train / 6000 validation images, 3 epochs, torch threads=4
+   epoch  1: train loss 0.6986 acc 0.8452 | val loss 0.4390 acc 0.8408 | 13.5s
+   epoch  2: train loss 0.4857 acc 0.8577 | val loss 0.3846 acc 0.8585 | 11.4s
+   epoch  3: train loss 0.4440 acc 0.8691 | val loss 0.3631 acc 0.8683 | 11.6s
+== no_scheduler: 54000 train / 6000 validation images, 3 epochs, torch threads=4
+   epoch  1: train loss 0.7684 acc 0.8332 | val loss 0.4592 acc 0.8297 | 11.5s
+   epoch  2: train loss 0.5567 acc 0.8529 | val loss 0.4042 acc 0.8517 | 12.0s
+   epoch  3: train loss 0.5106 acc 0.8649 | val loss 0.3732 acc 0.8658 | 18.2s
+
+pilot wall-clock 258.6s for 6 variants x 3 epochs
+  baseline          11.05 s/epoch
+  full_improved     14.32 s/epoch
+  no_augmentation   14.55 s/epoch
+  no_batchnorm      19.05 s/epoch
+  no_dropout        12.18 s/epoch
+  no_scheduler      13.92 s/epoch

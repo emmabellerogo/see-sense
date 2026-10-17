@@ -79,11 +79,20 @@ def verify_saved(payload: dict, saved: dict) -> List[str]:
     if payload["model_variant"] == "baseline":
         if saved.get("use_batchnorm") is not False or saved.get("dropout") != 0.0:
             problems.append("baseline must be saved with batch norm off and dropout 0")
-    for h in ("train_loss_history", "val_loss_history", "val_accuracy_history", "lr_history"):
+    for h in ("train_loss_history", "val_loss_history", "val_accuracy_history",
+              "train_accuracy_history", "lr_history"):
         if not saved.get(h) or len(saved[h]) != payload["epochs"]:
             problems.append(f"{h} missing or not {payload['epochs']} long")
     if not saved.get("confusion_matrix") or not saved.get("split_sha256"):
         problems.append("confusion matrix or split hash missing")
+    cfg = saved.get("config") or {}
+    if cfg.get("dataset") != "fashion-mnist" or cfg.get("n_classes") != 10:
+        problems.append("run was not trained on the 10-class Fashion-MNIST dataset")
+    calib = saved.get("calibration") or {}
+    if not calib.get("temperature") or not (saved.get("test_per_class") or {}).get("precision"):
+        problems.append("calibration or per-class test metrics missing (migration 005 applied?)")
+    if cfg.get("train_limit") != payload.get("train_limit"):
+        problems.append(f"train_limit: requested {payload.get('train_limit')!r}, saved {cfg.get('train_limit')!r}")
     return problems
 
 
@@ -173,8 +182,9 @@ def build_parser() -> argparse.ArgumentParser:
     opt.add_argument("--dropout", type=float, default=0.3)
     opt.add_argument("--max-shift", type=int, default=2)
     opt.add_argument("--scheduler", choices=["cosine", "step"], default="cosine")
-    opt.add_argument("--test-size", type=float, default=0.2)
-    opt.add_argument("--val-size", type=float, default=0.1)
+    opt.add_argument("--val-size", type=float, default=0.1, help="fraction of the official training images used for validation")
+    opt.add_argument("--train-limit", type=int, default=None,
+                     help="optional documented subset of training images (default: all of them)")
     run = p.add_argument_group("running")
     run.add_argument("--variants", default=",".join(VARIANTS), help="subset to run (default: all six)")
     run.add_argument("--dry-run", action="store_true", help="print the plan and fingerprint; no network")
@@ -191,8 +201,8 @@ def main(argv: Optional[List[str]] = None, api: Any = None, log: Callable[[str],
     try:
         protocol = Protocol(
             dataset_id=args.dataset_id, epochs=args.epochs, batch_size=args.batch_size,
-            lr=args.lr, split_seed=args.split_seed, test_size=args.test_size,
-            val_size=args.val_size, dropout=args.dropout, augment_max_shift=args.max_shift,
+            lr=args.lr, split_seed=args.split_seed,
+            val_size=args.val_size, train_limit=args.train_limit, dropout=args.dropout, augment_max_shift=args.max_shift,
             scheduler=args.scheduler,
         )
         seeds = [int(s) for s in args.seeds.split(",")]

@@ -1,0 +1,16 @@
+train_seed,variant,delta_accuracy_vs_full,delta_macro_f1_vs_full,delta_test_loss_vs_full
+0,baseline,0.0219,0.0228,-0.0521
+0,no_augmentation,0.0247,0.025,-0.0624
+0,no_batchnorm,-0.0093,-0.0097,0.0258
+0,no_dropout,0.0115,0.0119,-0.0288
+0,no_scheduler,-0.0005,-0.0005,-0.001
+1,baseline,0.0109,0.0117,-0.0305
+1,no_augmentation,0.0234,0.024,-0.06
+1,no_batchnorm,-0.0108,-0.0107,0.0326
+1,no_dropout,0.0076,0.0081,-0.0227
+1,no_scheduler,0.004,0.0038,-0.0064
+2,baseline,0.0159,0.017,-0.0504
+2,no_augmentation,0.0179,0.018,-0.0598
+2,no_batchnorm,-0.0093,-0.0098,0.0208
+2,no_dropout,0.0059,0.0062,-0.0188
+2,no_scheduler,0.0002,-0.0007,-0.0087

@@ -1,5 +1,10 @@
 # Running the See-Sense API locally (Part 2, step 1)
 
+> **Note (2026-10-17, dataset correction):** this guide was written for the earlier synthetic-shape version and is kept as Komal wrote it.
+> On branch `correction/fashion-mnist` some details differ: the offline store seeds **dataset id 1 = Fashion-MNIST** (ten classes; run
+> `python tools/fetch_fashion_mnist.py` first), `POST /datasets` takes only a `name`, `POST /train` no longer takes `test_size`, `/predict_sample`
+> is gone, and the `--dry-run` fingerprint, test counts and "4 classes" outputs below are historical. See the README and `docs/FASHION_PROTOCOL.md`.
+
 Written by Komal for Part 2. It finishes step 1 of the
 [Part 1 handoff](PART1_HANDOFF.md) section 9: "Get access ... Run the test
 suite, then a `--dry-run`."

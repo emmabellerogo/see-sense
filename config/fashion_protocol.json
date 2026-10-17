@@ -1,0 +1,38 @@
+{
+  "status": "frozen",
+  "note": "FROZEN on 2026-10-17 (dataset id 24, seeds 0,1,2, sequential execution, dry-run fingerprint below). No official run or test score existed when this was frozen. Do not change any value after the first official run starts.",
+  "dataset": "fashion-mnist",
+  "experiment_group": "fashion-official-1",
+  "chosen_on": "2026-10-17",
+  "chosen_before_official_results": true,
+  "protocol": {
+    "epochs": 20,
+    "batch_size": 128,
+    "lr": 0.001,
+    "optimizer": "adam",
+    "split_seed": 0,
+    "val_size": 0.1,
+    "train_limit": null,
+    "dropout": 0.3,
+    "augment_max_shift": 2,
+    "scheduler": "cosine"
+  },
+  "seeds": [0, 1, 2],
+  "variants": ["baseline", "full_improved", "no_augmentation", "no_batchnorm", "no_dropout", "no_scheduler"],
+  "checkpoint_selection": "lowest validation loss epoch (validation data only)",
+  "calibration": "temperature scaling fitted on validation logits only; ECE (15 bins), NLL and Brier measured before/after on validation and test",
+  "test_set_use": "scored exactly once per run, after the checkpoint is chosen; the runner hides test metrics unless --show-test is given",
+  "served_model": {"run_name": "full_improved-seed0", "why": "full improved configuration, lowest seed; fixed in advance, not chosen by test score"},
+  "pilot": {
+    "used_test_data": false,
+    "summary": "experiments/results/fashion-pilot/summary.md",
+    "measured_seconds_per_epoch_mean": 15.4,
+    "measured_seconds_per_epoch_range_by_variant": [13.4, 17.3],
+    "note": "Measured on an Apple M2 (8 cores, 16 GB) CPU with other applications running (load average about 9). Values are 12-20 s/epoch depending on variant and load; single quiet-machine runs were 10-12 s/epoch."
+  },
+  "dataset_id_note": "Assigned by POST /datasets on the Supabase project (fashion-mnist, source fashion_mnist). Not the live-test-fashion-mnist row.",
+  "command_template": "python -m experiments.run_experiments --api-url http://127.0.0.1:8000 --dataset-id 24 --group fashion-official-1 --seeds 0,1,2 --epochs 20 --batch-size 128 --lr 0.001 --split-seed 0 --dropout 0.3 --max-shift 2 --scheduler cosine --val-size 0.1 --timeout 3600 --expect-fingerprint 287b1895e0de07d1f9578d9bbec81e04e3194dc14340fb744df8567f79317f5a --out experiments/results/fashion-official-1-runs.jsonl",
+  "frozen_dataset_id": 24,
+  "execution": "sequential: one runner process, --seeds 0,1,2 (18 runs, one after another)",
+  "frozen_fingerprint": "287b1895e0de07d1f9578d9bbec81e04e3194dc14340fb744df8567f79317f5a"
+}

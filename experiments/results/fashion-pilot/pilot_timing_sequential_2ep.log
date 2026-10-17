@@ -1,0 +1,26 @@
+== baseline: 54000 train / 6000 validation images, 2 epochs, torch threads=4
+   epoch  1: train loss 0.6135 acc 0.8533 | val loss 0.4127 acc 0.8480 | 14.7s
+   epoch  2: train loss 0.3828 acc 0.8682 | val loss 0.3714 acc 0.8667 | 14.3s
+== full_improved: 54000 train / 6000 validation images, 2 epochs, torch threads=4
+   epoch  1: train loss 0.7684 acc 0.8332 | val loss 0.4592 acc 0.8297 | 17.6s
+   epoch  2: train loss 0.5589 acc 0.8469 | val loss 0.4166 acc 0.8483 | 16.4s
+== no_augmentation: 54000 train / 6000 validation images, 2 epochs, torch threads=4
+   epoch  1: train loss 0.5484 acc 0.8714 | val loss 0.3691 acc 0.8660 | 17.8s
+   epoch  2: train loss 0.3863 acc 0.8853 | val loss 0.3336 acc 0.8805 | 15.2s
+== no_batchnorm: 54000 train / 6000 validation images, 2 epochs, torch threads=4
+   epoch  1: train loss 0.8906 acc 0.7934 | val loss 0.5453 acc 0.7923 | 18.9s
+   epoch  2: train loss 0.6350 acc 0.8149 | val loss 0.4927 acc 0.8125 | 15.8s
+== no_dropout: 54000 train / 6000 validation images, 2 epochs, torch threads=4
+   epoch  1: train loss 0.6986 acc 0.8452 | val loss 0.4390 acc 0.8408 | 12.3s
+   epoch  2: train loss 0.4864 acc 0.8578 | val loss 0.3908 acc 0.8562 | 14.4s
+== no_scheduler: 54000 train / 6000 validation images, 2 epochs, torch threads=4
+   epoch  1: train loss 0.7684 acc 0.8332 | val loss 0.4592 acc 0.8297 | 14.6s
+   epoch  2: train loss 0.5567 acc 0.8529 | val loss 0.4042 acc 0.8517 | 12.8s
+
+pilot wall-clock 187.3s for 6 variants x 2 epochs
+  baseline          14.48 s/epoch
+  full_improved     16.98 s/epoch
+  no_augmentation   16.53 s/epoch
+  no_batchnorm      17.33 s/epoch
+  no_dropout        13.35 s/epoch
+  no_scheduler      13.69 s/epoch

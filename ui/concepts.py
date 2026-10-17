@@ -46,7 +46,9 @@ def conv_params(c_in: int, c_out: int, k: int) -> int:
     return c_in * c_out * k * k + c_out
 
 
-def our_cnn_param_count(n_classes: int = 4, img: int = 28) -> int:
-    """Parameters of SmallCNN (the baseline); matches the 4,388 stored in Supabase."""
+def our_cnn_param_count(n_classes: int = 10, img: int = 28) -> int:
+    """Parameters of SmallCNN (the baseline): 9,098 for Fashion-MNIST's ten classes.
+
+    (The historical four-class synthetic model, ``n_classes=4``, had 4,388.)"""
     feat = img // 4
     return conv_params(1, 8, 3) + conv_params(8, 16, 3) + 16 * feat * feat * n_classes + n_classes

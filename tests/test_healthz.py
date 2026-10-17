@@ -1,7 +1,7 @@
 """Smoke tests for /healthz, /version, /classes."""
 from __future__ import annotations
 
-from shared.data import CLASS_NAMES, N_CLASSES
+from shared.fashion import CLASS_NAMES, N_CLASSES
 
 
 def test_healthz_ok(client):

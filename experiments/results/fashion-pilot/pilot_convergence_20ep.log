@@ -1,0 +1,46 @@
+== baseline: 54000 train / 6000 validation images, 20 epochs, torch threads=4
+   epoch  1: train loss 0.6135 acc 0.8533 | val loss 0.4127 acc 0.8480 | 10.8s
+   epoch  2: train loss 0.3828 acc 0.8682 | val loss 0.3714 acc 0.8667 | 9.9s
+   epoch  3: train loss 0.3378 acc 0.8922 | val loss 0.3179 acc 0.8872 | 10.1s
+   epoch  4: train loss 0.3136 acc 0.8919 | val loss 0.3141 acc 0.8887 | 10.1s
+   epoch  5: train loss 0.2964 acc 0.8980 | val loss 0.3036 acc 0.8937 | 10.1s
+   epoch  6: train loss 0.2835 acc 0.9038 | val loss 0.2889 acc 0.8977 | 11.1s
+   epoch  7: train loss 0.2737 acc 0.9043 | val loss 0.2865 acc 0.9017 | 16.5s
+   epoch  8: train loss 0.2665 acc 0.9058 | val loss 0.2870 acc 0.8977 | 11.7s
+   epoch  9: train loss 0.2572 acc 0.9139 | val loss 0.2699 acc 0.9037 | 10.5s
+   epoch 10: train loss 0.2519 acc 0.9128 | val loss 0.2749 acc 0.9000 | 14.3s
+   epoch 11: train loss 0.2476 acc 0.9152 | val loss 0.2700 acc 0.9055 | 10.2s
+   epoch 12: train loss 0.2420 acc 0.9155 | val loss 0.2694 acc 0.9035 | 11.0s
+   epoch 13: train loss 0.2372 acc 0.9210 | val loss 0.2645 acc 0.9080 | 10.4s
+   epoch 14: train loss 0.2334 acc 0.9202 | val loss 0.2654 acc 0.9067 | 11.7s
+   epoch 15: train loss 0.2291 acc 0.9110 | val loss 0.2832 acc 0.8982 | 12.0s
+   epoch 16: train loss 0.2270 acc 0.9209 | val loss 0.2662 acc 0.9045 | 12.1s
+   epoch 17: train loss 0.2240 acc 0.9209 | val loss 0.2641 acc 0.9047 | 9.8s
+   epoch 18: train loss 0.2210 acc 0.9230 | val loss 0.2632 acc 0.9058 | 10.2s
+   epoch 19: train loss 0.2188 acc 0.9284 | val loss 0.2571 acc 0.9088 | 10.3s
+   epoch 20: train loss 0.2157 acc 0.9239 | val loss 0.2660 acc 0.9078 | 9.6s
+== full_improved: 54000 train / 6000 validation images, 20 epochs, torch threads=4
+   epoch  1: train loss 0.7684 acc 0.8332 | val loss 0.4592 acc 0.8297 | 16.1s
+   epoch  2: train loss 0.5566 acc 0.8526 | val loss 0.4044 acc 0.8528 | 17.5s
+   epoch  3: train loss 0.5105 acc 0.8653 | val loss 0.3734 acc 0.8660 | 16.3s
+   epoch  4: train loss 0.4845 acc 0.8618 | val loss 0.3783 acc 0.8610 | 24.5s
+   epoch  5: train loss 0.4698 acc 0.8648 | val loss 0.3657 acc 0.8623 | 16.7s
+   epoch  6: train loss 0.4561 acc 0.8737 | val loss 0.3467 acc 0.8722 | 13.9s
+   epoch  7: train loss 0.4474 acc 0.8800 | val loss 0.3351 acc 0.8798 | 12.1s
+   epoch  8: train loss 0.4325 acc 0.8742 | val loss 0.3418 acc 0.8730 | 12.3s
+   epoch  9: train loss 0.4303 acc 0.8768 | val loss 0.3363 acc 0.8787 | 14.7s
+   epoch 10: train loss 0.4277 acc 0.8836 | val loss 0.3240 acc 0.8833 | 14.2s
+   epoch 11: train loss 0.4200 acc 0.8853 | val loss 0.3200 acc 0.8845 | 17.4s
+   epoch 12: train loss 0.4124 acc 0.8816 | val loss 0.3252 acc 0.8842 | 25.7s
+   epoch 13: train loss 0.4120 acc 0.8861 | val loss 0.3141 acc 0.8848 | 21.5s
+   epoch 14: train loss 0.4061 acc 0.8883 | val loss 0.3092 acc 0.8903 | 25.5s
+   epoch 15: train loss 0.4072 acc 0.8883 | val loss 0.3100 acc 0.8882 | 19.8s
+   epoch 16: train loss 0.4004 acc 0.8887 | val loss 0.3075 acc 0.8858 | 31.0s
+   epoch 17: train loss 0.4005 acc 0.8881 | val loss 0.3085 acc 0.8877 | 20.2s
+   epoch 18: train loss 0.3982 acc 0.8892 | val loss 0.3050 acc 0.8883 | 23.0s
+   epoch 19: train loss 0.3982 acc 0.8890 | val loss 0.3060 acc 0.8873 | 19.9s
+   epoch 20: train loss 0.3971 acc 0.8890 | val loss 0.3055 acc 0.8878 | 17.9s
+
+pilot wall-clock 604.1s for 2 variants x 20 epochs
+  baseline          11.11 s/epoch
+  full_improved     19.02 s/epoch

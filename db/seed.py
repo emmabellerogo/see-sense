@@ -1,4 +1,4 @@
-"""Apply the migration (manually) and seed one default dataset into Supabase.
+"""Apply the migration (manually) and seed the Fashion-MNIST dataset row into Supabase.
 
 Usage (from the repo root, with a .env present or the env vars exported):
 
@@ -14,7 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from api import db
-from shared.data import IMG_SIZE, N_CLASSES
+from shared.fashion import IMG_SIZE, N_CLASSES
 
 load_dotenv()
 
@@ -30,13 +30,15 @@ def main() -> None:
 
     print(f"Migration file: {MIGRATION} (apply it in the SQL Editor if you have not).")
 
+    # Needs migration 005 (datasets.source / class_names / identity) and the local Fashion-MNIST files.
+    from shared import fashion
+
+    data = fashion.load()
     row = db.insert_dataset(
-        name="default-shapes",
-        n_rows=800,
-        img_size=IMG_SIZE,
-        n_classes=N_CLASSES,
-        noise=0.1,
-        seed=42,
+        name="fashion-mnist", n_rows=len(data.y_train), img_size=IMG_SIZE, n_classes=N_CLASSES,
+        noise=0.0, seed=0, source="fashion_mnist", class_names=list(fashion.CLASS_NAMES),
+        identity={"name": fashion.DATASET_NAME, "file_sha256": data.file_sha256,
+                  "official_train_images": len(data.y_train), "official_test_images": len(data.y_test)},
     )
     print(
         f"Seeded dataset id={row['id']} name={row['name']} "
