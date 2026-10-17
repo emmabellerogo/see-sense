@@ -1,0 +1,22 @@
+{
+  "source": "supabase",
+  "experiment_group": "official-supabase-1",
+  "run_name": "full_improved-seed0",
+  "run_id": 4,
+  "dataset_id": 3,
+  "dataset": {
+    "name": "shapes-2000-noise1.0",
+    "n_rows": 2000,
+    "img_size": 28,
+    "noise": 1,
+    "seed": 42
+  },
+  "split_seed": 0,
+  "split_sha256": "385933722df19a5cf5b802feff6cde0d0ddec2962bb91fc9083b3114f9f15012",
+  "stored_accuracy": 0.94,
+  "regenerated_accuracy": 0.94,
+  "n_test": 400,
+  "n_correct": 376,
+  "n_incorrect": 24,
+  "run_created_at": "2026-10-17T06:38:40.448414+00:00"
+}

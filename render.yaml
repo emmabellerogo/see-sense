@@ -1,7 +1,10 @@
 # Render.com blueprint for the FastAPI model service (Cloud #2).
 # In the Render dashboard: New -> Blueprint -> point at this repo.
 # Set SUPABASE_URL and SUPABASE_SERVICE_KEY as environment variables (secrets)
-# in the service settings after the first deploy.
+# in the service settings after the first deploy. Never set SEE_SENSE_LOCAL_DB on
+# Render: it switches the API to a throwaway local file and /healthz would report
+# "offline" instead of "ok". The free plan sleeps when idle (cold start ~30-60 s);
+# the UI's Try It tab warms the service up with /healthz before predicting.
 services:
   - type: web
     name: see-sense-api

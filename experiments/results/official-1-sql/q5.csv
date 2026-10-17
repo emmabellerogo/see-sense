@@ -1,0 +1,7 @@
+variant,n_seeds,mean_test_accuracy,sd_test_accuracy,mean_test_macro_f1,sd_test_macro_f1,mean_test_loss,mean_train_seconds
+full_improved,5,0.9520,0.0069,0.9513,0.0071,0.1407,8.5
+no_augmentation,5,0.9465,0.0068,0.9465,0.0065,0.1610,6.6
+no_scheduler,5,0.9460,0.0140,0.9460,0.0138,0.1314,8.3
+no_dropout,5,0.9455,0.0120,0.9448,0.0123,0.1466,8.3
+baseline,5,0.7300,0.1164,0.7217,0.1285,0.6189,5.2
+no_batchnorm,5,0.4400,0.3180,0.3583,0.3860,1.0528,7.2

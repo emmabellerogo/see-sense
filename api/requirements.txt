@@ -3,7 +3,10 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.6
 pydantic==2.9.2
 python-multipart==0.0.9
-# CPU-only torch keeps the Render build small and free-tier friendly.
+# CPU-only torch keeps the Render build small and free-tier friendly. The extra
+# index serves torch==2.4.1+cpu on Linux (without it pip installs the multi-GB CUDA
+# build); macOS/Windows resolve the normal PyPI wheel. NumPy stays on 1.x for torch 2.4.
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.4.1
 numpy==1.26.4
 pillow==10.4.0

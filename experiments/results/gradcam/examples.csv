@@ -1,0 +1,14 @@
+set,test_index,true,predicted,confidence,p_horizontal,p_vertical,p_diagonal,p_block
+correct,1875,horizontal,horizontal,0.997,0.997,0.000,0.000,0.003
+correct,1236,vertical,vertical,0.978,0.000,0.978,0.000,0.022
+correct,470,diagonal,diagonal,1.000,0.000,0.000,1.000,0.000
+correct,1949,block,block,0.980,0.006,0.006,0.008,0.980
+correct,150,block,block,0.432,0.262,0.006,0.299,0.432
+incorrect,135,block,horizontal,0.926,0.926,0.005,0.000,0.068
+incorrect,292,horizontal,block,0.831,0.169,0.000,0.000,0.831
+incorrect,1516,block,vertical,0.798,0.013,0.798,0.057,0.132
+incorrect,924,horizontal,diagonal,0.738,0.225,0.017,0.738,0.019
+incorrect,1953,block,diagonal,0.616,0.007,0.012,0.616,0.364
+incorrect,1848,vertical,block,0.608,0.002,0.391,0.000,0.608
+incorrect,213,block,horizontal,0.832,0.832,0.017,0.026,0.124
+incorrect,147,block,horizontal,0.743,0.743,0.015,0.000,0.241
