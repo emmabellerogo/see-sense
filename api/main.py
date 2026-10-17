@@ -13,13 +13,17 @@ from __future__ import annotations
 
 import hashlib
 import io
+import logging
 import os
 import subprocess
 
 import numpy as np
+import httpx
 import torch
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from postgrest.exceptions import APIError
 from PIL import Image
 
 from api import db
@@ -45,6 +49,30 @@ app = FastAPI(
     description="CNN image classifier + Grad-CAM for the three-cloud stack.",
     version="1.0.0",
 )
+
+# ---------------------------------------------------------------------------
+# Database outage handling: a Supabase network failure or a PostgREST
+# connection/schema-cache error becomes a clean 503, never a bare 500 or a leak
+# of connection details. Other database errors become a generic 500.
+# ---------------------------------------------------------------------------
+_log = logging.getLogger("see_sense.api")
+_DB_DOWN_CODES = {"PGRST000", "PGRST001", "PGRST002", "PGRST003"}
+
+
+@app.exception_handler(httpx.TransportError)
+async def _database_unreachable(_request, exc):
+    _log.warning("database unreachable: %s", type(exc).__name__)
+    return JSONResponse(status_code=503, content={"detail": "database unavailable"})
+
+
+@app.exception_handler(APIError)
+async def _database_error(_request, exc):
+    if str(getattr(exc, "code", "")) in _DB_DOWN_CODES:
+        _log.warning("database unavailable: %s", exc.code)
+        return JSONResponse(status_code=503, content={"detail": "database unavailable"})
+    _log.error("database error: code=%s", getattr(exc, "code", None))
+    return JSONResponse(status_code=500, content={"detail": "database error"})
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -249,10 +277,20 @@ def classes() -> ClassesResponse:
 # ---------------------------------------------------------------------------
 @app.get("/healthz", response_model=Health, tags=["ops"])
 def healthz() -> Health:
-    supabase_ok = db.ping()
+    """Liveness plus storage state. Always HTTP 200 so the host keeps routing here.
+
+    `supabase` is True only when the real project answered; the offline JSON store
+    (local development) reports status "offline", never "ok".
+    """
+    offline = bool(db.LOCAL_DB_PATH)
+    supabase_ok = (not offline) and db.ping()
     model_ok = torch.tensor([1.0]).sum().item() == 1.0
-    status = "ok" if (supabase_ok and model_ok) else "degraded"
-    return Health(status=status, model_loader=model_ok, supabase=supabase_ok)
+    if offline:
+        status = "offline" if model_ok else "degraded"
+    else:
+        status = "ok" if (supabase_ok and model_ok) else "degraded"
+    return Health(status=status, model_loader=model_ok, supabase=supabase_ok,
+                  storage="offline" if offline else "supabase")
 
 
 @app.get("/version", response_model=Version, tags=["ops"])

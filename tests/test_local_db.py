@@ -34,7 +34,9 @@ def test_api_trains_and_reads_back_offline(tmp_path, monkeypatch):
     importlib.reload(main)
     try:
         c = TestClient(main.app)
-        assert c.get("/healthz").json()["supabase"] is True
+        health = c.get("/healthz").json()
+        assert health["status"] == "offline" and health["storage"] == "offline"
+        assert health["supabase"] is False  # the local file is never reported as Supabase
         ds = c.post("/datasets", json={"name": "tiny", "n_rows": 100, "noise": 0.1, "seed": 1}).json()
         r = c.post("/train", json={
             "dataset_id": ds["id"], "lr": 0.01, "batch_size": 16, "epochs": 1,

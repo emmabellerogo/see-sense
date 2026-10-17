@@ -5,3 +5,7 @@ streamlit==1.38.0
 requests==2.32.3
 pandas==2.2.2
 supabase==2.7.4
+# st.dataframe converts via pyarrow. Streamlit 1.38 only requires pyarrow>=7, so an
+# unpinned install pulls the newest release, which needs NumPy>=2 and fails against
+# the NumPy 1.26.4 that the API/torch stack is pinned to. 17.0.0 works with both.
+pyarrow==17.0.0

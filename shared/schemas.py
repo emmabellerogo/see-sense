@@ -181,9 +181,10 @@ class ClassesResponse(BaseModel):
 # Ops
 # ---------------------------------------------------------------------------
 class Health(BaseModel):
-    status: str
+    status: str  # "ok" | "degraded" (Supabase unreachable) | "offline" (local JSON store)
     model_loader: bool
-    supabase: bool
+    supabase: bool  # True ONLY when the real Supabase project answered a query
+    storage: str = "supabase"  # "supabase" or "offline" (SEE_SENSE_LOCAL_DB is set)
 
 
 class Version(BaseModel):
