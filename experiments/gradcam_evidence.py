@@ -1,28 +1,38 @@
-"""Grad-CAM evidence: genuinely correct and incorrect test predictions (Part 2, step 6).
+"""Grad-CAM evidence: genuinely correct and incorrect Fashion-MNIST test predictions.
 
-Loads one official model, regenerates that run's exact test split (same dataset
-seed and split seed), classifies every test image with ``predict_with_cam``
-(the same function ``POST /predict`` uses), and saves overlays for a selection
-of correct and incorrect predictions.
+Loads one saved checkpoint, classifies every official test image with it, checks that the
+regenerated test accuracy equals the accuracy stored with the run (otherwise this is not the
+same model), and saves Grad-CAM overlays for a deterministic selection of correct and
+incorrect predictions.
 
     python -m experiments.gradcam_evidence <local_db.json> <run_name> <group> <out_dir>
     python -m experiments.gradcam_evidence --supabase <run_name> <group> <out_dir>
 
-Writes <out_dir>/gradcam_correct.png, gradcam_incorrect.png and examples.csv
-(--supabase also writes source.json: which run/group/dataset the evidence is from).
-The model weights come from run_artifacts; nothing is retrained. --supabase is
-read-only, takes credentials from .env / the environment, never prints them, and
-keeps the checkpoint in memory only. It refuses to run if SEE_SENSE_LOCAL_DB is set.
+Writes <out_dir>/gradcam_correct.png, gradcam_incorrect.png, examples.csv and source.json.
+The weights come from run_artifacts; nothing is retrained. --supabase is read-only, takes
+credentials from .env / the environment, never prints them, keeps the checkpoint in memory,
+and refuses to run if SEE_SENSE_LOCAL_DB is set. The Fashion-MNIST files must be on disk
+(``python tools/fetch_fashion_mnist.py``).
+
+SELECTION RULE (fixed here, before any figure is looked at; not chosen by appearance):
+  * correct   - for every class, the first correctly classified test image in test order
+                (10 examples, one per class);
+  * incorrect - wrong predictions sorted by confidence (highest first), taking one example
+                per distinct (true -> predicted) pair first, then filling with the next most
+                confident wrong predictions, up to 10. "Incorrect" means predicted != true.
+
+``cam_mass_on_garment`` in examples.csv is the share of the Grad-CAM map that falls on pixels
+brighter than 20% of the image maximum, a number to support (not replace) reading the figure.
+Interpretations of failures are written by a person in docs/ after viewing the figures.
 """
 from __future__ import annotations
 
-import base64
 import csv
-import io
 import json
 import os
 import sys
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import matplotlib
 
@@ -31,41 +41,15 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from PIL import Image  # noqa: E402
 
-from api.training import make_splits, predict_with_cam  # noqa: E402
-from shared.data import CLASS_NAMES, generate_images  # noqa: E402
+from api import calibration  # noqa: E402
+from api.training import cam_for_class, load_artifact, predict_with_cam, to01, normalize  # noqa: E402
+from shared import fashion  # noqa: E402
 
-
-def clean_shapes(n_rows: int, img_size: int, noise: float, seed: int) -> np.ndarray:
-    """Noise-free version of every image: replays generate_images' RNG stream.
-
-    generate_images draws the class, then the shape (_draw), then the noise, from
-    one Generator; replaying the same calls reproduces the exact shape that was
-    drawn before noise was added. Used only to show where the true shape is.
-    """
-    from shared.data import N_CLASSES, _draw
-
-    rng = np.random.default_rng(seed)
-    out = np.empty((n_rows, img_size, img_size), dtype=np.float32)
-    for i in range(n_rows):
-        k = int(rng.integers(0, N_CLASSES))
-        out[i] = _draw(k, img_size, rng)
-        rng.normal(0.0, noise, (img_size, img_size))  # consume the noise draw
-    return out
-
-
-def _img(b64: str) -> np.ndarray:
-    return np.asarray(Image.open(io.BytesIO(base64.b64decode(b64))))
-
-
-def _cam_only(model_b64: str, gray: np.ndarray, cls: int) -> np.ndarray:
-    """Grad-CAM map (0..1, 28x28) for an arbitrary class, for the side-by-side view."""
-    import torch
-
-    from api.training import _grad_cam, _load_model, _to_tensor
-
-    model, _ = _load_model(model_b64)
-    cam = _grad_cam(model, _to_tensor(gray[None]), cls)
-    return np.asarray(Image.fromarray((cam * 255).astype(np.uint8)).resize((28, 28))) / 255.0
+SELECTION_RULE = (
+    "correct: first correctly classified test image of each class in test order; "
+    "incorrect: wrong predictions by descending confidence, one per distinct (true, predicted) pair "
+    "first, then the next most confident, up to 10."
+)
 
 
 def load_from_file(db_file: str, run_name: str, group: str):
@@ -107,98 +91,147 @@ def load_from_supabase(run_name: str, group: str, client=None):
     return run, ds[0], art[0]["model_b64"]
 
 
-def main(db_file: str, run_name: str, group: str, out_dir: str, supabase: bool = False) -> None:
-    out = Path(out_dir)
-    if supabase:
-        run, ds, model_b64 = load_from_supabase(run_name, group)
-    else:
-        run, ds, model_b64 = load_from_file(db_file, run_name, group)
-    out.mkdir(parents=True, exist_ok=True)
-    cfg = run["config"]
+def classify_all(model_b64: str, x_test: np.ndarray, chunk: int = 2000) -> Dict[str, np.ndarray]:
+    """Raw logits and calibrated probabilities for every test image (batched, eval mode)."""
+    import torch
 
-    images, labels = generate_images(ds["n_rows"], img_size=ds["img_size"], noise=ds["noise"], seed=ds["seed"])
-    clean = clean_shapes(ds["n_rows"], ds["img_size"], ds["noise"], ds["seed"])
-    _, _, test_idx = make_splits(len(images), cfg["test_size"], cfg["val_size"], cfg["split_seed"])
+    loaded = load_artifact(model_b64)
+    outs = []
+    with torch.no_grad():
+        for s in range(0, len(x_test), chunk):
+            xb = normalize(to01(x_test[s : s + chunk]), loaded.preprocessing)
+            outs.append(loaded.model(xb).numpy())
+    logits = np.concatenate(outs).astype(np.float64)
+    probs = calibration.softmax(logits, loaded.temperature)
+    return {"logits": logits, "probs": probs, "pred": probs.argmax(axis=1)}
 
-    rows = []
-    for i in test_idx:
-        res = predict_with_cam(model_b64, images[i])
-        rows.append({"index": int(i), "true": labels[i], "pred": res["label"],
-                     "conf": res["confidence"], "probs": res["probs"], "res": res})
-    acc = np.mean([r["true"] == r["pred"] for r in rows])
-    # Must match the stored test accuracy exactly, or this is not the same model/split.
-    assert abs(acc - run["accuracy"]) < 1e-9, (acc, run["accuracy"])
 
-    correct = [r for r in rows if r["true"] == r["pred"]]
-    wrong = sorted((r for r in rows if r["true"] != r["pred"]), key=lambda r: -r["conf"])
-    # Correct: first example of each class in test order, plus the least confident correct one.
-    pick_c = [next(r for r in correct if r["true"] == k) for k in range(4)]
-    pick_c.append(min((r for r in correct if r not in pick_c), key=lambda r: r["conf"]))
-    # Incorrect: cover distinct (true -> pred) confusions first, most confident first; up to 8.
-    pick_w, seen = [], set()
-    for r in wrong:
-        if (r["true"], r["pred"]) not in seen:
-            pick_w.append(r); seen.add((r["true"], r["pred"]))
-    for r in wrong:
-        if len(pick_w) >= 8:
+def select_examples(y_true: np.ndarray, pred: np.ndarray, conf: np.ndarray, n_classes: int,
+                    max_incorrect: int = 10) -> Dict[str, List[int]]:
+    """Apply SELECTION_RULE. Raises if fewer than 5 correct or 5 incorrect examples exist."""
+    correct_idx = np.flatnonzero(pred == y_true)
+    picks_c: List[int] = []
+    for k in range(n_classes):
+        hit = correct_idx[y_true[correct_idx] == k]
+        if len(hit):
+            picks_c.append(int(hit[0]))
+    wrong = np.flatnonzero(pred != y_true)
+    wrong = wrong[np.argsort(-conf[wrong], kind="stable")]
+    picks_w: List[int] = []
+    seen = set()
+    for i in wrong:
+        key = (int(y_true[i]), int(pred[i]))
+        if key not in seen:
+            picks_w.append(int(i))
+            seen.add(key)
+        if len(picks_w) >= max_incorrect:
             break
-        if r not in pick_w:
-            pick_w.append(r)
-    pick_w = pick_w[:8]
+    for i in wrong:
+        if len(picks_w) >= max_incorrect:
+            break
+        if int(i) not in picks_w:
+            picks_w.append(int(i))
+    if len(picks_c) < 5 or len(picks_w) < 5:
+        raise ValueError(f"need at least 5 correct and 5 incorrect examples, got {len(picks_c)} and {len(picks_w)}")
+    return {"correct": picks_c, "incorrect": picks_w}
 
-    def panel(picks, title, fname, show_true_cam):
-        cols = 4 if show_true_cam else 3
-        fig, axes = plt.subplots(len(picks), cols, figsize=(2.3 * cols, 2.45 * len(picks) + 0.6))
 
-        def heat(ax, gray, cam, shape):
-            ax.imshow(gray, cmap="gray", vmin=0, vmax=255)
-            ax.imshow(cam, cmap="autumn", alpha=np.clip(cam, 0, 1) * 0.75)
-            ax.contour(shape, levels=[0.5], colors="cyan", linewidths=1.0)
+def cam_mass_on_garment(img: np.ndarray, cam01: np.ndarray) -> float:
+    """Share of Grad-CAM mass on pixels brighter than 20% of the image maximum (0 if no CAM)."""
+    cam = np.asarray(Image.fromarray((cam01 * 255).astype(np.uint8)).resize(img.shape[::-1]),
+                     dtype=np.float64) / 255.0
+    total = cam.sum()
+    if total <= 0:
+        return 0.0
+    mask = img.astype(np.float64) > 0.2 * max(float(img.max()), 1.0)
+    return float(cam[mask].sum() / total)
 
-        for row_axes, r in zip(axes, picks):
-            gray, shape = images[r["index"]], clean[r["index"]]
-            row_axes[0].imshow(gray, cmap="gray", vmin=0, vmax=255)
-            row_axes[0].set_title(f"#{r['index']} input (true: {CLASS_NAMES[r['true']]})", fontsize=7.5)
-            row_axes[1].imshow(shape, cmap="gray", vmin=0, vmax=1)
-            row_axes[1].set_title("true shape before noise", fontsize=7.5)
-            heat(row_axes[2], gray, _cam_only(model_b64, gray, r["pred"]), shape)
-            row_axes[2].set_title(f"CAM pred: {CLASS_NAMES[r['pred']]} ({100*r['conf']:.0f}%)", fontsize=7.5)
+
+def build_evidence(model_b64: str, data: fashion.FashionData, out: Path, run: Optional[Dict[str, Any]] = None,
+                   run_name: str = "model") -> Dict[str, Any]:
+    """Create the figures, examples.csv and (when ``run`` is given) source.json."""
+    out.mkdir(parents=True, exist_ok=True)
+    loaded = load_artifact(model_b64)
+    names = loaded.class_names
+    y = data.y_test.astype(np.int64)
+    res = classify_all(model_b64, data.x_test)
+    pred, probs = res["pred"], res["probs"]
+    conf = probs.max(axis=1)
+    acc = float((pred == y).mean())
+    if run is not None and abs(acc - run["accuracy"]) > 1e-9:
+        raise AssertionError(f"regenerated test accuracy {acc} != stored {run['accuracy']}: not the same model/data")
+    picks = select_examples(y, pred, conf, len(names))
+
+    # The serving path (the same function POST /predict uses) must agree with the batch path.
+    for i in picks["correct"] + picks["incorrect"]:
+        served = predict_with_cam(model_b64, data.x_test[i])
+        assert served["label"] == int(pred[i]), f"serving path disagrees on test image {i}"
+
+    def heat(ax, gray, cam):
+        ax.imshow(gray, cmap="gray", vmin=0, vmax=255)
+        ax.imshow(cam, cmap="autumn", alpha=np.clip(cam, 0, 1) * 0.75)
+
+    def up(cam):  # 7x7 -> 28x28 for display
+        return np.asarray(Image.fromarray((cam * 255).astype(np.uint8)).resize((28, 28), Image.BILINEAR)) / 255.0
+
+    def panel(idxs: List[int], title: str, fname: str, show_true_cam: bool) -> None:
+        cols = 3 if show_true_cam else 2
+        fig, axes = plt.subplots(len(idxs), cols, figsize=(2.4 * cols, 2.5 * len(idxs) + 0.7), squeeze=False)
+        for row, i in zip(axes, idxs):
+            gray = data.x_test[i]
+            row[0].imshow(gray, cmap="gray", vmin=0, vmax=255)
+            row[0].set_title(f"test #{i}  true: {names[y[i]]}", fontsize=7.5)
+            heat(row[1], gray, up(cam_for_class(loaded, gray, int(pred[i]))))
+            row[1].set_title(f"CAM pred: {names[pred[i]]} ({100 * conf[i]:.0f}%)", fontsize=7.5)
             if show_true_cam:
-                heat(row_axes[3], gray, _cam_only(model_b64, gray, r["true"]), shape)
-                row_axes[3].set_title(f"CAM if true: {CLASS_NAMES[r['true']]}", fontsize=7.5)
-            for ax in row_axes:
+                heat(row[2], gray, up(cam_for_class(loaded, gray, int(y[i]))))
+                row[2].set_title(f"CAM if true: {names[y[i]]}", fontsize=7.5)
+            for ax in row:
                 ax.set_xticks([]); ax.set_yticks([])
-        fig.suptitle(title + "\n(cyan outline = true shape; yellow/red = Grad-CAM, brighter = more important)",
-                     fontsize=9)
-        fig.tight_layout(rect=(0, 0, 1, 0.975))
+        fig.suptitle(title + "\n(yellow/red = Grad-CAM of the class logit, brighter = more influential)", fontsize=9)
+        fig.tight_layout(rect=(0, 0, 1, 0.97))
         fig.savefig(out / fname, dpi=120)
         plt.close(fig)
 
-    panel(pick_c, f"{run_name}: correct test predictions",
-          "gradcam_correct.png", False)
-    panel(pick_w, f"{run_name}: incorrect test predictions",
-          "gradcam_incorrect.png", True)
+    panel(picks["correct"], f"{run_name}: correct test predictions", "gradcam_correct.png", False)
+    panel(picks["incorrect"], f"{run_name}: incorrect test predictions", "gradcam_incorrect.png", True)
 
     with open(out / "examples.csv", "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["set", "test_index", "true", "predicted", "confidence",
-                    "p_horizontal", "p_vertical", "p_diagonal", "p_block"])
-        for name, picks in (("correct", pick_c), ("incorrect", pick_w)):
-            for r in picks:
-                w.writerow([name, r["index"], CLASS_NAMES[r["true"]], CLASS_NAMES[r["pred"]],
-                            f"{r['conf']:.3f}", *[f"{p:.3f}" for p in r["probs"]]])
-    if supabase:
-        (out / "source.json").write_text(json.dumps({
-            "source": "supabase", "experiment_group": group, "run_name": run_name,
-            "run_id": run["id"], "dataset_id": run["dataset_id"],
-            "dataset": {k: ds[k] for k in ("name", "n_rows", "img_size", "noise", "seed")},
-            "split_seed": cfg["split_seed"], "split_sha256": run.get("split_sha256"),
-            "stored_accuracy": run["accuracy"], "regenerated_accuracy": float(acc),
-            "n_test": len(rows), "n_correct": len(correct), "n_incorrect": len(wrong),
+        w.writerow(["set", "test_index", "true", "predicted", "confidence", "cam_mass_on_garment",
+                    *[f"p_{n}" for n in names]])
+        for name, idxs in picks.items():
+            for i in idxs:
+                mass = cam_mass_on_garment(data.x_test[i], cam_for_class(loaded, data.x_test[i], int(pred[i])))
+                w.writerow([name, i, names[y[i]], names[pred[i]], f"{conf[i]:.3f}", f"{mass:.3f}",
+                            *[f"{p:.3f}" for p in probs[i]]])
+    source = {
+        "dataset": fashion.DATASET_NAME, "class_names": names, "selection_rule": SELECTION_RULE,
+        "n_test": int(len(y)), "n_correct": int((pred == y).sum()), "n_incorrect": int((pred != y).sum()),
+        "regenerated_accuracy": acc, "temperature": loaded.temperature,
+        "checkpoint": {"artifact_version": loaded.artifact_version, "dataset": loaded.dataset.get("name")},
+    }
+    if run is not None:
+        source.update({
+            "source": "supabase-or-local-store", "experiment_group": run.get("experiment_group"),
+            "run_name": run.get("run_name"), "run_id": run["id"], "dataset_id": run.get("dataset_id"),
+            "stored_accuracy": run["accuracy"], "split_sha256": run.get("split_sha256"),
             "run_created_at": run.get("created_at"),
-        }, indent=2) + "\n")
-    print(f"{run_name}: test accuracy {acc:.4f} (matches stored), {len(correct)} correct, {len(wrong)} wrong")
-    print(open(out / "examples.csv").read())
+        })
+    (out / "source.json").write_text(json.dumps(source, indent=2) + "\n")
+    return source
+
+
+def main(db_file: str, run_name: str, group: str, out_dir: str, supabase: bool = False) -> None:
+    if supabase:
+        run, _ds, model_b64 = load_from_supabase(run_name, group)
+    else:
+        run, _ds, model_b64 = load_from_file(db_file, run_name, group)
+    data = fashion.load()
+    src = build_evidence(model_b64, data, Path(out_dir), run, run_name)
+    print(f"{run_name}: test accuracy {src['regenerated_accuracy']:.4f} (matches stored), "
+          f"{src['n_correct']} correct, {src['n_incorrect']} wrong")
+    print((Path(out_dir) / "examples.csv").read_text())
 
 
 if __name__ == "__main__":

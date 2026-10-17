@@ -1,7 +1,8 @@
 """Matched run configurations for the baseline-vs-improved comparison.
 
-Six variants, all trained on the same dataset, split and seeds with the same
-epochs, batch size, optimizer (Adam, fixed by the API) and initial learning rate:
+Six variants, all trained on the same dataset (Fashion-MNIST, official train/test
+partitions), validation split and seeds with the same epochs, batch size, optimizer
+(Adam, fixed by the API) and initial learning rate:
 
     baseline          SmallCNN, no techniques
     full_improved     ImprovedCNN + batch norm + dropout + augmentation + cosine LR
@@ -18,7 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Optional
 
 VARIANTS = (
     "baseline",
@@ -40,7 +41,7 @@ ABLATED_FIELD = {
 # Fields that must be identical in every run of the same training seed.
 MATCHED_FIELDS = (
     "dataset_id", "experiment_group", "lr", "batch_size", "epochs",
-    "test_size", "val_size", "split_seed", "train_seed", "augment_max_shift",
+    "val_size", "train_limit", "split_seed", "train_seed", "augment_max_shift",
 )
 
 
@@ -53,8 +54,8 @@ class Protocol:
     batch_size: int
     lr: float
     split_seed: int
-    test_size: float = 0.2
-    val_size: float = 0.1
+    val_size: float = 0.1         # fraction of the official TRAINING images held out for validation
+    train_limit: Optional[int] = None  # None = all training images; a number is a documented subset
     dropout: float = 0.3          # strength used where dropout is on
     augment_max_shift: int = 2    # pixels, where augmentation is on
     scheduler: str = "cosine"     # used where the scheduler is on
@@ -102,8 +103,8 @@ def build_payload(protocol: Protocol, variant: str, train_seed: int, group: str)
         "lr": protocol.lr,
         "batch_size": protocol.batch_size,
         "epochs": protocol.epochs,
-        "test_size": protocol.test_size,
         "val_size": protocol.val_size,
+        "train_limit": protocol.train_limit,
         "augment_max_shift": protocol.augment_max_shift,
         "split_seed": protocol.split_seed,
         "train_seed": train_seed,
