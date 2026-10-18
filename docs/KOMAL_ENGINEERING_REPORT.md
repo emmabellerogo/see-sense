@@ -32,6 +32,7 @@ For Grad-CAM, the pipeline selects genuinely correct and incorrect test predicti
 - Read the assignment before choosing a dataset. The synthetic shapes came from the starter, and the mismatch with the required Fashion-MNIST was caught late. Neither of us introduced it, but we both should have checked sooner.
 - Run more seeds and a larger-capacity variant, to separate "techniques hurt" from "this model is too small."
 - Compute provenance from Supabase from the start, not a local replica.
+- Test beyond the benchmark earlier. Supplementary probes run after the official evaluation (10 bundled test images, run 54; not benchmark results) showed that a white background pushed most images to Bag with high confidence. The app now warns before upload; the model itself is unchanged.
 
 ## Ethics and my Christian worldview
 [Komal: write your own reflection. Nothing about your beliefs, tradition or Scripture reading has been assumed here. You may connect it to reporting a null result honestly, to disclosing the dataset error, or to the privacy choices (hashes instead of pixels), but only if that reflects what you think.]

@@ -44,6 +44,11 @@ Details, intervals, per-class results, calibration and Grad-CAM: [MODEL_CARD.md]
 
 **Historical (not Fashion-MNIST):** the first version of the project was built on four generated shapes (group `official-supabase-1`, 2,000 images, 30 runs). That experiment is kept for transparency in [experiments/results/official-supabase-1-analysis/summary.md](experiments/results/official-supabase-1-analysis/summary.md), [docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md](docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md) and [docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md](docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md). Its numbers say nothing about Fashion-MNIST.
 
+**Known limitation (distribution shift).** The model expects Fashion-MNIST-style images: a centered, light clothing item on a dark background.
+Ordinary photos, especially with light backgrounds, can receive incorrect high-confidence predictions; in our supplementary probes (10 bundled test
+images, run 54, run after the official evaluation, not a benchmark result) a white background pushed most images to **Bag**. The app does not invert,
+crop or reject uploads. Use the bundled held-out examples (Try It, Option B) to see expected behaviour. Details: [MODEL_CARD.md](MODEL_CARD.md) → Limitations.
+
 ## Data: persisted vs not persisted
 
 | Persisted in Supabase | Never persisted |

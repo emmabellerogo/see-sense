@@ -143,6 +143,15 @@ looking at the results; the method was not changed.
 
 ## Limitations
 - **Small, standard benchmark:** Fashion-MNIST images are centred, low-resolution and uniform. Accuracy here says little about real clothing photos.
+- **Light-background inputs are pushed towards Bag (distribution shift).** The model was trained only on light items on dark backgrounds and the
+  app does not invert, crop or reject uploads. In a supplementary robustness check run **after** the official evaluation (not an official benchmark
+  result, not part of the 18-run comparison): the 10 bundled held-out test images, served model run 54, direct inference with nothing logged. With
+  the background turned white and the item pixels unchanged, 8 of the 9 non-bag images were predicted Bag (confidence 0.63-1.00; only the pullover
+  survived). With a dark item on white, 4 of the 9 became Bag at 0.97-1.00 (sneaker, ankle boot, sandal, shirt), 3 became other wrong classes (dress
+  → trouser, T-shirt → pullover, coat → shirt) and 2 stayed correct (trouser, pullover). A wrong answer can carry very high confidence, and
+  the temperature scaling does not fix that. Ordinary photos usually have light backgrounds, so expect this. These are small probes (10 images,
+  one model, one construction of the background), not a measured failure rate; the probe script is not part of the saved evidence. The Try It tab
+  warns before upload and recommends the bundled examples.
 - **Confusable classes:** Shirt is the weakest class (F1 0.64 for the served model) and is mostly confused with T-shirt/top, Coat and
   Pullover; these four upper-body classes account for most errors in every variant.
 - **Small model:** about 9,000 parameters, chosen for transparency and cheap training, not for the best possible accuracy.

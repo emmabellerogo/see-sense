@@ -243,3 +243,31 @@ def test_try_it_refuses_a_served_run_that_is_not_the_configured_fashion_model(mo
     at, posts = _try_it(monkeypatch, tmp_path, historical, Resp(200, _predict_body()))
     assert any("not the expected Fashion-MNIST model" in e.value for e in at.error)
     assert not [b for b in at.button if b.label == "Classify this example"] and posts == []
+
+
+# ---- Upload warning (distribution shift) ------------------------------------------------------------------
+EXPECTED_WARNING = (
+    "This model expects Fashion-MNIST-style images: a centered, light clothing item on a dark background. "
+    "Ordinary photos, especially those with light backgrounds, may receive incorrect high-confidence predictions."
+)
+
+
+def test_try_it_warns_before_upload_and_recommends_the_bundled_samples(monkeypatch, tmp_path):
+    at, posts = _try_it(monkeypatch, tmp_path, RUN_OK, Resp(200, _predict_body()))
+    assert not at.exception, [e.value for e in at.exception]
+    assert EXPECTED_WARNING in [w.value for w in at.warning]
+    assert any("bundled held-out examples" in c.value and "Option B" in c.value for c in at.caption)
+    assert posts == []  # the warning is shown with nothing sent or logged, and uploads are not altered or rejected for it
+
+
+def test_the_warning_is_not_a_background_detector():
+    """Documented limitation only: the UI must not invert, crop or reject uploads on its own guess about the background."""
+    import inspect
+    sys_path = str(APP.parent)
+    if sys_path not in sys.path:
+        sys.path.insert(0, sys_path)
+    import tryit
+
+    assert tryit.UPLOAD_WARNING == EXPECTED_WARNING
+    src = inspect.getsource(tryit.validate_upload) + inspect.getsource(tryit.predict_upload)
+    assert "invert" not in src.lower() and "background" not in src.lower()
