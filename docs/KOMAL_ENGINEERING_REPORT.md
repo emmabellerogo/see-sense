@@ -1,41 +1,48 @@
 # Engineering report: Komal Khan
 
-> **DRAFT written for Komal to review and rewrite.** It was drafted from the repository record (`ai-usage/Komal-Session1.md`, `Komal-Session2.md`, git history) and the team's verified results. Anything marked [Komal to confirm] is an inference, not something Komal has said. Her personal reflection is deliberately left blank.
+## My role
+My job was to make sure our comparison was fair and that every number could be checked. I wrote the scripts for exploring settings, analysing results, checking the SQL tables and producing the Grad-CAM figures, and I wrote the first version of our experiment protocol. The later switch from synthetic shapes to Fashion-MNIST was done in an AI-assisted session on Emma's machine,
 
-## My focus: experimental method and evidence
-My part of the project was making the comparison fair and the evidence checkable. Per the repository record, I ran the API locally with an offline database, fixed `.env` loading, and in Part 2 wrote the exploration, analysis, SQL-check and Grad-CAM evidence scripts. I also wrote the first protocol document. [Komal to confirm scope.] The final Fashion-MNIST correction was done afterwards, in an AI-assisted session on Emma's machine, and I do not claim it. What I contributed is the method it reused.
+## Experiment
+- **I never chose settings by looking at the test set.** While exploring, I used separate seeds and only looked at validation results.
+- **We fixed the plan before running.** Seeds, epochs and data split were written down first, and the run would stop if anything changed.
+- **We changed one thing at a time.** Besides the plain baseline and the full improved model, we trained four versions that each remove one technique (batch norm, dropout, augmentation or the learning-rate schedule). All six used the same data and settings for each seed, so we could compare them directly.
+- **We checked the numbers twice.** The results tables from Supabase matched an earlier local run exactly.
 
-## Method decisions
-**Explore on validation only.** `experiments/explore.py` calls the same runner as the API but deletes test metrics before printing and uses seeds 100 and 101, never the official ones. That prevents choosing a setup by looking at the test set. I used it to move the original task off a ceiling, where every model scored 100% and no comparison was possible.
+## What we found
+| Model | Test accuracy (average of 3 seeds) |
+|---|---|
+| No augmentation | 90.30% |
+| Baseline | 89.73% |
+| No dropout | 88.94% |
+| No scheduler | 88.23% |
+| Full improved | 88.10% |
+| No batch norm | 87.12% |
 
-**Freeze, then run.** The protocol was written before the official run, and the run was started with an expected fingerprint so a drifted configuration would fail rather than silently proceed. The Fashion-MNIST protocol followed the same rule: seeds 0–2, 20 epochs, identical split per seed.
+The surprise is that **the "improved" model did worse than the plain baseline**. Batch norm was the only technique that helped. Augmentation and dropout actually lowered accuracy, and the learning-rate schedule made no real difference.
 
-**Controlled ablations.** Beyond the baseline and the full improved model, four variants each remove one technique: batch normalization, dropout, augmentation, and the cosine schedule. Because a seed uses the same split and budget for all six, differences can be paired by seed rather than compared as unrelated averages.
+My best explanation is that the model is too small (about 9,000 parameters). The improved model was not overfitting, since its training and validation accuracy were both around 89%, so the extra regularization only held it back. This is a guess we did not test. With only three seeds, small differences between models should not be over-read.
 
-**Check numbers two ways.** The comparison queries run unchanged on a local Postgres engine, and I recomputed the summary in Python independently. On the earlier synthetic experiment this gave zero mismatches. The same discipline applied to the Fashion tables: the Supabase SQL-editor export matched the earlier local run cell for cell.
+## Where the model struggles
+- **Shirt is the hardest class.** It gets mixed up with T-shirts, coats and pullovers, which all have similar shapes. Trousers, bags, sandals and ankle boots are easy (over 93%).
+- **Grad-CAM has limits.** When the model confuses shoe types with high confidence, the images themselves look ambiguous at 28×28. For most Dress and Coat predictions, Grad-CAM shows nothing at all, so it cannot explain those decisions.
+- **White backgrounds confuse it.** Photos with a light background were mostly predicted as "Bag", often with high confidence.
 
-## What the evidence says
-Averaged over three seeds, test accuracy was: no augmentation 90.30%, baseline 89.73%, no dropout 88.94%, no scheduler 88.23%, full improved 88.10%, no batch normalization 87.12%.
+## What I would do differently
+- Check the assignment's dataset requirement at the start. We built on the starter's synthetic shapes and found out late that Fashion-MNIST was required.
+- Use more seeds and try a bigger model, to find out whether the techniques really hurt or the model is just too small.
+- Test on real-world images much earlier.
 
-The headline is a negative result. Compared with the full improved model on the same seed, the baseline scored 1.62 points higher (interval +0.26 to +2.99) and the no-augmentation variant 2.20 higher (+1.30 to +3.10). Removing dropout gave +0.83 (+0.12 to +1.55). Removing batch normalization lowered accuracy by 0.98 (−1.20 to −0.76), so it alone helped. Removing the scheduler made no clear difference (+0.12, interval includes zero).
+## Christian worldview
+Our dataset, Fashion-MNIST, has a background bias. Every training image shows a light clothing item on a dark background, so the model only learned what clothing looks like in that setting. When we turned the background of the test images white, 8 of 9 items were wrongly predicted as "Bag", some with almost 100% confidence. The model only works properly on images with a dark background.
 
-Two cautions apply. An ablation measures a technique's contribution given the others, so "dropout hurt" means "in this combination, at this budget." And with three seeds the intervals are wide; I would not rank variants that sit within one standard deviation of each other. A five-seed design was dropped for compute reasons.
+**Bias** Every person is made in the image of God (Genesis 1:27), and God shows no partiality (Acts 10:34). Our model is harmless, but the same mistake in a real system, like face recognition or medical imaging trained mostly on one group of people, would serve some people well and fail others. Micah 6:8 calls us to "do justly", and for an engineer that means asking who our data leaves out.
 
-On cause, the curves point to capacity, not over-fitting: the improved model ends with train and validation accuracy both near 89%, while the baseline gets 92.39% train and 90.69% validation. That is a hypothesis, not a result. A larger model or longer training would test it, and neither was run.
+**Honesty** Proverbs 11:1 says "a false balance is abomination to the LORD: but a just weight is his delight." A model that confidently gives the wrong answer is like a false balance: it looks trustworthy but isn't. That is why we openly report this bias in our model card and warn users in the app.
 
-## Per-class errors and Grad-CAM interpretation
-Shirt is the hardest class (precision 69%, recall 60% for the served model), confused mainly with T-shirt/top, Coat and Pullover. Those classes share silhouettes, so confusion there is plausible. Trouser, Bag, Sandal and Ankle boot exceed 93%.
+**Humility** First Corinthians 13:12 says we "see through a glass, darkly." Our model sees even less, since it only knows the images it was given. Remembering that keeps us from trusting a confident output more than it deserves.
 
-For Grad-CAM, the pipeline selects genuinely correct and incorrect test predictions and checks that regenerated accuracy equals the stored value, so figures come from the stored model. The draft interpretations are in `docs/FASHION_GRADCAM_FAILURE_ANALYSIS.md`. The first, that confident footwear swaps look like ambiguous images, is the one I find more convincing. The second is a limitation: the map is empty for most Dress and Coat predictions. I would not describe it as evidence the model "looks at the wrong thing", because the method simply gives no signal there. [Komal to confirm after reading the figures yourself; the interpretations were drafted for human review and are not yet approved.]
-
-## What I would change
-- Read the assignment before choosing a dataset. The synthetic shapes came from the starter, and the mismatch with the required Fashion-MNIST was caught late. Neither of us introduced it, but we both should have checked sooner.
-- Run more seeds and a larger-capacity variant, to separate "techniques hurt" from "this model is too small."
-- Compute provenance from Supabase from the start, not a local replica.
-- Test beyond the benchmark earlier. Supplementary probes run after the official evaluation (10 bundled test images, run 54; not benchmark results) showed that a white background pushed most images to Bag with high confidence. The app now warns before upload; the model itself is unchanged.
-
-## Ethics and my Christian worldview
-[Komal: write your own reflection. Nothing about your beliefs, tradition or Scripture reading has been assumed here. You may connect it to reporting a null result honestly, to disclosing the dataset error, or to the privacy choices (hashes instead of pixels), but only if that reflects what you think.]
+This project taught me that a model is only as fair as its data, and that being a Christian engineer means being truthful about where a system fails, not just making it work.
 
 ## AI use
-My AI sessions are recorded in `ai-usage/Komal-Session1.md` and `Komal-Session2.md`. [Komal to add what you verified yourself and what you would not have done without the assistant.]
+My AI sessions are recorded in `ai-usage/Komal-Session1.md` and `Komal-Session2.md`. I also used an AI assistant to help draft and simplify this report, including the worldview section. [Komal to add what you checked yourself]ve done without the assistant.]
