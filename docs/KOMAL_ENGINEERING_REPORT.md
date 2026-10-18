@@ -45,4 +45,4 @@ Our dataset, Fashion-MNIST, has a background bias. Every training image shows a 
 This project taught me that a model is only as fair as its data, and that being a Christian engineer means being truthful about where a system fails, not just making it work.
 
 ## AI use
-My AI sessions are recorded in `ai-usage/Komal-Session1.md` and `Komal-Session2.md`. I also used an AI assistant to help draft and simplify this report, including the worldview section. [Komal to add what you checked yourself]ve done without the assistant.]
+My AI sessions are recorded in `ai-usage/Komal-Session1.md` and `Komal-Session2.md`. I also used an AI assistant to help draft and simplify this report
