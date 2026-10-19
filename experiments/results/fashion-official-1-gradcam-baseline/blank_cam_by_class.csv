@@ -1,0 +1,11 @@
+predicted_class,n_predictions,n_blank_cam,share_blank
+T-shirt/top,1034,10,0.0097
+Trouser,1003,1,0.0010
+Pullover,1020,744,0.7294
+Dress,987,987,1.0000
+Coat,996,996,1.0000
+Sandal,1016,0,0.0000
+Shirt,957,0,0.0000
+Sneaker,1030,1030,1.0000
+Bag,999,0,0.0000
+Ankle boot,958,958,1.0000

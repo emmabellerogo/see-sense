@@ -1,0 +1,21 @@
+set,test_index,true,baseline_pred,baseline_correct,baseline_conf,baseline_cam_mass_on_garment,baseline_blank_map,improved_pred,improved_correct,improved_conf,improved_cam_mass_on_garment,improved_blank_map
+improved_correct_set,19,T-shirt/top,T-shirt/top,True,0.930,0.966,False,T-shirt/top,True,0.934,0.986,False
+improved_correct_set,2,Trouser,Trouser,True,1.000,0.679,False,Trouser,True,1.000,0.613,False
+improved_correct_set,1,Pullover,Pullover,True,0.998,0.000,True,Pullover,True,0.998,0.899,False
+improved_correct_set,13,Dress,Dress,True,0.996,0.000,True,Dress,True,0.994,0.000,True
+improved_correct_set,6,Coat,Coat,True,0.978,0.000,True,Coat,True,0.853,0.000,True
+improved_correct_set,8,Sandal,Sandal,True,0.994,0.023,False,Sandal,True,0.938,0.100,False
+improved_correct_set,4,Shirt,Shirt,True,0.804,0.890,False,Shirt,True,0.848,0.904,False
+improved_correct_set,9,Sneaker,Sneaker,True,1.000,0.000,True,Sneaker,True,0.998,0.056,False
+improved_correct_set,18,Bag,Bag,True,0.999,0.550,False,Bag,True,0.998,0.748,False
+improved_correct_set,0,Ankle boot,Ankle boot,True,0.981,0.000,True,Ankle boot,True,0.978,0.092,False
+improved_incorrect_set,3466,T-shirt/top,Sandal,False,0.961,0.030,False,Sandal,False,1.000,0.122,False
+improved_incorrect_set,4462,Dress,Trouser,False,0.988,0.493,False,Trouser,False,0.999,0.523,False
+improved_incorrect_set,2914,Sneaker,Ankle boot,False,0.998,0.000,True,Ankle boot,False,0.999,0.088,False
+improved_incorrect_set,1111,T-shirt/top,Dress,False,0.998,0.000,True,Dress,False,0.999,0.000,True
+improved_incorrect_set,3084,Coat,Dress,False,0.997,0.000,True,Dress,False,0.999,0.000,True
+improved_incorrect_set,4405,Sandal,Sneaker,False,0.728,0.000,True,Sneaker,False,0.997,0.081,False
+improved_incorrect_set,9922,Sandal,Sandal,True,0.986,0.038,False,Ankle boot,False,0.995,0.067,False
+improved_incorrect_set,787,Trouser,Dress,False,0.983,0.000,True,Dress,False,0.993,0.000,True
+improved_incorrect_set,3188,Shirt,Pullover,False,0.968,0.000,True,Pullover,False,0.991,0.428,False
+improved_incorrect_set,5077,Ankle boot,Sneaker,False,0.947,0.000,True,Sneaker,False,0.989,0.073,False

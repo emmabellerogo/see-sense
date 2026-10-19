@@ -1,0 +1,56 @@
+{
+  "selection": "the 20 test indices already chosen for the improved model (examples.csv of fashion-official-1-gradcam); not re-selected after viewing any baseline map",
+  "n_images": 20,
+  "baseline_regenerated_accuracy": 0.9001,
+  "baseline_stored_accuracy": 0.9001,
+  "improved_regenerated_accuracy": 0.8782,
+  "improved_stored_accuracy": 0.8782,
+  "identity": {
+    "group": "fashion-official-1",
+    "dataset_id": 24,
+    "split_sha256": "786ed8107e43ef83d70d4905a8813c26927b352362675804427894557914b7b9",
+    "train_seed": 0,
+    "class_names": [
+      "T-shirt/top",
+      "Trouser",
+      "Pullover",
+      "Dress",
+      "Coat",
+      "Sandal",
+      "Shirt",
+      "Sneaker",
+      "Bag",
+      "Ankle boot"
+    ],
+    "preprocessing": {
+      "mode": "L",
+      "size": [
+        28,
+        28
+      ],
+      "resize": "bicubic (PIL default)",
+      "scale": 255.0,
+      "mean": 0.286,
+      "std": 0.353
+    },
+    "local_file_sha256_matches_stored_identity": true,
+    "baseline": {
+      "run_id": 53,
+      "run_name": "baseline-seed0",
+      "artifact_version": 3,
+      "temperature": 1.122398845602099
+    },
+    "improved": {
+      "run_id": 54,
+      "run_name": "full_improved-seed0",
+      "artifact_version": 3,
+      "temperature": 0.8705441487903772
+    }
+  },
+  "counts_on_shared_images": {
+    "baseline_correct": 11,
+    "improved_correct": 10,
+    "baseline_blank_maps": 12,
+    "improved_blank_maps": 5
+  }
+}
