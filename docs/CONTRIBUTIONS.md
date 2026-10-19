@@ -17,10 +17,9 @@ records exist, but they are not a substitute for a personal statement.
 ## Komal Khan
 
 **Contribution statement:**
-> TODO (Komal): describe in your own words what you built, decided and learned. Mention which
-> parts of the work were yours and which were done jointly.
+I was responsible for the experiment and the evidence. I fixed setup before the official run (Fashion-MNIST, 20 epochs, batch size 128, learning rate 0.001, seeds 0–2), ran all six configurations across three seeds (18 runs), saved them to Supabase and retrieved the results with SQL. Also preparing the Grad-CAM evidence and explained two failures. The switch to Fashion-MNIST was done by Emma. I learned that fair experiment matters more than a high score, our "improved" model did worse than the baseline, and that was still worth reporting.
 
-**Individual video link:** TODO — not yet recorded or linked: `<paste URL here>`
+**Individual video link:** [https://www.loom.com/share/d341818a31304cdb9add752bd470809a]
 
 ## Dataset correction (2026-10-17)
 The move from the synthetic shapes to Fashion-MNIST (branch `correction/fashion-mnist`) was done in an AI-assisted session on Emma's
