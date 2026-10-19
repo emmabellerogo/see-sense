@@ -2,7 +2,7 @@
 
 - **GitHub:** https://github.com/emmabellerogo/see-sense · **Streamlit Cloud:** https://see-sense-glpk38qzwsf9hhvnlkt798.streamlit.app/
 - **Render API:** https://see-sense-api-rhkb.onrender.com (`/healthz`, `/docs`) · **Supabase project ref:** `glcxpjaeobpppkizlcke`
-- **Videos:** Emma — ❌ *MISSING: not yet recorded* · Komal — loom video [https://www.loom.com/share/d341818a31304cdb9add752bd470809a]
+- **Videos:** Emma — [Video walkthrough](https://www.loom.com/share/8a3f95c3eb824a01a19407af70d2c41c) · Komal — loom video [https://www.loom.com/share/d341818a31304cdb9add752bd470809a]
 - **Engineering reports:** [Emma](docs/EMMA_ENGINEERING_REPORT.md) · [Komal](docs/KOMAL_ENGINEERING_REPORT.md) · Contributions: [docs/CONTRIBUTIONS.md](docs/CONTRIBUTIONS.md)
 
 **Streamlit UI ⇄ FastAPI model API ⇄ Supabase data.** A small PyTorch CNN classifies 28×28 grayscale pictures of clothing into the

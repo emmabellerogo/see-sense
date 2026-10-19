@@ -10,7 +10,7 @@ records exist, but they are not a substitute for a personal statement.
 > TODO (Emma): describe in your own words what you built, decided and learned. Mention which
 > parts of the work were yours and which were done jointly.
 
-**Individual video link:** TODO — not yet recorded or linked: `<paste URL here>`
+**Individual video link:** [Emma’s video walkthrough](https://www.loom.com/share/8a3f95c3eb824a01a19407af70d2c41c)
 
 **Disclosure reflection:** see the draft in [ETHICS_AND_DISCLOSURE.md](ETHICS_AND_DISCLOSURE.md) §6 (for Emma to review).
 
