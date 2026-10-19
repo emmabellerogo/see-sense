@@ -1,4 +1,4 @@
-# Fashion-MNIST experimental protocol (FROZEN 2026-10-17 — report still a DRAFT until results exist)
+# Fashion-MNIST experimental protocol (FROZEN 2026-10-17; official results exist)
 
 Machine-readable twin: [`config/fashion_protocol.json`](../config/fashion_protocol.json) (tests check that the two agree and that the plan is matched).
 Written and **frozen 2026-10-17, before any official Fashion-MNIST run and before any official test image was scored.** The earlier synthetic-shape protocol is
@@ -90,7 +90,7 @@ Estimated wall-clock for the full comparison (6 variants × 20 epochs; plus ~2 s
      `python -m experiments.ingest_sql_export <downloaded file> experiments/results/fashion-official-1-sql --source supabase-sql-editor`
      and `python -m experiments.analyze experiments/results/fashion-official-1-sql experiments/results/fashion-official-1-analysis`. Done on 2026-10-17: `PROVENANCE.md` in that folder now records source `supabase-sql-editor`, the database's own timestamp/version and the export's sha256.
    - Read-only verification of the saved records: `python -m experiments.export_records fashion-official-1 experiments/results/fashion-official-1-records`.
-7. Grad-CAM evidence (done for run 54): `python -m experiments.gradcam_evidence --supabase full_improved-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam` and `python -m experiments.cam_blank_check --supabase full_improved-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam/blank_cam_by_class.csv`; the two failure interpretations are a **draft** in `docs/FASHION_GRADCAM_FAILURE_ANALYSIS.md` for a person to review.
+7. Grad-CAM evidence (done for runs 54 and 53; the baseline folder `fashion-official-1-gradcam-baseline` was made with `python -m experiments.gradcam_evidence --supabase baseline-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam-baseline`, `python -m experiments.cam_blank_check --supabase baseline-seed0 ...` and `python -m experiments.gradcam_compare --supabase baseline-seed0 full_improved-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam experiments/results/fashion-official-1-gradcam-baseline`, all read-only, no retraining; improved, run 54): `python -m experiments.gradcam_evidence --supabase full_improved-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam` and `python -m experiments.cam_blank_check --supabase full_improved-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam/blank_cam_by_class.csv`; the two failure interpretations are a **draft** in `docs/FASHION_GRADCAM_FAILURE_ANALYSIS.md` for a person to review.
 8. `served_run_id` = 54 is set in `config/served_model.json` (done); deploy is a manual step.
 
 ## Things that can go wrong (and what to do)

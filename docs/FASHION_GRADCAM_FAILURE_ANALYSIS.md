@@ -56,5 +56,5 @@ analysis on the other seeds' checkpoints. If other seeds show blank maps for dif
 - Ten errors chosen by confidence are anecdotes. Neither example says how often this kind of mistake occurs; the confusion matrices
   and per-class tables do.
 - Whether a particular image is mislabelled or ambiguous is my reading of 28×28 pictures; it needs a person's judgement.
-- Only one checkpoint (seed 0, the lowest-scoring `full_improved` seed at 87.82% vs 88.10% and 88.39%) was examined.
+- Only one improved checkpoint (seed 0, the lowest-scoring `full_improved` seed at 87.82% vs 88.10% and 88.39%) was examined. The baseline (run 53) was examined afterwards on the same images: see [FASHION_GRADCAM_BASELINE_COMPARISON.md](FASHION_GRADCAM_BASELINE_COMPARISON.md) (also an unreviewed AI draft).
 - These interpretations apply to Fashion-MNIST only. The interpretations in `SUPABASE_GRADCAM_FAILURE_ANALYSIS.md` describe the earlier synthetic shapes and must not be reused.

@@ -22,8 +22,8 @@ and moves the synthetic experiment to a clearly labelled historical section.
 
 **Not done / not claimed.**
 - Official Fashion-MNIST results now exist (group `fashion-official-1`, runs 53-70, 3 seeds): the improved model did not beat the baseline, and the reports say so. SQL provenance is the Supabase SQL-editor export (ingested 2026-10-17); an earlier local dry run matched it.
-- Nothing was committed, pushed or deployed by the correction session. Migrations 004 and 005 were applied to Supabase by Emma and verified (live tests passed 2026-10-17); the deployed Render/Streamlit apps are still the earlier version.
+- Nothing was committed, pushed or deployed by the correction session. Migrations 004 and 005 were applied to Supabase by Emma and verified (live tests passed 2026-10-17); the deployed Render/Streamlit apps were redeployed from `main` afterwards (Render `/version` reports `24a09d5`, checked 2026-10-18).
 - No instructor approval has been obtained for anything. A question is drafted in `docs/INSTRUCTOR_QUESTION_DRAFT.md` and has **not** been sent.
 
 **Deviation to disclose in the final submission, if still unresolved then:** the first deployed version used synthetic shapes. The final evidence is
-Fashion-MNIST only if the official runs, the migrations and the redeployment are completed before the deadline (2026-10-18 23:59 America/Phoenix).
+Fashion-MNIST: the official runs, migrations and redeployment were completed (see the audit).

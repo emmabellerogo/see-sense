@@ -1,6 +1,6 @@
 # Dataset Card — Fashion-MNIST in See-Sense
 
-> **Status: DRAFT.** Describes the dataset and how this project uses it. Class counts and hashes below were measured from the
+> Describes the dataset and how this project uses it. Class counts and hashes below were measured from the
 > downloaded official files on 2026-10-17. The 18 official runs (group `fashion-official-1`, Supabase dataset id 24) recorded this
 > same dataset identity (file SHA-256 hashes match the files measured here). Model results are in [MODEL_CARD.md](../MODEL_CARD.md), not here.
 > (The earlier synthetic-shape dataset is documented in [DATASET_CARD_HISTORICAL_SYNTHETIC.md](DATASET_CARD_HISTORICAL_SYNTHETIC.md);

@@ -5,7 +5,7 @@ Status key used throughout:
 - **PROPOSED** — not implemented; a recommendation only. Nothing marked PROPOSED should be
   described as done.
 
-> **DRAFT** — written for the Fashion-MNIST version on branch `correction/fashion-mnist`; it describes the code on that branch, not the earlier synthetic-shape deployment still online.
+> Describes the deployed Fashion-MNIST version (`main`). Safeguards marked IMPLEMENTED are present in the repository; PROPOSED items are not.
 
 See-Sense is a teaching demo that classifies 28×28 grayscale clothing pictures (Fashion-MNIST, ten categories). The discussion
 below asks what would go wrong if a system like it, or its prediction-logging design,
@@ -42,7 +42,7 @@ were reused in the real world.
 
 | ID | Safeguard | Status | Evidence |
 |---|---|---|---|
-| T1 | **Store a hash and numbers, never pixels — and log atomically.** Uploaded files are decoded in memory; `image_metadata` holds only SHA-256, width, height, label, class name, confidence and timestamp; `predictions` holds SHA-256, label, probability vector, serving run and timestamp. Both rows are written in one transaction, and `/predict` returns an error (not a result) if logging fails. Grad-CAM images are not stored. | IMPLEMENTED in code and migrations 004/005 (prepared, **not yet applied** to Supabase); local-engine and mocked tests pass, live check pending | `api/db.py` `log_prediction`; `db/migrations/004`–`005`; `api/main.py` `/predict`; `tests/test_api_predict.py`, `tests/test_live_supabase.py` (live, opt-in) |
+| T1 | **Store a hash and numbers, never pixels — and log atomically.** Uploaded files are decoded in memory; `image_metadata` holds only SHA-256, width, height, label, class name, confidence and timestamp; `predictions` holds SHA-256, label, probability vector, serving run and timestamp. Both rows are written in one transaction, and `/predict` returns an error (not a result) if logging fails. Grad-CAM images are not stored. | IMPLEMENTED in code and migrations 004/005 (applied to Supabase by Emma); mocked and local-engine tests pass, and the opt-in live check passed on 2026-10-17 | `api/db.py` `log_prediction`; `db/migrations/004`–`005`; `api/main.py` `/predict`; `tests/test_api_predict.py`, `tests/test_live_supabase.py` (live, opt-in) |
 | T2 | **Least-privilege database access.** The UI uses only the anon key, which can read `runs` and the restricted views `recent_predictions` and `recent_classifications` (no hashes). `image_metadata`, `predictions` and `run_artifacts` have row-level security with no anon policy. The public `GET /predictions` omits hashes too. Writes use the service-role key, which stays on the API server and is never in the UI. | IMPLEMENTED | `db/migrations/001`–`005` (`003_verify.sql`, `004_verify.sql`, `005_verify.sql` check grants); README "Data" section; `.gitignore` excludes secret files |
 | T3 | **Errors do not leak internals.** Database failures return a generic 503 "database unavailable"; logs record the exception type or code only. Tests check that host names and keys do not appear in user-facing messages or logs. | IMPLEMENTED | `api/main.py` exception handlers; `tests/test_deploy_readiness.py`, `tests/test_ui_recent.py` |
 | T4 | **Upload size limit, content-type check and rate limiting on `/predict`.** | PARTLY IMPLEMENTED | A 5 MB size limit (HTTP 413) and image decoding checks (HTTP 422) exist; there is no per-client rate limit. |
@@ -83,31 +83,9 @@ Uploads of the 20 bundled held-out examples are logged the same way (their hashe
 
 ## 6. Reflection: responsible disclosure from a Christian worldview
 
-> **DRAFT — for Emma's personal review. This is a placeholder structure, not Emma's
-> beliefs. The text below was drafted by an AI assistant from the project's facts and
-> general themes; Emma should rewrite, replace or delete it in her own words before
-> submission. No personal belief, church tradition or Scripture reading has been
-> assumed or attributed to Emma or Komal.**
-
-Prompts and project facts to reflect on (edit freely):
-
-1. **Truthfulness about what the system is.** The project states plainly that it is a
-   benchmark demo and will report whatever the final experiment shows, including weak or null
-   results for individual techniques. It also discloses that an earlier version used the wrong
-   (synthetic) dataset.
-   *Reflection (Emma to write):* How does the commitment to truthful speech connect to
-   reporting the seed spread and not only the best run? [your words here]
-2. **Care for those who might be affected.** The hash-not-pixels design and the
-   out-of-scope list exist because uploaded images might belong to real people.
-   *Reflection (Emma to write):* What does it mean to love one's neighbour when you build
-   something others will use without reading the fine print? [your words here]
-3. **Humility about limits.** Grad-CAM can look plausible while wrong; known gaps in
-   section 4 are published rather than hidden.
-   *Reflection (Emma to write):* What place do confession of limits and accountability
-   have in how you disclose a system's weaknesses? [your words here]
-4. **Disclosure in practice.** Decide what responsible disclosure means for this project:
-   who a user or reviewer should contact, and how quickly a reported problem would be
-   fixed. This is currently undefined (G4). [your words here]
-
-If you cite Scripture or a tradition, add the specific passage and how you read it
-yourself; none has been chosen for you here.
+Each author wrote their own worldview reflection in their individual engineering report, in their own words:
+[Emma](EMMA_ENGINEERING_REPORT.md) (Genesis 1:27: power over image-bearers, and the use she would refuse to build) and
+[Komal](KOMAL_ENGINEERING_REPORT.md) (bias, honesty and humility). This document does not add beliefs for either of them.
+What the project itself does about disclosure: it reports the null result for the improved model, discloses the earlier wrong dataset
+(`PROJECT_NOTES.md`), labels the blank Grad-CAM limitation, and lists the gaps in section 4. A reporting contact and response time
+are **not defined** (G4).
