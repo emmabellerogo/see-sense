@@ -1,6 +1,6 @@
 # Part 2 results: baseline vs improved CNN on Fashion-MNIST
 
-> **DRAFT.** Numbers are the official saved run records (group `fashion-official-1`, runs 53–70). The tables come from the project's SQL
+> Numbers are the official saved run records (group `fashion-official-1`, runs 53–70). The tables come from the project's SQL
 > queries run in the Supabase SQL editor (export ingested 2026-10-17; `experiments/results/fashion-official-1-sql/PROVENANCE.md`).
 > The earlier synthetic-shape experiment is kept separately in [docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md](docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md).
 

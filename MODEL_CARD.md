@@ -1,6 +1,6 @@
 # Model Card — See-Sense (Fashion-MNIST)
 
-> **Status: DRAFT.** Official Fashion-MNIST results (group `fashion-official-1`, 18 runs, ids 53-70) are reported below.
+> **Status:** Official Fashion-MNIST results (group `fashion-official-1`, 18 runs, ids 53-70) are reported below.
 > They are real saved run records, and the tables were produced by running the project's SQL queries in the **Supabase SQL editor**
 > (export ingested 2026-10-17; see *Results*). The earlier four-class *synthetic-shape* experiment
 > is documented separately under **Historical** at the end; it is not Fashion-MNIST and must not be read as Fashion-MNIST performance.
@@ -123,11 +123,21 @@ local-engine dry run of the same queries cell for cell.
 ## Grad-CAM evidence
 Generated from the saved run-54 checkpoint (`experiments/results/fashion-official-1-gradcam/`): regenerated test accuracy 87.82%, identical
 to the stored value. Fixed selection rule: one correct example per class (10) and the ten most confident errors (one per distinct true →
-predicted pair first), so the error set is **not a typical sample of errors**. Two draft interpretations (to be checked by a person) are in
+predicted pair first), so the error set is **not a typical sample of errors**. Two interpretations (drafted by an AI assistant; **not yet confirmed by a person**) are in
 `docs/FASHION_GRADCAM_FAILURE_ANALYSIS.md`: footwear confusions at over 99% confidence look like ambiguous 28×28 images rather than the model
 looking at the wrong place; and **Grad-CAM is empty for 97.8% of Dress and 87.6% of Coat predictions** (and for at most 1.2% of any other
 class), so for those classes the heat map cannot explain the decision. This is a property of the method and this checkpoint, found by
 looking at the results; the method was not changed.
+
+**Baseline (run 53) and side-by-side.** The same method was applied to the saved baseline checkpoint
+(`experiments/results/fashion-official-1-gradcam-baseline/`): same group, dataset, split, labels and preprocessing (`identity_check.json`),
+regenerated test accuracy 90.01%, identical to the stored value; 10 correct and 10 incorrect examples by the same rule, and the improved
+model's 20 gallery images shown for both models. The baseline's predicted-class map is blank for **100% of Dress, Coat, Sneaker and
+Ankle boot predictions and 72.9% of Pullover**, so only some of its examples can be read as heat maps (5 of its 10 correct and 5 of its 10
+incorrect). On the improved model's ten confident errors the baseline predicted the same wrong class on nine and was right on one (#9922).
+A blank map means this method found no positive evidence; it does not mean no region supports the class. One seed per model; saliency
+shows where a score is sensitive, not why the model decides, and these figures do not explain why the baseline scored higher. The
+written comparison (`docs/FASHION_GRADCAM_BASELINE_COMPARISON.md`) is an AI draft that has **not** been confirmed by a person.
 
 ## Privacy and data handling
 - For every served prediction the API stores, in one transaction, a row in `image_metadata` (SHA-256 hash, width, height, label,

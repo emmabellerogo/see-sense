@@ -2,7 +2,7 @@
 
 - **GitHub:** https://github.com/emmabellerogo/see-sense · **Streamlit Cloud:** https://see-sense-glpk38qzwsf9hhvnlkt798.streamlit.app/
 - **Render API:** https://see-sense-api-rhkb.onrender.com (`/healthz`, `/docs`) · **Supabase project ref:** `glcxpjaeobpppkizlcke`
-- **Videos:** Emma — [Video walkthrough](https://www.loom.com/share/8a3f95c3eb824a01a19407af70d2c41c) · Komal — loom video [https://www.loom.com/share/d341818a31304cdb9add752bd470809a]
+- **Videos:** Emma — [Video walkthrough](https://www.loom.com/share/8a3f95c3eb824a01a19407af70d2c41c) · Komal — [Video walkthrough](https://www.loom.com/share/d341818a31304cdb9add752bd470809a)
 - **Engineering reports:** [Emma](docs/EMMA_ENGINEERING_REPORT.md) · [Komal](docs/KOMAL_ENGINEERING_REPORT.md) · Contributions: [docs/CONTRIBUTIONS.md](docs/CONTRIBUTIONS.md)
 
 **Streamlit UI ⇄ FastAPI model API ⇄ Supabase data.** A small PyTorch CNN classifies 28×28 grayscale pictures of clothing into the
@@ -10,11 +10,16 @@ ten **Fashion-MNIST** categories (T-shirt/top, trouser, pullover, dress, coat, s
 five most probable classes, and returns a **Grad-CAM** heatmap showing where the network looked. It is a teaching and evaluation
 project, not a general photo classifier.
 
-> **Status (draft, branch `correction/fashion-mnist`).** The code on this branch is the Fashion-MNIST version and the official experiment has
-> been run (group `fashion-official-1`, 18 runs, ids 53-70). The apps currently deployed at the URLs below are still the *earlier
-> synthetic-shape version* (from `main`) until this branch is deployed. The result tables were produced by the
-> project's SQL queries run in the Supabase SQL editor (export ingested 2026-10-17; see `experiments/results/fashion-official-1-sql/PROVENANCE.md`). See
-> [docs/PROJECT_NOTES.md](docs/PROJECT_NOTES.md) and [docs/SUBMISSION_CHECKLIST.md](docs/SUBMISSION_CHECKLIST.md).
+> **Status.** The Fashion-MNIST version is on `main`; the Render API reports build `24a09d5` at `/version` and serves run 54 from Supabase. The
+> official experiment (group `fashion-official-1`, 18 runs, ids 53–70) was run and its tables were produced by the project's SQL queries in the Supabase SQL editor
+> (export ingested 2026-10-17; see `experiments/results/fashion-official-1-sql/PROVENANCE.md`). The first version of the project used generated shapes; that history is
+> disclosed in [docs/PROJECT_NOTES.md](docs/PROJECT_NOTES.md) and kept separate from the final evidence. Audit and checklist: [docs/FINAL_SUBMISSION_AUDIT.md](docs/FINAL_SUBMISSION_AUDIT.md), [docs/SUBMISSION_CHECKLIST.md](docs/SUBMISSION_CHECKLIST.md).
+
+## Product pitch and dataset choice
+
+**Pitch.** A teaching team piloting an AI-literacy demo wants a tool that classifies an uploaded picture, shows the predicted class with calibrated probabilities, and shows which pixels drove the decision, so visitors see that a CNN does not see the way a person does. It also wants a public, anonymized *Recent Classifications* wall with a drill-down from any classification to the training run that produced it.
+
+**Dataset: Fashion-MNIST (not CIFAR-10).** Our reasons, all tied to the code: images are 28×28 grayscale, the shape our compact CNN, Grad-CAM and preprocessing already use; ten balanced classes with an official 60,000/10,000 train/test split (we carve a validation set from the training images and score the test set once per run); and it is small enough to train 18 matched runs on a laptop CPU and to serve on a free CPU-only Render instance. The cost is a limitation we state: images are centred garments on dark backgrounds, so photos with other backgrounds are out of distribution (see *Known limitation*).
 
 ## Live deployment URLs
 
@@ -28,7 +33,7 @@ project, not a general photo classifier.
 
 1. **Concepts** — convolution, stride/padding/output-size arithmetic with a worked example, receptive-field growth (three stacked 3×3 layers: 3 → 5 → 7), and the Grad-CAM derivation and limits, using this project's 10-class network (9,098 parameters for the baseline).
 2. **Try It** — classify an uploaded image or one of 20 bundled *held-out* clothing examples (the first two official-test images of each class). Shows the prediction, **top-five probabilities**, the input and Grad-CAM, and whether the prediction was logged. The model comes from [config/served_model.json](config/served_model.json) (fixed in advance, checked against the saved experiment records and verified against the API) — never a hard-coded run ID. Handles cold starts and errors; prediction requests are never retried automatically.
-3. **Compare Models** — the final Fashion-MNIST comparison (baseline, full improved and four leave-one-technique-out variants: tables, training/validation curves, confusion matrices, per-class precision/recall, calibration, Grad-CAM gallery) **once its evidence files exist** — until then the tab says plainly that they are not available. The earlier synthetic-shape experiment is shown separately in a clearly labelled historical section.
+3. **Compare Models** — the final Fashion-MNIST comparison (baseline, full improved and four leave-one-technique-out variants: tables, training/validation curves, confusion matrices, per-class precision/recall, calibration, and Grad-CAM galleries of 10 correct and 10 incorrect test predictions for **each** of the improved model (run 54) and the baseline (run 53), the same 20 test images shown for both models, and a table of blank-map counts; the written comparison is an AI draft not yet reviewed by the authors). If the evidence files are missing the tab says so plainly. The earlier synthetic-shape experiment is shown separately in a clearly labelled historical section.
 4. **Recent Classifications** — reads the latest ≤200 rows of the hash-free `recent_predictions` view with the anon key, shows a class-distribution histogram, and lets you **drill down from a classification to the run that produced it**.
 5. **Model Card** — [MODEL_CARD.md](MODEL_CARD.md).
 
@@ -48,6 +53,14 @@ Details, intervals, per-class results, calibration and Grad-CAM: [MODEL_CARD.md]
 Ordinary photos, especially with light backgrounds, can receive incorrect high-confidence predictions; in our supplementary probes (10 bundled test
 images, run 54, run after the official evaluation, not a benchmark result) a white background pushed most images to **Bag**. The app does not invert,
 crop or reject uploads. Use the bundled held-out examples (Try It, Option B) to see expected behaviour. Details: [MODEL_CARD.md](MODEL_CARD.md) → Limitations.
+
+## Individual contributions (summary)
+
+Full statements, the complete task inventory and evidence: [docs/CONTRIBUTIONS.md](docs/CONTRIBUTIONS.md).
+
+- **Emma:** CNNs, training and experiment runner, Supabase schema/migrations (applied by her), FastAPI service, five-tab dashboard, the Fashion-MNIST correction and the 18 official runs, deployment configuration.
+- **Komal:** offline/Windows API setup and verification, the first experiment protocol and the exploring/analysis/SQL-check/Grad-CAM-figure scripts, the earlier synthetic-shape experiment, her own engineering report and video.
+- Each person wrote their own engineering report and recorded their own video; AI use is recorded in [ai-usage/](ai-usage/).
 
 ## Data: persisted vs not persisted
 
@@ -80,8 +93,8 @@ config/                served_model.json (model Try It serves), fashion_protocol
 shared/                fashion.py (dataset loader, split, identity), schemas.py, synthetic_data.py (historical)
 api/                   FastAPI tier: main, training (CNN + Grad-CAM + checkpoints), calibration, db, experiments
 ui/                    Streamlit tier: app.py + concepts/evidence/recent/tryit modules, assets/samples, requirements.txt
-db/migrations/         001_init … 005 (+ *_verify.sql, *.md); 004 and 005 are prepared, NOT applied
-experiments/           matched-run runner, pilot, analysis, Grad-CAM evidence, results/
+db/migrations/         001_init … 005 (+ *_verify.sql, *.md); 004 and 005 were applied to the project's Supabase by Emma (2026-10-17)
+experiments/           matched-run runner, pilot, analysis, Grad-CAM evidence (gradcam_evidence, gradcam_compare), results/
 tools/                 fetch_fashion_mnist.py (the only downloader), export_samples.py
 docs/                  protocol, dataset card, ethics, checklist, notes, historical reports
 tests/                 pytest suite (mocked database; live tests are opt-in)
@@ -98,7 +111,7 @@ python tools/fetch_fashion_mnist.py     # training machine only: downloads + ver
 pytest -q                               # live Supabase tests are skipped unless SEE_SENSE_RUN_LIVE_TESTS=1
 ```
 
-**Database:** in the Supabase SQL Editor, run in order `001_init.sql`, `002_experiment_tracking.sql`, `003_recent_classifications_view.sql` (+ `003_verify.sql`), then `004_predictions.sql` (+ `004_verify.sql`) and `005_fashion_mnist_and_atomic_logging.sql` (+ `005_verify.sql`). Migrations only add things and are safe to re-run. **Apply 004 and 005 before deploying this branch's API** (see `db/migrations/004_predictions.md`, `005_*.md`).
+**Database:** in the Supabase SQL Editor, run in order `001_init.sql`, `002_experiment_tracking.sql`, `003_recent_classifications_view.sql` (+ `003_verify.sql`), then `004_predictions.sql` (+ `004_verify.sql`) and `005_fashion_mnist_and_atomic_logging.sql` (+ `005_verify.sql`). Migrations only add things and are safe to re-run. 004 and 005 are **required** by this version of the API (see `db/migrations/004_predictions.md`, `005_*.md`); they are already applied to the project's Supabase.
 
 **Secrets (never commit; git-ignored at any depth):**
 
