@@ -1,7 +1,7 @@
 # Engineering report: Komal Khan
 
 ## My role
-My job was to make sure our comparison was fair and that every number could be checked. I wrote the scripts for exploring settings, analysing results, checking the SQL tables and producing the Grad-CAM figures, and I wrote the first version of our experiment protocol. The later switch from synthetic shapes to Fashion-MNIST was done in an AI-assisted session on Emma's machine,
+My job was to make sure our comparison was fair and that every number could be checked. I wrote the scripts for exploring settings, analysing results, checking the SQL tables and producing the Grad-CAM figures, and I wrote the first version of our experiment protocol. The later switch from synthetic shapes to Fashion-MNIST was done by Emma in an AI-assisted session on her machine, including the 18 official Fashion-MNIST runs.
 
 ## Experiment
 - **I never chose settings by looking at the test set.** While exploring, I used separate seeds and only looked at validation results.
@@ -23,15 +23,31 @@ The surprise is that **the "improved" model did worse than the plain baseline**.
 
 My best explanation is that the model is too small (about 9,000 parameters). The improved model was not overfitting, since its training and validation accuracy were both around 89%, so the extra regularization only held it back. This is a guess we did not test. With only three seeds, small differences between models should not be over-read.
 
+Curves and confusion matrices are below; per-class precision and recall are in the [per-class metrics](../experiments/results/fashion-official-1-analysis/per_class_metrics.csv).
+
+![loss-curves](../experiments/results/fashion-official-1-analysis/loss_curves.png)
+![accuracy-curves](../experiments/results/fashion-official-1-analysis/accuracy_curves.png)
+![confusion-matrices](../experiments/results/fashion-official-1-analysis/confusion_matrices.png)
+
 ## Where the model struggles
 - **Shirt is the hardest class.** It gets mixed up with T-shirts, coats and pullovers, which all have similar shapes. Trousers, bags, sandals and ankle boots are easy (over 93%).
-- **Grad-CAM has limits.** When the model confuses shoe types with high confidence, the images themselves look ambiguous at 28×28. For most Dress and Coat predictions, Grad-CAM shows nothing at all, so it cannot explain those decisions.
+- **Grad-CAM has limits.** We made overlays for both models on the same 20 test images. The baseline made the same wrong prediction as the improved model on 9 of its 10 confident errors, including the shoe mix-ups, which look ambiguous at 28×28 (data or models, we cannot tell). Grad-CAM also shows nothing for many predictions: every baseline Dress, Coat, Sneaker and Ankle boot, and most improved Dress and Coat. A blank map does not prove no part of the image supports the class, so it cannot explain those decisions.
+
+![baseline-vs-improved-correct](../experiments/results/fashion-official-1-gradcam-baseline/gradcam_shared_correct_set.png)
+![baseline-vs-improved-incorrect](../experiments/results/fashion-official-1-gradcam-baseline/gradcam_shared_incorrect_set.png)
 - **White backgrounds confuse it.** Photos with a light background were mostly predicted as "Bag", often with high confidence.
 
 ## What I would do differently
 - Check the assignment's dataset requirement at the start. We built on the starter's synthetic shapes and found out late that Fashion-MNIST was required.
 - Use more seeds and try a bigger model, to find out whether the techniques really hurt or the model is just too small.
 - Test on real-world images much earlier.
+
+## Ethical reflection
+**Where harm could occur.** Harm could occur in medical triage (a confident wrong label delays care) and in surveillance or content moderation (a label on a person who cannot contest it). Grad-CAM can make a wrong answer look reasoned.
+
+**Safeguards a responsible team would add before shipping.** Technical: API authentication and rate limits, and a privacy notice before upload. Governance: a retention policy and a named contact. **None of these four is implemented**; our public API has no authentication or rate limit.
+
+**What we chose not to log.** We store no pixels, filenames, IP addresses or user identifiers, only a hash, the label and the probabilities. Uploads could be faces or documents.
 
 ## Christian worldview
 Our dataset, Fashion-MNIST, has a background bias. Every training image shows a light clothing item on a dark background, so the model only learned what clothing looks like in that setting. When we turned the background of the test images white, 8 of 9 items were wrongly predicted as "Bag", some with almost 100% confidence. The model only works properly on images with a dark background.
@@ -45,4 +61,4 @@ Our dataset, Fashion-MNIST, has a background bias. Every training image shows a 
 This project taught me that a model is only as fair as its data, and that being a Christian engineer means being truthful about where a system fails, not just making it work.
 
 ## AI use
-My AI sessions are recorded in `ai-usage/Komal-Session1.md` and `Komal-Session2.md`. I also used an AI assistant to help draft and simplify this report
+My AI sessions are recorded in `ai-usage/Komal-Session1.md` and `Komal-Session2.md`. I also used an AI assistant to help draft and simplify this report.
