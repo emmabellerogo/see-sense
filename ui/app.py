@@ -176,6 +176,18 @@ with concepts:
         "the 28×28 image, and neighbouring cells are 4 pixels apart. This is why Grad-CAM maps "
         "are coarse."
     )
+    st.markdown(
+        "**Receptive field and model capacity.** A cell can only use evidence inside its receptive "
+        "field, so the field limits what context a layer can combine, while the number of "
+        "parameters limits how many different patterns it can represent: that is the network's "
+        "*capacity*. Stacking small kernels grows the field cheaply (three 3×3 layers see 7×7 for "
+        "27 weights per channel pair, versus 49 for one 7×7 kernel) and the ReLU between layers "
+        "adds non-linearity that a single big kernel lacks. Our network is small (about 9,000 "
+        "parameters) and each of its final cells sees only 10×10 pixels; the linear layer is the "
+        "only place where the whole garment is combined. We observed that the network looks "
+        "capacity-limited (training and validation accuracy both near 89% for the improved model), "
+        "but we did not test whether a larger receptive field or more parameters would help."
+    )
 
     # ---- 4. Grad-CAM -------------------------------------------------------
     st.subheader("4. Grad-CAM: where did the network look?")
@@ -606,6 +618,78 @@ def _render_gradcam(ev, examples):
             st.markdown(interp["limits"])
 
 
+def _render_baseline_gradcam(ev, data):
+    src = data["source"]
+    st.caption(
+        f"Source: run `{src.get('run_name')}` (run id {src.get('run_id')}), regenerated test accuracy "
+        f"{src['regenerated_accuracy']:.2%} matching the stored {src['stored_accuracy']:.2%}; same group, dataset, "
+        "split, labels and preprocessing as the improved model (checked when the evidence was generated). "
+        "The weights were read from the saved checkpoint; nothing was retrained."
+    )
+    st.caption("Selection rule (the same fixed rule as for the improved model, applied to the baseline's own predictions): "
+               + src.get("selection_rule", ""))
+    n_by = {k: sum(e["set"] == k for e in data["examples"]) for k in ("correct", "incorrect")}
+    for set_name, fig in (("correct", "gradcam_correct"), ("incorrect", "gradcam_incorrect")):
+        st.markdown(f"#### Baseline: {set_name} predictions ({n_by[set_name]})")
+        path = ev.gradcam_baseline_dir / f"{fig}.png"
+        if path.is_file():
+            st.image(str(path), caption=f"Baseline Grad-CAM, {set_name} examples (blank panels are blank maps, see below).",
+                     use_column_width=True)
+        else:
+            st.warning(f"Figure not available: {path.name}")
+        st.dataframe(pd.DataFrame(
+            {"Test index": e["test_index"], "True": e["true"], "Predicted": e["predicted"],
+             "Confidence": f"{e['confidence']:.1%}"} for e in data["examples"] if e["set"] == set_name),
+            use_container_width=True, hide_index=True)
+
+    st.markdown("#### Blank Grad-CAM maps by predicted class (all 10,000 test images)")
+    st.caption("A blank map means this method found no positive evidence for the predicted class on this checkpoint. "
+               "It does not mean no region supports the class, and it is not evidence that the model ignored the image.")
+    try:
+        imp_blank = {r["predicted_class"]: r for r in evidence._read_csv(ev.gradcam_dir / "blank_cam_by_class.csv")}
+    except evidence.EvidenceError:
+        imp_blank = {}
+    rows = []
+    for cls in ev.classes:
+        b = data["blank"][cls]
+        i = imp_blank.get(cls)
+        rows.append({
+            "Predicted class": cls,
+            "Baseline blank": f"{b['blank']:,} of {b['n']:,} ({b['blank'] / max(b['n'], 1):.1%})",
+            "Improved blank": (f"{int(i['n_blank_cam']):,} of {int(i['n_predictions']):,} "
+                               f"({int(i['n_blank_cam']) / max(int(i['n_predictions']), 1):.1%})") if i else "n/a",
+        })
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+    st.markdown("#### Same test images, both models")
+    st.caption("The improved model's 20 gallery images, shown for both models. Each model's own prediction and "
+               "correctness are labelled separately; an image can be right for one model and wrong for the other. "
+               "These images were chosen from the improved model's galleries, so they say nothing about how often "
+               "either model errs. They do not replace the galleries above.")
+    shared = data["shared"]
+    for set_name in ("correct", "incorrect"):
+        path = ev.gradcam_baseline_dir / f"gradcam_shared_{set_name}_set.png"
+        if path.is_file():
+            st.image(str(path), caption=f"Baseline vs improved on the improved model's {set_name} gallery images.",
+                     use_column_width=True)
+        else:
+            st.warning(f"Figure not available: {path.name}")
+    st.dataframe(pd.DataFrame(
+        {"Test index": s["test_index"], "True": s["true"],
+         "Baseline": f"{s['baseline_pred']} ({s['baseline_conf']:.0%}) {'correct' if s['baseline_correct'] else 'wrong'}"
+                     + (", blank map" if s["baseline_blank"] else ""),
+         "Improved": f"{s['improved_pred']} ({s['improved_conf']:.0%}) {'correct' if s['improved_correct'] else 'wrong'}"
+                     + (", blank map" if s["improved_blank"] else "")}
+        for s in shared), use_container_width=True, hide_index=True)
+
+    try:
+        text = evidence.load_text_doc(evidence.BASELINE_COMPARISON_DOC)
+        with st.expander("What each model highlights (draft, not yet reviewed by the authors)", expanded=True):
+            st.markdown(text.split("\n", 1)[1] if text.startswith("# ") else text)
+    except evidence.EvidenceError as exc:
+        st.warning(f"Written comparison unavailable. {exc}")
+
+
 def _render_evidence_set(ev: "evidence.EvidenceSet", historical: bool):
     expected = ev.expected_seeds
     _section("Six-variant results", lambda: evidence.load_variant_summary(ev.sql_dir), lambda r: _render_summary(ev, r))
@@ -634,8 +718,12 @@ def _render_evidence_set(ev: "evidence.EvidenceSet", historical: bool):
                  lambda: evidence.load_calibration_summary(ev.analysis_dir), lambda r: _render_calibration(ev, r))
     st.divider()
     st.header("Grad-CAM gallery")
-    _section("Correct and incorrect examples",
+    _section("Correct and incorrect examples" if historical else
+             "Improved model (full_improved-seed0, run 54): correct and incorrect examples",
              lambda: evidence.load_gradcam_examples(ev.gradcam_dir, ev.gradcam_counts), lambda e: _render_gradcam(ev, e))
+    if not historical:
+        _section("Baseline (baseline-seed0, run 53): correct and incorrect examples, and a side-by-side comparison",
+                 lambda: evidence.load_baseline_gradcam(ev), lambda d: _render_baseline_gradcam(ev, d))
 
 
 with compare_tab:

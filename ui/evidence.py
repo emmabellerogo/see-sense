@@ -60,6 +60,10 @@ class EvidenceSet(NamedTuple):
     def gradcam_dir(self) -> Path:
         return RESULTS / f"{self.group}-gradcam"
 
+    @property
+    def gradcam_baseline_dir(self) -> Path:
+        return RESULTS / f"{self.group}-gradcam-baseline"
+
     def figure(self, name: str) -> Path:
         folder = self.gradcam_dir if name.startswith("gradcam") else self.analysis_dir
         return folder / f"{name}.png"
@@ -297,6 +301,81 @@ def load_gradcam_source(gradcam_dir: Path = GRADCAM_DIR) -> dict:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         raise EvidenceError(f"Missing or unreadable evidence file: {_rel(path)}") from None
+
+
+BASELINE_RUN_NAME = "baseline-seed0"
+BASELINE_COMPARISON_DOC = REPO_ROOT / "docs" / "FASHION_GRADCAM_BASELINE_COMPARISON.md"
+SHARED_REQUIRED = ("set", "test_index", "true", "baseline_pred", "baseline_correct", "baseline_conf",
+                   "baseline_blank_map", "improved_pred", "improved_correct", "improved_conf", "improved_blank_map")
+
+
+def _truthy(value: str, path: Path, col: str) -> bool:
+    if value not in ("True", "False"):
+        raise EvidenceError(f"{_rel(path)}: column {col} must be True or False, found {value!r}")
+    return value == "True"
+
+
+def load_baseline_gradcam(ev: "EvidenceSet") -> dict:
+    """The baseline model's own Grad-CAM evidence, the shared-image comparison and blank-map counts.
+
+    Refuses evidence that is not the baseline run of the same group, dataset, split and labels as the
+    improved evidence, whose regenerated accuracy differs from the stored one, or that has fewer than
+    five correct or five incorrect examples. Returns {'source', 'examples', 'blank', 'shared', 'identity'}.
+    """
+    import json
+    folder = ev.gradcam_baseline_dir
+    if not folder.is_dir():
+        raise EvidenceError(f"Missing evidence folder: {_rel(folder)}")
+    source = load_gradcam_source(folder)
+    improved = load_gradcam_source(ev.gradcam_dir)
+    if source.get("run_name") != BASELINE_RUN_NAME:
+        raise EvidenceError(f"{_rel(folder)}/source.json: expected run {BASELINE_RUN_NAME}, found {source.get('run_name')!r}")
+    for key in ("experiment_group", "dataset_id", "split_sha256", "class_names", "n_test"):
+        if source.get(key) != improved.get(key):
+            raise EvidenceError(f"Baseline and improved evidence differ in {key}: not a fair comparison")
+    if source.get("experiment_group") != ev.group:
+        raise EvidenceError("Baseline evidence is not from the official group")
+    if "stored_accuracy" not in source or abs(source["regenerated_accuracy"] - source["stored_accuracy"]) > 1e-9:
+        raise EvidenceError("Baseline regenerated accuracy does not equal the stored accuracy")
+    examples = load_gradcam_examples(folder, counts=None)
+    blank = {}
+    path = folder / "blank_cam_by_class.csv"
+    for r in _read_csv(path):
+        blank[r["predicted_class"]] = {"n": int(_num(r, "n_predictions", path)),
+                                       "blank": int(_num(r, "n_blank_cam", path))}
+    if set(blank) != set(ev.classes):
+        raise EvidenceError(f"{_rel(path)}: expected one row per class")
+    spath = folder / "shared_examples.csv"
+    shared = []
+    for r in _read_csv(spath):
+        missing = [c for c in SHARED_REQUIRED if c not in r]
+        if missing:
+            raise EvidenceError(f"{_rel(spath)}: missing columns {missing}")
+        shared.append({
+            "set": r["set"].replace("improved_", "").replace("_set", ""),
+            "test_index": int(_num(r, "test_index", spath)), "true": r["true"],
+            "baseline_pred": r["baseline_pred"], "baseline_correct": _truthy(r["baseline_correct"], spath, "baseline_correct"),
+            "baseline_conf": _num(r, "baseline_conf", spath), "baseline_blank": _truthy(r["baseline_blank_map"], spath, "baseline_blank_map"),
+            "improved_pred": r["improved_pred"], "improved_correct": _truthy(r["improved_correct"], spath, "improved_correct"),
+            "improved_conf": _num(r, "improved_conf", spath), "improved_blank": _truthy(r["improved_blank_map"], spath, "improved_blank_map"),
+        })
+    if len(shared) < 10:
+        raise EvidenceError(f"{_rel(spath)}: too few shared examples ({len(shared)})")
+    imp_idx = {e["test_index"] for e in load_gradcam_examples(ev.gradcam_dir, counts=None)}
+    if {s["test_index"] for s in shared} != imp_idx:
+        raise EvidenceError(f"{_rel(spath)}: shared images are not the improved model's gallery images")
+    try:
+        identity = json.loads((folder / "identity_check.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        raise EvidenceError(f"Missing or unreadable evidence file: {_rel(folder / 'identity_check.json')}") from None
+    return {"source": source, "examples": examples, "blank": blank, "shared": shared, "identity": identity}
+
+
+def load_text_doc(doc: Path) -> str:
+    try:
+        return doc.read_text(encoding="utf-8")
+    except OSError:
+        raise EvidenceError(f"Missing evidence file: {_rel(doc)}") from None
 
 
 def load_failure_interpretations(doc: Path = FAILURE_DOC) -> dict:

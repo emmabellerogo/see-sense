@@ -87,7 +87,7 @@ def test_model_card_fashion_numbers_match_the_saved_results():
 
     text = ev.load_model_card()
     section = text.split("# Historical:", 1)[0]
-    assert "Status: DRAFT" in section
+    assert "Supabase SQL editor" in section  # provenance is stated; the DRAFT banner was removed once it was settled
     by = {}
     for r in csv.DictReader(open(ev.FASHION.sql_dir / "q4.csv")):
         by.setdefault(r["run_name"].rsplit("-seed", 1)[0], []).append(float(r["test_accuracy"]))
