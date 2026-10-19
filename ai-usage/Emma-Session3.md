@@ -8317,3 +8317,4779 @@ Safeguards: decide whether to implement any PROPOSED safeguard, such as restrict
 Commit and push: the caption fix and docs reach the deployed app only after you commit, push and redeploy.
 
 
+I applied migrations 004 and 005 to Supabase. I confirmed runs has calibration and test_per_class.
+
+Verify the corrected integration against the real Supabase project using tests/test_live_supabase.py and the existing local credentials privately. Never print credentials.
+
+First inspect the test and explain any records it creates. Run the intended small live checks, including prediction-to-run linkage and anonymous permissions where credentials are available. Do not delete existing records or run official experiments.
+
+Confirm:
+- Existing datasets are identified as synthetic_shapes.
+- New metadata columns and atomic logging function exist.
+- A prediction saves linked predictions and image_metadata rows.
+- Anonymous access exposes only the intended view fields.
+
+Report actual passes/skips/failures. If successful, give me the exact next command to start the corrected local API and register Fashion-MNIST. Do not commit, push, deploy, or start full training.
+Show less
+1:38 PM
+I'll read the live test first, then run it.
+
+
+
+Read test_live_supabase.py
+Bash
+IN
+grep -n "def has_supabase_creds" -A12 tests/conftest.py; echo ---; sed -E 's/=.*/=<set>/' .env | grep -E '^[A-Z_]+=' ; echo ---; ls data 2>/dev/null | head; env | grep -c SEE_SENSE_LOCAL_DB
+
+OUT
+180:def has_supabase_creds() -> bool:
+181-    """True only when credentials are present AND live tests were asked for explicitly.
+182-
+183-    The live tests WRITE to the real project (a dataset, a trained run, predictions).
+184-    api/db.py loads .env on import, so credentials can be present without the person
+185-    running pytest intending to touch the cloud; hence the explicit opt-in:
+186-
+187-        SEE_SENSE_RUN_LIVE_TESTS=1 pytest tests/test_supabase_roundtrip.py
+188-    """
+189-    return bool(
+190-        os.environ.get("SEE_SENSE_RUN_LIVE_TESTS") == "1"
+191-        and os.environ.get("SUPABASE_URL")
+192-        and os.environ.get("SUPABASE_SERVICE_KEY")
+---
+SUPABASE_URL=<set>
+SUPABASE_SERVICE_KEY=<set>
+ALLOWED_ORIGINS=<set>
+---
+fashion-mnist
+0
+Bash
+IN
+ls -a ui/.streamlit 2>/dev/null; grep -l "anon" -r .streamlit ui/.streamlit 2>/dev/null; grep -nE "^\s*[A-Za-z_]+\s*=" ui/.streamlit/secrets.toml 2>/dev/null | sed -E 's/=.*/=<set>/'
+
+OUT
+.
+..
+secrets.toml
+secrets.toml.example
+.streamlit/secrets.toml.example
+ui/.streamlit/secrets.toml.example
+5:API_URL =<set>
+6:SUPABASE_URL =<set>
+9:SUPABASE_ANON_KEY =<set>
+I found the credentials and will load the anon key into the environment without printing it. Next, I'll run read-only checks on the existing datasets and the new schema.
+Bash
+IN
+cat > /private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/precheck.py <<'EOF'
+import os, tomllib
+from dotenv import load_dotenv
+load_dotenv()
+from supabase import create_client
+cl = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
+ds = cl.table("datasets").select("id,name,source,class_names").execute().data
+for d in ds: print("dataset", d["id"], d["name"], d["source"], len(d["class_names"] or []) , "classes")
+runs = cl.table("runs").select("id,calibration,test_per_class").limit(1).execute().data
+print("runs new columns selectable:", True, "| existing run count sample:", len(runs))
+print("run total:", cl.table("runs").select("id", count="exact").execute().count)
+print("predictions total:", cl.table("predictions").select("id", count="exact").execute().count)
+print("image_metadata total:", cl.table("image_metadata").select("id", count="exact").execute().count)
+# function exists? call with unknown run -> expect a DB error about the run, not 'function not found'
+try:
+    cl.rpc("log_prediction", {"p_run_id": -1, "p_sha256": "precheck", "p_width": 1, "p_height": 1,
+        "p_label": 0, "p_class": "x", "p_probs": [1.0], "p_conf": 1.0}).execute()
+    print("rpc: UNEXPECTED success")
+except Exception as e:
+    print("rpc error type:", type(e).__name__, "|", str(e)[:200])
+EOF
+.venv/bin/python /private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/precheck.py
+
+OUT
+Permission for this action was denied by the Claude Code auto mode classifier. Reason: The server-side auto mode classifier judged this action dangerous (it gave no explanation). If you have other tasks that don't depend on this action, continue working on those. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this denial in malicious ways, e.g. do not use your ability to run tests to execute non-test actions. You should only try to work around this restriction in reasonable ways that do not attempt to bypass the intent behind this denial. If you believe this capability is essential to complete the user's request, first try a safer method. Get as much of the rest of the task done as you can, then STOP and explain to the user what you were trying to do and why you need this permission. Let the user decide how to proceed. To allow this type of action in the future, the user can add a permission rule for Bash to their settings.
+1:38 PM
+An ad hoc script that reads credentials was blocked. I'll try the narrower route you named and run the test file itself.
+
+
+
+Bash
+IN
+SEE_SENSE_RUN_LIVE_TESTS=1 .venv/bin/python -m pytest tests/test_live_supabase.py -v -rs -p no:cacheprovider 2>&1 | tail -30
+
+OUT
+============================= test session starts ==============================
+platform darwin -- Python 3.11.15, pytest-8.3.3, pluggy-1.6.0 -- /Users/emmarogoveanu/Documents/GitHub/see-sense/.venv/bin/python
+rootdir: /Users/emmarogoveanu/Documents/GitHub/see-sense
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collecting ... collected 5 items
+
+tests/test_live_supabase.py::test_run_is_stored_with_fashion_identity_and_calibration SKIPPED [ 20%]
+tests/test_live_supabase.py::test_prediction_is_written_with_its_run_and_returned_by_get_predictions SKIPPED [ 40%]
+tests/test_live_supabase.py::test_both_rows_exist_in_the_database_and_hold_no_pixels SKIPPED [ 60%]
+tests/test_live_supabase.py::test_the_atomic_function_rejects_an_unknown_run_and_leaves_no_orphan_rows SKIPPED [ 80%]
+tests/test_live_supabase.py::test_anon_key_reads_the_hash_free_view_but_not_the_tables SKIPPED [100%]
+
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_live_supabase.py:60: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+SKIPPED [1] tests/test_live_supabase.py:68: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+SKIPPED [1] tests/test_live_supabase.py:88: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+SKIPPED [1] tests/test_live_supabase.py:108: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+SKIPPED [1] tests/test_live_supabase.py:121: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+============================== 5 skipped in 0.03s ==============================
+The test skip was a bug — the credential check runs at collection time, before .env gets loaded by api.db. I'll fix it by loading .env in the check itself, without overriding already-set variables so the blanked-env guard stays intact.
+Bash
+IN
+sed -n 188,200p tests/conftest.py
+
+OUT
+    """
+    return bool(
+        os.environ.get("SEE_SENSE_RUN_LIVE_TESTS") == "1"
+        and os.environ.get("SUPABASE_URL")
+        and os.environ.get("SUPABASE_SERVICE_KEY")
+    )
+Bash
+IN
+python3 - <<'EOF'
+p="tests/conftest.py"
+s=open(p).read()
+s=s.replace('''    """
+    return bool(
+        os.environ.get("SEE_SENSE_RUN_LIVE_TESTS") == "1"''','''    """
+    if os.environ.get("SEE_SENSE_RUN_LIVE_TESTS") == "1":
+        # api.db loads .env only when imported, which is after collection; load it here (never overrides
+        # variables that are already set, even blank ones, so `env SUPABASE_URL= ...` still disables it).
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    return bool(
+        os.environ.get("SEE_SENSE_RUN_LIVE_TESTS") == "1"''')
+open(p,"w").write(s)
+EOF
+sed -i '' 's/tests\/test_supabase_roundtrip.py/tests\/test_live_supabase.py/' tests/conftest.py
+# anon key: export into this process only, never echoed
+export SUPABASE_ANON_KEY="$(.venv/bin/python -c "import tomllib;print(tomllib.load(open('ui/.streamlit/secrets.toml','rb'))['SUPABASE_ANON_KEY'])")"
+SEE_SENSE_RUN_LIVE_TESTS=1 .venv/bin/python -m pytest tests/test_live_supabase.py -v -rs -p no:cacheprovider 2>&1 | tail -40
+
+OUT
+            self.http_method,
+            self.path,
+            json=self.json,
+            params=self.params,
+            headers=self.headers,
+        )
+        try:
+            if r.is_success:
+                if self.http_method != "HEAD":
+                    body = r.text
+                    if self.headers.get("Accept") == "text/csv":
+                        return body
+                    if self.headers.get(
+                        "Accept"
+                    ) and "application/vnd.pgrst.plan" in self.headers.get("Accept"):
+                        if "+json" not in self.headers.get("Accept"):
+                            return body
+                return APIResponse[_ReturnT].from_http_request_response(r)
+            else:
+>               raise APIError(r.json())
+E               postgrest.exceptions.APIError: {'code': '42501', 'details': None, 'hint': 'Grant the required privileges to the current role with: GRANT SELECT ON public.predictions TO anon;', 'message': 'permission denied for table predictions'}
+
+.venv/lib/python3.11/site-packages/postgrest/_sync/request_builder.py:78: APIError
+=============================== warnings summary ===============================
+tests/test_live_supabase.py::test_run_is_stored_with_fashion_identity_and_calibration
+  /Users/emmarogoveanu/Documents/GitHub/see-sense/.venv/lib/python3.11/site-packages/starlette/testclient.py:40: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
+
+tests/test_live_supabase.py::test_run_is_stored_with_fashion_identity_and_calibration
+  /Users/emmarogoveanu/Documents/GitHub/see-sense/.venv/lib/python3.11/site-packages/supabase/_async/auth_client.py:3: DeprecationWarning: The `gotrue` package is deprecated, is not going to receive updates in the future. Please, use `supabase_auth` instead.
+    from gotrue import (
+
+tests/test_live_supabase.py::test_run_is_stored_with_fashion_identity_and_calibration
+  /Users/emmarogoveanu/Documents/GitHub/see-sense/.venv/lib/python3.11/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_loader" in Health has conflict with protected namespace "model_".
+
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================== 1 failed, 4 passed, 3 warnings in 6.76s ====================
+The one failure was my faulty test assumption, not a real leak—anon lacks table grants entirely, so Postgres throws a permission error instead of returning an empty list. I'll adjust the assertion to accept either outcome and remove the test's dependency on the writing fixture.
+Bash
+IN
+python3 - <<'EOF'
+p="tests/test_live_supabase.py"
+s=open(p).read()
+s=s.replace("def test_anon_key_reads_the_hash_free_view_but_not_the_tables(live_run):\n    from supabase import create_client\n",
+"def test_anon_key_reads_the_hash_free_view_but_not_the_tables():\n    \"\"\"Needs no fixture: reads only (rows from earlier live runs / real use must already exist).\"\"\"\n    from postgrest.exceptions import APIError\n    from supabase import create_client\n")
+s=s.replace('''    for table in ("predictions", "image_metadata", "run_artifacts"):
+        assert cl.table(table).select("*").limit(1).execute().data == []  # RLS: no policy for anon
+''','''    for table in ("predictions", "image_metadata", "run_artifacts"):
+        # No grant (42501 permission denied) or RLS with no policy (empty result) both mean "no access".
+        try:
+            assert cl.table(table).select("*").limit(1).execute().data == []
+        except APIError as e:
+            assert e.code == "42501", e
+''')
+open(p,"w").write(s)
+EOF
+export SUPABASE_ANON_KEY="$(.venv/bin/python -c "import tomllib;print(tomllib.load(open('ui/.streamlit/secrets.toml','rb'))['SUPABASE_ANON_KEY'])")"
+SEE_SENSE_RUN_LIVE_TESTS=1 .venv/bin/python -m pytest tests/test_live_supabase.py -k anon -v -rs -p no:cacheprovider 2>&1 | grep -E "PASS|FAIL|SKIP|passed|failed|Error" | head
+
+OUT
+tests/test_live_supabase.py::test_anon_key_reads_the_hash_free_view_but_not_the_tables PASSED [100%]
+================== 1 passed, 4 deselected, 1 warning in 1.02s ==================
+1:39 PM
+The datasets check isn't covered by the file, so I'll add it as a read-only test.
+
+
+
+Bash
+IN
+cat >> tests/test_live_supabase.py <<'EOF'
+
+
+def test_existing_datasets_are_labelled_by_source_and_never_relabelled():
+    """Read-only: migration 005 must mark every pre-existing dataset as the historical synthetic one."""
+    from api import db
+
+    rows = db.get_client().table("datasets").select("id,name,source,class_names").order("id").execute().data
+    assert rows
+    assert {r["source"] for r in rows} <= {"synthetic_shapes", "fashion-mnist"}
+    old = [r for r in rows if not (r["name"] or "").lower().replace("_", "-").startswith(("fashion", "live-test"))]
+    assert old and all(r["source"] == "synthetic_shapes" for r in old), old
+    assert all(len(r["class_names"] or []) in (0, 4) for r in old)  # synthetic shapes: 4 classes, never 10
+EOF
+SEE_SENSE_RUN_LIVE_TESTS=1 .venv/bin/python -m pytest tests/test_live_supabase.py -k existing_datasets -v -p no:cacheprovider 2>&1 | grep -E "PASS|FAIL|assert|passed|failed" | head
+echo ---- default suite; env SUPABASE_URL= SUPABASE_SERVICE_KEY= .venv/bin/python -m pytest -q -p no:cacheprovider 2>&1 | tail -3
+
+OUT
+tests/test_live_supabase.py::test_existing_datasets_are_labelled_by_source_and_never_relabelled FAILED [100%]
+=================================== FAILURES ===================================
+        assert rows
+>       assert {r["source"] for r in rows} <= {"synthetic_shapes", "fashion-mnist"}
+E       AssertionError: assert {'fashion_mni...hetic_shapes'} <= {'fashion-mni...hetic_shapes'}
+FAILED tests/test_live_supabase.py::test_existing_datasets_are_labelled_by_source_and_never_relabelled
+================== 1 failed, 5 deselected, 1 warning in 0.57s ==================
+---- default suite
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+277 passed, 7 skipped, 4 warnings in 32.33s
+1:40 PM
+The Fashion source value is stored as fashion_mnist (underscore), and my test guessed a hyphen. I'll fix the test.
+
+
+
+Bash
+IN
+sed -i '' 's/{"synthetic_shapes", "fashion-mnist"}/{"synthetic_shapes", "fashion_mnist"}/' tests/test_live_supabase.py && SEE_SENSE_RUN_LIVE_TESTS=1 .venv/bin/python -m pytest tests/test_live_supabase.py -k existing_datasets -v -p no:cacheprovider 2>&1 | grep -E "PASS|FAIL|^E |passed|failed" | head
+
+OUT
+tests/test_live_supabase.py::test_existing_datasets_are_labelled_by_source_and_never_relabelled PASSED [100%]
+================== 1 passed, 5 deselected, 1 warning in 0.69s ==================
+1:40 PM
+The live checks now pass against your Supabase project. The default suite still passes (277 passed, 7 skipped; the extra skip is the new live test). I didn't commit, push, deploy or delete anything, I ran no official experiments, and no credentials were printed.
+
+What the test wrote
+The test file writes to the real project, so I read it before running. One full run created:
+
+Dataset: one row named live-test-fashion-mnist.
+Run: one run, group live-test, name live-<pid>. It trained 1 epoch on 500 images and uploaded a checkpoint.
+Predictions: two /predict calls, which wrote two predictions rows and two image_metadata rows.
+The anon test and the datasets check only read. The atomicity test writes nothing, because it expects the call to be rejected. These records are still in your project. Delete them yourself if you want them gone.
+
+Results
+Check	Result
+Run stored with Fashion identity, calibration, 10-class per-class metrics, train accuracy history	pass
+/predict saves linked predictions and image_metadata rows (served_by_run_id matches); GET /predictions returns them, with no hashes; drill-down returns the run	pass
+Both rows exist in the database with no raw pixels, and the predictions columns are exactly the expected set	pass
+Unknown run is rejected by log_prediction and leaves no orphan rows	pass
+Existing datasets are all synthetic_shapes, each with 0 or 4 classes; the new one is fashion_mnist	pass
+Anon key reads recent_predictions with no hash fields; the base tables are blocked	pass
+Logging function and new columns: log_prediction exists, since it wrote the rows above. runs.calibration and test_per_class hold data, since the first test read them back.
+Anon access: anon gets "permission denied" (42501) on predictions, image_metadata and run_artifacts, not an empty list. That is stricter than the empty result I had assumed.
+Test fixes (in the test files, not the application)
+The test skipped itself because it checked for credentials before .env was loaded. tests/conftest.py now loads .env first when the opt-in variable is set. A blank variable still wins, so the normal suite stays offline.
+The anon assertion now accepts "permission denied" as well as an empty result.
+I added a read-only datasets test.
+The anon test no longer needs the fixture that writes, so rerunning it creates no records.
+The first full run (4 passed, 1 failed) happened before the anon fix. I ran the fixed anon test and the datasets test separately. I did not rerun the whole file, to avoid creating more records.
+
+SUPABASE_ANON_KEY isn't in .env. I read it from ui/.streamlit/secrets.toml into the process only. To run the anon check yourself, export it first.
+
+One earlier ad hoc script that read credentials was blocked by the permission classifier. I used the test file instead.
+
+Next: start the corrected local API and register Fashion-MNIST
+In one terminal, with SEE_SENSE_LOCAL_DB unset:
+
+
+cd /Users/emmarogoveanu/Documents/GitHub/see-sense && OMP_NUM_THREADS=2 .venv/bin/uvicorn api.main:app --port 8000
+In a second terminal, confirm /healthz says "storage":"supabase", then register the dataset:
+
+
+curl -s localhost:8000/healthz
+curl -s -X POST localhost:8000/datasets -H 'content-type: application/json' -d '{"name":"fashion-mnist"}'
+Note the returned id. The official dataset ID is this one, not the live-test-fashion-mnist row. Then do the --dry-run freeze from step 4 of docs/FASHION_PROTOCOL.md. Stop before the real runs unless you want to start them.
+
+
+
+Update config/fashion_protocol.json and docs/FASHION_PROTOCOL.md: status frozen, dataset ID 24, three seeds (0,1,2), sequential execution, fingerprint 287b1895e0de07d1f9578d9bbec81e04e3194dc14340fb744df8567f79317f5a. Preserve all previewed settings. Do not start training.
+Show more
+Bash
+IN
+cat config/fashion_protocol.json; grep -rn "frozen\|fashion_protocol" tests/test_protocol_config.py | head -30
+
+OUT
+{
+  "status": "proposed",
+  "note": "PROPOSED, not yet frozen. It becomes frozen when the dry-run fingerprint is recorded below (see docs/FASHION_PROTOCOL.md) and the first official run starts. Nothing here was chosen after looking at any official test result, because none exists.",
+  "dataset": "fashion-mnist",
+  "experiment_group": "fashion-official-1",
+  "chosen_on": "2026-10-17",
+  "chosen_before_official_results": true,
+  "protocol": {
+    "epochs": 20,
+    "batch_size": 128,
+    "lr": 0.001,
+    "optimizer": "adam",
+    "split_seed": 0,
+    "val_size": 0.1,
+    "train_limit": null,
+    "dropout": 0.3,
+    "augment_max_shift": 2,
+    "scheduler": "cosine"
+  },
+  "seeds": [0, 1, 2],
+  "variants": ["baseline", "full_improved", "no_augmentation", "no_batchnorm", "no_dropout", "no_scheduler"],
+  "checkpoint_selection": "lowest validation loss epoch (validation data only)",
+  "calibration": "temperature scaling fitted on validation logits only; ECE (15 bins), NLL and Brier measured before/after on validation and test",
+  "test_set_use": "scored exactly once per run, after the checkpoint is chosen; the runner hides test metrics unless --show-test is given",
+  "served_model": {"run_name": "full_improved-seed0", "why": "full improved configuration, lowest seed; fixed in advance, not chosen by test score"},
+  "pilot": {
+    "used_test_data": false,
+    "summary": "experiments/results/fashion-pilot/summary.md",
+    "measured_seconds_per_epoch_mean": 15.4,
+    "measured_seconds_per_epoch_range_by_variant": [13.4, 17.3],
+    "note": "Measured on an Apple M2 (8 cores, 16 GB) CPU with other applications running (load average about 9). Values are 12-20 s/epoch depending on variant and load; single quiet-machine runs were 10-12 s/epoch."
+  },
+  "dataset_id_note": "The dataset id is assigned by POST /datasets (Supabase); substitute it for <DATASET_ID>.",
+  "command_template": "python -m experiments.run_experiments --api-url http://127.0.0.1:8000 --dataset-id <DATASET_ID> --group fashion-official-1 --seeds 0,1,2 --epochs 20 --batch-size 128 --lr 0.001 --split-seed 0 --dropout 0.3 --max-shift 2 --scheduler cosine --val-size 0.1 --timeout 3600 --out experiments/results/fashion-official-1-runs.jsonl",
+  "frozen_fingerprint": null
+}
+tests/test_protocol_config.py:14:PROTO = json.loads((ROOT / "config" / "fashion_protocol.json").read_text())
+tests/test_protocol_config.py:38:    assert PROTO["status"] in {"proposed", "frozen"}
+tests/test_protocol_config.py:83:def test_a_frozen_fingerprint_if_recorded_matches_the_plan_it_names():
+tests/test_protocol_config.py:84:    fp = PROTO["frozen_fingerprint"]
+tests/test_protocol_config.py:86:        pytest.skip("protocol not frozen yet: record the dry-run fingerprint in config/fashion_protocol.json")
+tests/test_protocol_config.py:89:    assert PROTO["status"] == "frozen"
+tests/test_protocol_config.py:90:    ds = PROTO.get("frozen_dataset_id")
+Bash
+IN
+sed -n 80,110p tests/test_protocol_config.py
+
+OUT
+    assert {u.parts[0] for u in users} <= {"tools", "tests"}, users
+
+
+def test_a_frozen_fingerprint_if_recorded_matches_the_plan_it_names():
+    fp = PROTO["frozen_fingerprint"]
+    if fp is None:
+        pytest.skip("protocol not frozen yet: record the dry-run fingerprint in config/fashion_protocol.json")
+    from experiments.configs import fingerprint
+
+    assert PROTO["status"] == "frozen"
+    ds = PROTO.get("frozen_dataset_id")
+    assert isinstance(ds, int)
+    assert fingerprint(build_plan(_protocol(ds), PROTO["experiment_group"], PROTO["seeds"])) == fp
+Bash
+IN
+python3 - <<'EOF'
+import re
+p="config/fashion_protocol.json"
+s=open(p).read()
+s=s.replace('"status": "proposed"','"status": "frozen"')
+s=re.sub(r'"note": "PROPOSED[^"]*"','"note": "FROZEN on 2026-10-17 (dataset id 24, seeds 0,1,2, sequential execution, dry-run fingerprint below). No official run or test score existed when this was frozen. Do not change any value after the first official run starts."',s)
+s=s.replace('"dataset_id_note": "The dataset id is assigned by POST /datasets (Supabase); substitute it for <DATASET_ID>."','"dataset_id_note": "Assigned by POST /datasets on the Supabase project (fashion-mnist, source fashion_mnist). Not the live-test-fashion-mnist row."')
+s=s.replace('--dataset-id <DATASET_ID>','--dataset-id 24')
+s=s.replace('"frozen_fingerprint": null','"frozen_dataset_id": 24,\n  "execution": "sequential: one runner process, --seeds 0,1,2 (18 runs, one after another)",\n  "frozen_fingerprint": "287b1895e0de07d1f9578d9bbec81e04e3194dc14340fb744df8567f79317f5a"')
+s=s.replace('--out experiments/results/fashion-official-1-runs.jsonl"','--expect-fingerprint 287b1895e0de07d1f9578d9bbec81e04e3194dc14340fb744df8567f79317f5a --out experiments/results/fashion-official-1-runs.jsonl"')
+open(p,"w").write(s)
+EOF
+python3 -c "import json;json.load(open('config/fashion_protocol.json'))" && grep -n "expect-fingerprint" experiments/run_experiments.py | head -3
+env SUPABASE_URL= SUPABASE_SERVICE_KEY= .venv/bin/python -m pytest tests/test_protocol_config.py -q -p no:cacheprovider 2>&1 | tail -3
+
+OUT
+15:on purpose: choose them, freeze them (see ``--expect-fingerprint``), then run.
+191:    run.add_argument("--expect-fingerprint", help="abort unless the plan hashes to this (freezes the protocol)")
+217:        log("fingerprint does not match --expect-fingerprint; the protocol changed. Aborting.")
+........                                                                 [100%]
+8 passed in 0.71s
+1:45 PM
+The config test now checks the recorded fingerprint instead of skipping, and it passes. Next is the protocol doc.
+
+
+
+Bash
+IN
+python3 - <<'EOF'
+p="docs/FASHION_PROTOCOL.md"
+s=open(p).read()
+s=s.replace("# Fashion-MNIST experimental protocol (DRAFT — proposed, not yet frozen)",
+"# Fashion-MNIST experimental protocol (FROZEN 2026-10-17 — report still a DRAFT until results exist)")
+s=s.replace("Written 2026-10-17, **before any official Fashion-MNIST run and before any official test image was scored.**",
+"Written and **frozen 2026-10-17, before any official Fashion-MNIST run and before any official test image was scored.**")
+s=s.replace("## What is compared",
+"""## Frozen decisions
+| Item | Value |
+|---|---|
+| Status | **frozen** (`config/fashion_protocol.json`) |
+| Dataset | Supabase dataset id **24** (`fashion-mnist`) |
+| Seeds | **0, 1, 2** (3 seeds × 6 variants = 18 runs); five seeds not used |
+| Execution | **sequential**: one runner process, `--seeds 0,1,2`, one run after another (estimate about 1.5 h on a busy machine, see below) |
+| Dry-run fingerprint | `287b1895e0de07d1f9578d9bbec81e04e3194dc14340fb744df8567f79317f5a` |
+| Everything else | unchanged from the tables below (20 epochs, batch 128, Adam 0.001, split seed 0, val 10%, dropout 0.3, shift ≤2 px, cosine, full data) |
+
+The runner is given `--expect-fingerprint` and aborts if the plan differs. `tests/test_protocol_config.py` recomputes the fingerprint from the JSON. After the first official run starts, no value here may change.
+
+## What is compared""",1)
+# procedure
+s=s.replace("3. Register the dataset once: `curl -X POST localhost:8000/datasets -H 'content-type: application/json' -d '{\"name\":\"fashion-mnist\"}'` → note its `id`.",
+"3. Dataset registered once (done): id **24**. Do not register another.")
+s=s.replace("4. **Freeze:** `python -m experiments.run_experiments --dry-run <the command below with that id>`; copy the printed fingerprint and the dataset id into `config/fashion_protocol.json` (`frozen_fingerprint`, `frozen_dataset_id`, `status: \"frozen\"`).",
+"4. **Freeze (done):** the dry-run fingerprint and dataset id 24 are recorded in `config/fashion_protocol.json` (`frozen_fingerprint`, `frozen_dataset_id`, `status: \"frozen\"`).")
+i=s.index("5. Run, pinning"); j=s.index("6. Evidence")
+s=s[:i]+"""5. Run **sequentially**, pinning the fingerprint (one process; the API must be running locally):
+   ```bash
+   python -m experiments.run_experiments --api-url http://127.0.0.1:8000 --dataset-id 24 \\
+     --group fashion-official-1 --seeds 0,1,2 --epochs 20 --batch-size 128 --lr 0.001 --split-seed 0 \\
+     --dropout 0.3 --max-shift 2 --scheduler cosine --val-size 0.1 --timeout 3600 \\
+     --expect-fingerprint 287b1895e0de07d1f9578d9bbec81e04e3194dc14340fb744df8567f79317f5a \\
+     --out experiments/results/fashion-official-1-runs.jsonl
+   ```
+   (Parallel per-seed processes were considered and are **not** used.)
+"""+s[j:]
+s=s.replace("**3 training seeds × 6 variants = 18 runs, 20 epochs.**","**(Adopted) 3 training seeds × 6 variants = 18 runs, 20 epochs.**")
+open(p,"w").write(s)
+EOF
+grep -n "Three processes in parallel\|<ID>" docs/FASHION_PROTOCOL.md | head; grep -rn "proposed" docs/SUBMISSION_CHECKLIST.md README.md MODEL_CARD.md | head
+
+OUT
+65:| Seeds | Runs | One process, busy machine | One process, quiet | Three processes in parallel |
+Bash
+IN
+env SUPABASE_URL= SUPABASE_SERVICE_KEY= .venv/bin/python -m pytest -q -p no:cacheprovider 2>&1 | tail -2; git status --short | grep -c .
+
+OUT
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+278 passed, 6 skipped, 4 warnings in 35.33s
+81
+1:46 PM
+I froze the protocol in config/fashion_protocol.json and docs/FASHION_PROTOCOL.md. The full suite gives 278 passed, 6 skipped. The 6 skips are the live-Supabase tests, which only run with the opt-in variable. The fingerprint test now runs and passes instead of skipping, so the JSON recomputes to 287b1895…7f5a for dataset 24 and seeds 0, 1, 2. Nothing was started, committed or pushed.
+
+Config
+
+Frozen values: status is frozen, frozen_dataset_id is 24, and the fingerprint is recorded. The seeds stay [0,1,2], and I added an execution field saying runs are sequential.
+Preserved settings: every other setting is unchanged: 20 epochs, batch 128, Adam at 0.001, split seed 0, validation 10%, dropout 0.3, shift ≤2 px, cosine schedule, full data, and the served model full_improved-seed0.
+Command: command_template now uses --dataset-id 24 and --expect-fingerprint 287b…7f5a, so the runner aborts if the plan differs.
+Doc
+
+The title now says frozen, and a new "Frozen decisions" table lists the values above.
+Procedure steps 3 and 4 are marked done (dataset 24 registered, fingerprint recorded).
+Step 5 is one sequential command with the fingerprint pinned.
+The old parallel-per-seed loop is gone, and the doc says parallel was considered and not used.
+The runtime estimate for sequential execution is about 1.5 h on a busy machine, or roughly 1.1 h on a quiet one.
+
+To start the official run later, the API must be running locally against Supabase, and then you run the step 5 command from the doc. If you run it yourself, check first that live-test-fashion-mnist isn't what dataset 24 points to. /healthz should say "storage":"supabase".
+
+
+
+Official Fashion-MNIST training is complete:
+- Group: fashion-official-1
+- Dataset ID: 24
+- 18 runs, IDs 53–70
+- Served model chosen in advance: full_improved-seed0, run ID 54
+- Runner summary: 18 saved, 0 failed.
+
+Finish evidence generation and update the local app and report drafts. Do not retrain.
+
+1. Read the official records from Supabase using existing credentials privately. Verify all six variants across seeds 0,1,2 and the matched protocol.
+2. Automate complete SQL-based exports for the existing comparison queries, including training accuracy, per-class metrics, and calibration. Preserve SQL provenance. If direct SQL access is unavailable, prepare one packaged SQL export I can run once; do not substitute API exports while calling them SQL-sourced.
+3. Generate Fashion-MNIST comparison tables, training/validation loss and accuracy curves, confusion matrices, per-class precision/recall, paired ablation analysis, and calibration results.
+4. Generate at least five correct and five incorrect Grad-CAM examples from saved run 54. Verify regenerated test accuracy matches the stored result. Inspect the actual overlays and draft two cautious, evidence-based failure interpretations.
+5. Set served_run_id to 54 in config/served_model.json and verify its group, dataset, labels, and preprocessing.
+6. Update the local dashboard, model card, dataset card, and both report drafts with verified Fashion-MNIST results. Preserve historical shape evidence with clear labels. Report disappointing results honestly; do not change the frozen protocol.
+7. Keep each individual report within 750–1,000 words. Preserve accurate contribution attribution and leave Komal’s personal beliefs for her review.
+8. Run appropriate tests and a real local UI check. Update the submission checklist against the full attached assignment.
+
+Do not print credentials, modify cloud records, commit, push, or deploy. Report actual results, generated files, report word counts, and exact remaining manual steps. Continue independent work if SQL export requires my action.
+Show more
+Bash
+IN
+ls experiments experiments/results docs; sed -n 1,60p experiments/sql_check.mjs; grep -n "^-- \(q\|Q\|Query\)" docs/comparison_queries.sql | head -30; wc -l docs/comparison_queries.sql; ls node_modules 2>/dev/null | head -3
+
+OUT
+docs:
+CONTRIBUTIONS.md
+DATASET_CARD.md
+DATASET_CARD_HISTORICAL_SYNTHETIC.md
+ETHICS_AND_DISCLOSURE.md
+FASHION_GRADCAM_FAILURE_ANALYSIS.md
+FASHION_PROTOCOL.md
+INSTRUCTOR_QUESTION_DRAFT.md
+PART1_HANDOFF.md
+PART2_PROTOCOL.md
+PART2_RESULTS.md
+PROJECT_NOTES.md
+RUN_API_LOCALLY.md
+SUBMISSION_CHECKLIST.md
+SUPABASE_GRADCAM_FAILURE_ANALYSIS.md
+comparison_queries.sql
+
+experiments:
+__init__.py
+__pycache__
+analyze.py
+configs.py
+explore.py
+gradcam_evidence.py
+migration_check.mjs
+pilot.py
+pilot_summary.py
+results
+run_experiments.py
+sql_check.mjs
+
+experiments/results:
+explore_budget.jsonl
+explore_difficulty.jsonl
+explore_difficulty2.jsonl
+explore_techniques.jsonl
+fashion-official-1-runs.jsonl
+fashion-pilot
+gradcam
+official-1-analysis
+official-1-console.txt
+official-1-runs.jsonl
+official-1-sql
+official-supabase-1-analysis
+official-supabase-1-gradcam
+official-supabase-1-runs.jsonl
+official-supabase-1-sql
+// Run docs/comparison_queries.sql verbatim on a local Postgres engine (PGlite).
+//
+// Applies db/migrations/001, 002, 004 and 005 (the same schema as Supabase), loads the runs
+// of one experiment group from the offline API database (.local_db.json), then
+// executes the requested queries from comparison_queries.sql unchanged except
+// for the group name, writing each result to <outdir>/q<N>.csv.
+//
+//   node experiments/sql_check.mjs <local_db.json> <group> <outdir> 1,2,3[,4,5,6,7]
+//
+// Needs:  npm install @electric-sql/pglite@0.2.17  in some folder, then copy this file
+//         there and run it with SEE_SENSE_ROOT=<repo root>.
+// Only for checking queries locally. The source of truth for the team is Supabase.
+import { PGlite } from '@electric-sql/pglite';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const [dbFile, group, outDir, which] = process.argv.slice(2);
+// SEE_SENSE_ROOT lets you run a copy of this file from the folder where PGlite is installed.
+const root = process.env.SEE_SENSE_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const wanted = new Set(which.split(',').map(Number));
+
+const pg = new PGlite();
+await pg.exec('create role anon; create role authenticated; create role service_role;');
+for (const m of ['001_init.sql', '002_experiment_tracking.sql', '004_predictions.sql', '005_fashion_mnist_and_atomic_logging.sql']) {
+  await pg.exec(fs.readFileSync(path.join(root, 'db', 'migrations', m), 'utf8'));
+}
+
+const local = JSON.parse(fs.readFileSync(dbFile, 'utf8'));
+const runs = local.runs.filter(r => r.experiment_group === group);
+if (!runs.length) throw new Error(`no runs in group ${group}`);
+for (const d of local.datasets.filter(d => runs.some(r => r.dataset_id === d.id))) {
+  await pg.query(
+    'insert into datasets (id, name, n_rows, img_size, n_classes, noise, seed, source, class_names, identity) overriding system value values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
+    [d.id, d.name, d.n_rows, d.img_size, d.n_classes, d.noise, d.seed, d.source || 'synthetic_shapes',
+     d.class_names ? JSON.stringify(d.class_names) : null, d.identity ? JSON.stringify(d.identity) : null]);
+}
+const jsonCols = new Set(['config', 'confusion_matrix', 'train_loss_history', 'val_loss_history',
+  'val_accuracy_history', 'train_accuracy_history', 'lr_history', 'calibration', 'test_per_class']);
+for (const r of runs) {
+  const cols = Object.keys(r).filter(k => k !== 'created_at');
+  const vals = cols.map(k => (jsonCols.has(k) && r[k] !== null ? JSON.stringify(r[k]) : r[k]));
+  await pg.query(
+    `insert into runs (${cols.join(',')}) overriding system value values (${cols.map((_, i) => '$' + (i + 1)).join(',')})`, vals);
+}
+
+// Split the SQL file into its numbered queries.
+const sql = fs.readFileSync(path.join(root, 'docs', 'comparison_queries.sql'), 'utf8');
+const blocks = sql.split(/^-- =+\n-- (\d+)\./m);
+fs.mkdirSync(outDir, { recursive: true });
+for (let i = 1; i < blocks.length; i += 2) {
+  const n = Number(blocks[i]);
+  if (!wanted.has(n)) continue;
+  const body = blocks[i + 1].split('\n').slice(1).filter(l => !l.startsWith('--')).join('\n')
+    .replaceAll('REPLACE-WITH-GROUP', group).trim();
+  const res = await pg.query(body);
+  const header = res.fields.map(f => f.name);
+  const csv = [header.join(',')].concat(res.rows.map(row => header.map(h => {
+    const v = row[h];
+    return v === null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v));
+     159 docs/comparison_queries.sql
+Bash
+IN
+wc -l experiments/results/fashion-official-1-runs.jsonl; head -c 1200 experiments/results/fashion-official-1-runs.jsonl; echo; git status --short experiments/results | head -20; ls /private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/; cat docs/comparison_queries.sql | sed -n 1,159p
+
+OUT
+      18 experiments/results/fashion-official-1-runs.jsonl
+{"run_name": "baseline-seed0", "train_seed": 0, "http_status": 200, "run_id": 53, "status": "saved"}
+{"run_name": "full_improved-seed0", "train_seed": 0, "http_status": 200, "run_id": 54, "status": "saved"}
+{"run_name": "no_augmentation-seed0", "train_seed": 0, "http_status": 200, "run_id": 55, "status": "saved"}
+{"run_name": "no_batchnorm-seed0", "train_seed": 0, "http_status": 200, "run_id": 56, "status": "saved"}
+{"run_name": "no_dropout-seed0", "train_seed": 0, "http_status": 200, "run_id": 57, "status": "saved"}
+{"run_name": "no_scheduler-seed0", "train_seed": 0, "http_status": 200, "run_id": 58, "status": "saved"}
+{"run_name": "baseline-seed1", "train_seed": 1, "http_status": 200, "run_id": 59, "status": "saved"}
+{"run_name": "full_improved-seed1", "train_seed": 1, "http_status": 200, "run_id": 60, "status": "saved"}
+{"run_name": "no_augmentation-seed1", "train_seed": 1, "http_status": 200, "run_id": 61, "status": "saved"}
+{"run_name": "no_batchnorm-seed1", "train_seed": 1, "http_status": 200, "run_id": 62, "status": "saved"}
+{"run_name": "no_dropout-seed1", "train_seed": 1, "http_status": 200, "run_id": 63, "status": "saved"}
+{"run_name": "no_scheduler-seed1", "train_seed":
+ M experiments/results/official-supabase-1-analysis/summary.md
+?? experiments/results/fashion-official-1-runs.jsonl
+?? experiments/results/fashion-pilot/
+?? experiments/results/official-supabase-1-analysis/accuracy_curves.png
+?? experiments/results/official-supabase-1-analysis/per_class_metrics.csv
+app_tail.py
+dbg_ui.py
+e2e
+old_training_mid.txt
+pg
+quick.py
+-- comparison_queries.sql
+-- Read-only queries for the baseline-vs-improved experiment (Supabase SQL Editor).
+-- In every query, replace 'REPLACE-WITH-GROUP' with your experiment_group.
+-- Run names look like  <variant>-seed<N>  (e.g. no_dropout-seed1).
+--
+-- IMPORTANT: runs.accuracy, runs.macro_f1, runs.test_loss and runs.confusion_matrix
+-- are TEST results. Use queries 1-3 (validation / training evidence only) while
+-- choosing the protocol. Open queries 4-7 only after the protocol is frozen.
+
+-- =========================================================================
+-- 1. [validation only] Matched-configuration audit.
+--    Every column should show 1 distinct value per training seed. Anything else
+--    means that seed's runs are not matched (except for the declared technique).
+-- =========================================================================
+select train_seed,
+       count(*)                                  as n_runs,
+       count(distinct dataset_id)                as datasets,
+       count(distinct split_seed)                as split_seeds,
+       count(distinct split_sha256)              as split_hashes,
+       count(distinct (n_train, n_val, n_test))  as split_sizes,
+       count(distinct config ->> 'dataset')      as dataset_names,   -- fashion-mnist (NULL on historical synthetic runs)
+       count(distinct config ->> 'val_size')     as val_sizes,
+       count(distinct coalesce(config ->> 'train_limit', 'all')) as train_limits,
+       count(distinct config -> 'preprocessing') as preprocessings,
+       count(distinct epochs)                    as epochs,
+       count(distinct batch_size)                as batch_sizes,
+       count(distinct lr)                        as initial_lrs,
+       count(distinct optimizer)                 as optimizers,
+       count(distinct augment_max_shift)         as max_shifts
+from runs
+where experiment_group = 'REPLACE-WITH-GROUP'
+group by train_seed
+order by train_seed;
+
+-- =========================================================================
+-- 2. [validation only] Settings and training / validation evidence per run.
+-- =========================================================================
+select run_name,
+       model_variant, use_batchnorm, dropout, augment, scheduler,
+       train_seed, param_count, best_epoch,
+       (val_loss_history   ->> best_epoch)::double precision   as best_val_loss,
+       (val_accuracy_history ->> best_epoch)::double precision as val_accuracy_at_best,
+       (train_loss_history ->> (epochs - 1))::double precision as final_train_loss,
+       round(train_seconds::numeric, 1)                         as train_seconds
+from runs
+where experiment_group = 'REPLACE-WITH-GROUP'
+order by train_seed, run_name;
+
+-- =========================================================================
+-- 3. [validation only] Training AND validation loss and accuracy, plus learning rate,
+--    one row per run per epoch (for plotting). train_accuracy is NULL for the historical
+--    official-supabase-1 runs (never recorded) and present for runs trained after migration 004.
+-- =========================================================================
+select r.run_name, r.train_seed,
+       t.ord - 1                  as epoch,
+       t.v::double precision      as train_loss,
+       v.v::double precision      as val_loss,
+       ta.v::double precision     as train_accuracy,
+       a.v::double precision      as val_accuracy,
+       l.v::double precision      as lr
+from runs r
+cross join lateral jsonb_array_elements_text(r.train_loss_history)   with ordinality as t(v, ord)
+join  lateral jsonb_array_elements_text(r.val_loss_history)          with ordinality as v(v, ord) on v.ord = t.ord
+join  lateral jsonb_array_elements_text(r.val_accuracy_history)      with ordinality as a(v, ord) on a.ord = t.ord
+join  lateral jsonb_array_elements_text(r.lr_history)                with ordinality as l(v, ord) on l.ord = t.ord
+left join lateral jsonb_array_elements_text(r.train_accuracy_history) with ordinality as ta(v, ord) on ta.ord = t.ord
+where r.experiment_group = 'REPLACE-WITH-GROUP'
+order by r.train_seed, r.run_name, epoch;
+
+-- =========================================================================
+-- 4. [TEST results - after protocol freeze] Per-run test metrics.
+-- =========================================================================
+select run_name, model_variant, train_seed,
+       accuracy as test_accuracy, macro_f1 as test_macro_f1, test_loss,
+       best_epoch, param_count, round(train_seconds::numeric, 1) as train_seconds
+from runs
+where experiment_group = 'REPLACE-WITH-GROUP'
+order by train_seed, run_name;
+
+-- =========================================================================
+-- 5. [TEST results - after protocol freeze] Mean and spread across seeds per
+--    variant. stddev is NULL with a single seed; do not read much into a spread
+--    from two or three seeds.
+-- =========================================================================
+select split_part(run_name, '-seed', 1)       as variant,
+       count(*)                                as n_seeds,
+       round(avg(accuracy)::numeric, 4)        as mean_test_accuracy,
+       round(stddev_samp(accuracy)::numeric, 4) as sd_test_accuracy,
+       round(avg(macro_f1)::numeric, 4)        as mean_test_macro_f1,
+       round(stddev_samp(macro_f1)::numeric, 4) as sd_test_macro_f1,
+       round(avg(test_loss)::numeric, 4)       as mean_test_loss,
+       round(avg(train_seconds)::numeric, 1)   as mean_train_seconds
+from runs
+where experiment_group = 'REPLACE-WITH-GROUP'
+group by 1
+order by mean_test_accuracy desc;
+
+-- =========================================================================
+-- 6. [TEST results - after protocol freeze] Ablation effect per seed: each
+--    ablation (and the baseline) compared with full_improved of the SAME seed.
+--    Negative delta = the run scored lower than full_improved.
+-- =========================================================================
+select a.train_seed,
+       split_part(a.run_name, '-seed', 1)               as variant,
+       round((a.accuracy - f.accuracy)::numeric, 4)     as delta_accuracy_vs_full,
+       round((a.macro_f1 - f.macro_f1)::numeric, 4)     as delta_macro_f1_vs_full,
+       round((a.test_loss - f.test_loss)::numeric, 4)   as delta_test_loss_vs_full
+from runs a
+join runs f
+  on f.experiment_group = a.experiment_group
+ and f.train_seed       = a.train_seed
+ and f.run_name         = 'full_improved-seed' || a.train_seed
+where a.experiment_group = 'REPLACE-WITH-GROUP'
+  and a.run_name <> f.run_name
+order by a.train_seed, variant;
+
+-- =========================================================================
+-- 7. [TEST results - after protocol freeze] Confusion matrices, one row per
+--    (run, true class, predicted class) cell. Class names come from each run's own
+--    config (Fashion-MNIST order: T-shirt/top, Trouser, Pullover, Dress, Coat, Sandal,
+--    Shirt, Sneaker, Bag, Ankle boot); historical synthetic runs fall back to their four shapes.
+-- =========================================================================
+select r.run_name, r.train_seed,
+       coalesce(r.config -> 'class_names' ->> (t.i - 1),
+                (array['horizontal','vertical','diagonal','block'])[t.i])  as true_class,
+       coalesce(r.config -> 'class_names' ->> (p.j - 1),
+                (array['horizontal','vertical','diagonal','block'])[p.j])  as predicted_class,
+       (r.confusion_matrix -> (t.i - 1) ->> (p.j - 1))::integer           as n
+from runs r
+cross join lateral generate_series(1, jsonb_array_length(r.confusion_matrix)) as t(i)
+cross join lateral generate_series(1, jsonb_array_length(r.confusion_matrix)) as p(j)
+where r.experiment_group = 'REPLACE-WITH-GROUP'
+order by r.train_seed, r.run_name, t.i, p.j;
+
+-- =========================================================================
+-- 8. Which runs are in which group (find the verification run and old groups).
+-- =========================================================================
+select experiment_group, count(*) as n_runs, min(created_at) as first_run, max(created_at) as last_run
+from runs
+group by experiment_group
+order by last_run desc nulls last;
+
+-- =========================================================================
+-- 9. [TEST results - after protocol freeze] Calibration of the served probabilities:
+--    temperature fitted on VALIDATION logits, and ECE / NLL before (T = 1) and after on the
+--    held-out test set. Needs migration 005 and runs trained after it (NULL before).
+--    Lower ECE/NLL after = better calibrated; this is a measurement, not an assumption.
+-- =========================================================================
+select run_name, train_seed,
+       (calibration ->> 'temperature')::double precision                      as temperature,
+       (calibration -> 'validation' -> 'before' ->> 'ece')::double precision  as val_ece_before,
+       (calibration -> 'validation' -> 'after'  ->> 'ece')::double precision  as val_ece_after,
+       (calibration -> 'test' -> 'before' ->> 'ece')::double precision        as test_ece_before,
+       (calibration -> 'test' -> 'after'  ->> 'ece')::double precision        as test_ece_after,
+       (calibration -> 'test' -> 'before' ->> 'nll')::double precision        as test_nll_before,
+       (calibration -> 'test' -> 'after'  ->> 'nll')::double precision        as test_nll_after
+from runs
+where experiment_group = 'REPLACE-WITH-GROUP' and calibration is not null
+order by train_seed, run_name;
+Bash
+IN
+wc -l experiments/analyze.py experiments/gradcam_evidence.py experiments/run_experiments.py && sed -n 1,80p experiments/analyze.py; grep -n "def \|q[0-9]\.csv\|\.csv" experiments/analyze.py | sed -n 1,80p; ls /private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/pg | head
+
+OUT
+     351 experiments/analyze.py
+     242 experiments/gradcam_evidence.py
+     249 experiments/run_experiments.py
+     842 total
+"""Turn the SQL query results (docs/comparison_queries.sql) into tables and figures.
+
+Input: a folder with q1.csv ... q7.csv, exactly as the queries return them
+(from the Supabase SQL editor, or from experiments/sql_check.mjs locally).
+
+    python -m experiments.analyze <sql_dir> <out_dir> [--classes fashion|legacy-synthetic]
+
+Writes to <out_dir>:
+    summary.md                   mean +/- sd per variant, per-technique deltas, audit
+    loss_curves.png              train/val loss per variant (mean over seeds, band = min..max)
+    accuracy_curves.png          validation accuracy per variant (+ training accuracy when q3 has it)
+    per_class_metrics.csv        per-class test precision / recall per variant (from query 7)
+    calibration.csv              per-run temperature and ECE / NLL before and after (query 9; optional)
+    confusion_matrices.png       summed confusion matrix per variant
+    test_metrics_by_seed.png     test accuracy per seed per variant
+"""
+from __future__ import annotations
+
+import csv
+import math
+import statistics as st
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+
+# Two-sided 95% t critical values by degrees of freedom (n_seeds - 1).
+T95 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262}
+
+VARIANTS = ["baseline", "full_improved", "no_augmentation", "no_batchnorm", "no_dropout", "no_scheduler"]
+# Class order of the two datasets this tool can analyse. Fashion-MNIST is the project's dataset;
+# the four synthetic shapes exist only to regenerate the historical official-supabase-1 outputs.
+FASHION_CLASSES = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
+                   "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"]
+LEGACY_SYNTHETIC_CLASSES = ["horizontal", "vertical", "diagonal", "block"]
+CLASS_SETS = {"fashion": FASHION_CLASSES, "legacy-synthetic": LEGACY_SYNTHETIC_CLASSES}
+TECHNIQUE = {
+    "no_augmentation": "augmentation", "no_batchnorm": "batch norm",
+    "no_dropout": "dropout", "no_scheduler": "LR scheduler",
+}
+
+
+def read(path: Path) -> list[dict]:
+    with open(path, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def variant_of(run_name: str) -> str:
+    return run_name.rsplit("-seed", 1)[0]
+
+
+def sd(xs: list[float]) -> float:
+    return st.stdev(xs) if len(xs) > 1 else float("nan")
+
+
+def per_class_metrics(q7: list[dict], classes: list[str]) -> dict:
+    """Per-class test precision and recall for every run, from the saved confusion counts.
+
+    ``q7`` rows are (run_name, true_class, predicted_class, n). Precision = TP / predicted-as-class,
+    recall = TP / true-in-class. A class that a run never predicts has undefined precision; it is
+    scored 0.0 (same convention as the training code's macro-F1) and counted in ``undefined``.
+    Returns {variant: {class: {"precision": [per-run...], "recall": [...], "undefined": int}}}.
+    """
+    k_n = len(classes)
+    runs: dict[str, list[list[int]]] = defaultdict(lambda: [[0] * k_n for _ in range(k_n)])
+    for r in q7:
+        runs[r["run_name"]][classes.index(r["true_class"])][classes.index(r["predicted_class"])] += int(r["n"])
+    out: dict = {v: {c: {"precision": [], "recall": [], "undefined": 0} for c in classes} for v in VARIANTS}
+    for name in sorted(runs):
+        m = runs[name]
+        for k, c in enumerate(classes):
+            tp = m[k][k]
+            predicted = sum(m[i][k] for i in range(k_n))
+            actual = sum(m[k])
+            cell = out[variant_of(name)][c]
+            cell["precision"].append(tp / predicted if predicted else 0.0)
+3:Input: a folder with q1.csv ... q7.csv, exactly as the queries return them
+12:    per_class_metrics.csv        per-class test precision / recall per variant (from query 7)
+13:    calibration.csv              per-run temperature and ECE / NLL before and after (query 9; optional)
+47:def read(path: Path) -> list[dict]:
+52:def variant_of(run_name: str) -> str:
+56:def sd(xs: list[float]) -> float:
+60:def per_class_metrics(q7: list[dict], classes: list[str]) -> dict:
+86:def main(sql_dir: Path, out: Path, classes: list[str] | None = None) -> None:
+90:    q1, q2, q3, q4 = (read(sql_dir / f"q{i}.csv") for i in (1, 2, 3, 4))
+91:    q6, q7 = read(sql_dir / "q6.csv"), read(sql_dir / "q7.csv")
+206:    with open(out / "per_class_metrics.csv", "w", newline="") as f:
+210:    q9_path = sql_dir / "q9.csv"
+232:        with open(out / "calibration.csv", "w", newline="") as f:
+migcheck.mjs
+migration_check.mjs
+node_modules
+package-lock.json
+package.json
+sql_check.mjs
+Bash
+IN
+sed -n 86,351p experiments/analyze.py
+
+OUT
+def main(sql_dir: Path, out: Path, classes: list[str] | None = None) -> None:
+    CLASSES = classes or FASHION_CLASSES
+    K = len(CLASSES)
+    out.mkdir(parents=True, exist_ok=True)
+    q1, q2, q3, q4 = (read(sql_dir / f"q{i}.csv") for i in (1, 2, 3, 4))
+    q6, q7 = read(sql_dir / "q6.csv"), read(sql_dir / "q7.csv")
+    lines: list[str] = []
+
+    # --- audit (query 1): every count must be 1 per seed --------------------
+    audit_ok = all(
+        all(v == "1" for k, v in row.items() if k not in ("train_seed", "n_runs")) and row["n_runs"] == "6"
+        for row in q1
+    )
+    lines.append(f"**Matched-configuration audit (query 1):** {'PASS' if audit_ok else 'FAIL'} "
+                 f"- {len(q1)} seeds, 6 runs each, one dataset/split/budget per seed.\n")
+
+    # --- per-variant test metrics (query 4) ---------------------------------
+    per = defaultdict(lambda: defaultdict(list))
+    for r in q4:
+        v = variant_of(r["run_name"])
+        per[v]["acc"].append(float(r["test_accuracy"]))
+        per[v]["f1"].append(float(r["test_macro_f1"]))
+        per[v]["loss"].append(float(r["test_loss"]))
+        per[v]["seed"].append(int(r["train_seed"]))
+        per[v]["params"].append(int(r["param_count"]))
+    lines.append("### Test results per variant (mean ± sd across seeds; from query 4)\n")
+    lines.append("| Variant | Seeds | Test accuracy | Macro-F1 | Test loss | Params |")
+    lines.append("|---|---|---|---|---|---|")
+    for v in VARIANTS:
+        d = per[v]
+        lines.append(
+            f"| {v} | {len(d['acc'])} | {100*st.mean(d['acc']):.2f}% ± {100*sd(d['acc']):.2f} "
+            f"| {st.mean(d['f1']):.4f} ± {sd(d['f1']):.4f} | {st.mean(d['loss']):.4f} ± {sd(d['loss']):.4f} "
+            f"| {d['params'][0]} |")
+    lines.append("")
+
+    # --- per-seed accuracy table --------------------------------------------
+    seeds = sorted({int(r["train_seed"]) for r in q4})
+    lines.append("### Test accuracy by seed\n")
+    lines.append("| Variant | " + " | ".join(f"seed {s}" for s in seeds) + " |")
+    lines.append("|---|" + "---|" * len(seeds))
+    for v in VARIANTS:
+        by = dict(zip(per[v]["seed"], per[v]["acc"]))
+        lines.append(f"| {v} | " + " | ".join(f"{100*by[s]:.2f}%" for s in seeds) + " |")
+    lines.append("")
+
+    # --- ablation deltas (query 6) ------------------------------------------
+    deltas = defaultdict(lambda: defaultdict(list))
+    for r in q6:
+        deltas[r["variant"]]["acc"].append(float(r["delta_accuracy_vs_full"]))
+        deltas[r["variant"]]["f1"].append(float(r["delta_macro_f1_vs_full"]))
+        deltas[r["variant"]]["loss"].append(float(r["delta_test_loss_vs_full"]))
+    lines.append("### Difference from full_improved, same seed (from query 6)\n")
+    lines.append("Negative accuracy delta = scored lower than the full model. "
+                 "Accuracy deltas in percentage points (pp).\n")
+    lines.append("| Variant | Technique removed | Δ accuracy per seed (pp) | Mean Δ acc (pp) | 95% CI of mean Δ (pp, paired t) | Mean Δ macro-F1 | Mean Δ test loss | Seeds lower than full |")
+    lines.append("|---|---|---|---|---|---|---|---|")
+    for v in ["baseline"] + list(TECHNIQUE):
+        d = deltas[v]
+        per_seed = ", ".join(f"{100*x:+.2f}" for x in d["acc"])
+        lower = sum(1 for x in d["acc"] if x < 0)
+        n = len(d["acc"])
+        half = T95.get(n - 1, 1.96) * 100 * sd(d["acc"]) / math.sqrt(n) if n > 1 else float("nan")
+        m = 100 * st.mean(d["acc"])
+        ci = f"[{m - half:+.2f}, {m + half:+.2f}]" + (" includes 0" if m - half <= 0 <= m + half else "")
+        lines.append(
+            f"| {v} | {TECHNIQUE.get(v, 'architecture + all four')} | {per_seed} | {m:+.2f} | {ci} "
+            f"| {st.mean(d['f1']):+.4f} | {st.mean(d['loss']):+.4f} | {lower} of {len(d['acc'])} |")
+    lines.append("")
+
+    # --- validation evidence (query 2) --------------------------------------
+    val = defaultdict(lambda: defaultdict(list))
+    for r in q2:
+        v = variant_of(r["run_name"])
+        val[v]["bvl"].append(float(r["best_val_loss"]))
+        val[v]["vacc"].append(float(r["val_accuracy_at_best"]))
+        val[v]["ep"].append(int(r["best_epoch"]))
+        val[v]["ftl"].append(float(r["final_train_loss"]))
+    lines.append("### Validation / training evidence (from query 2)\n")
+    lines.append("| Variant | Best val loss | Val acc at best | Best epoch (0-based) per seed | Final train loss |")
+    lines.append("|---|---|---|---|---|")
+    for v in VARIANTS:
+        d = val[v]
+        lines.append(f"| {v} | {st.mean(d['bvl']):.4f} | {100*st.mean(d['vacc']):.2f}% "
+                     f"| {', '.join(map(str, d['ep']))} | {st.mean(d['ftl']):.4f} |")
+    lines.append("")
+
+    # --- confusion (query 7) ------------------------------------------------
+    cm = {v: [[0] * K for _ in range(K)] for v in VARIANTS}
+    for r in q7:
+        v = variant_of(r["run_name"])
+        cm[v][CLASSES.index(r["true_class"])][CLASSES.index(r["predicted_class"])] += int(r["n"])
+    lines.append("### Most common confusions (summed over seeds, from query 7)\n")
+    lines.append("| Variant | Errors | Top confusions (true → predicted: count) |")
+    lines.append("|---|---|---|")
+    for v in VARIANTS:
+        offd = [(cm[v][i][j], CLASSES[i], CLASSES[j]) for i in range(K) for j in range(K) if i != j]
+        offd.sort(reverse=True)
+        top = "; ".join(f"{a} → {b}: {n}" for n, a, b in offd[:5] if n)
+        lines.append(f"| {v} | {sum(n for n, _, _ in offd)} | {top} |")
+    lines.append("")
+
+    # --- per-class precision / recall (from the same confusion counts) ---------
+    pc = per_class_metrics(q7, CLASSES)
+    lines.append("### Per-class test precision and recall (mean ± sd over seeds; from query 7)\n")
+    lines.append("Computed from each run's saved confusion matrix. Precision = correct / predicted as that "
+                 "class; recall = correct / truly that class. A class never predicted by a run has "
+                 "precision scored as 0 (shown with *).\n")
+    lines.append("| Variant | Class | Precision | Recall |")
+    lines.append("|---|---|---|---|")
+    csv_rows = [("variant", "class", "mean_precision", "sd_precision", "mean_recall", "sd_recall", "n_runs")]
+    for v in VARIANTS:
+        for c in CLASSES:
+            cell = pc[v][c]
+            star = "*" if cell["undefined"] else ""
+            lines.append(f"| {v} | {c} | {100*st.mean(cell['precision']):.1f}% ± {100*sd(cell['precision']):.1f}{star} "
+                         f"| {100*st.mean(cell['recall']):.1f}% ± {100*sd(cell['recall']):.1f} |")
+            csv_rows.append((v, c, f"{st.mean(cell['precision']):.4f}", f"{sd(cell['precision']):.4f}",
+                             f"{st.mean(cell['recall']):.4f}", f"{sd(cell['recall']):.4f}", len(cell["recall"])))
+    lines.append("")
+    with open(out / "per_class_metrics.csv", "w", newline="") as f:
+        csv.writer(f).writerows(csv_rows)
+
+    # --- calibration (query 9, optional: runs trained after migration 005) -----------
+    q9_path = sql_dir / "q9.csv"
+    if q9_path.exists():
+        q9 = read(q9_path)
+        lines.append("### Calibration: temperature scaling fitted on validation (query 9)\n")
+        lines.append("ECE = expected calibration error (15 bins; lower is better); NLL = negative log-likelihood. "
+                     "'Before' is plain softmax (T = 1); 'after' divides the logits by the temperature fitted on "
+                     "validation data. Test columns are held-out measurements, never used to fit T. "
+                     "Mean over seeds.\n")
+        lines.append("| Variant | Mean T | Test ECE before | Test ECE after | Test NLL before | Test NLL after |")
+        lines.append("|---|---|---|---|---|---|")
+        cal = defaultdict(lambda: defaultdict(list))
+        for r in q9:
+            for key in ("temperature", "test_ece_before", "test_ece_after", "test_nll_before", "test_nll_after"):
+                if r.get(key) not in (None, ""):
+                    cal[variant_of(r["run_name"])][key].append(float(r[key]))
+        for v in VARIANTS:
+            d = cal[v]
+            if d["temperature"]:
+                lines.append(f"| {v} | {st.mean(d['temperature']):.3f} | {st.mean(d['test_ece_before']):.4f} "
+                             f"| {st.mean(d['test_ece_after']):.4f} | {st.mean(d['test_nll_before']):.4f} "
+                             f"| {st.mean(d['test_nll_after']):.4f} |")
+        lines.append("")
+        with open(out / "calibration.csv", "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(q9[0].keys()) if q9 else ["run_name"])
+            w.writeheader()
+            w.writerows(q9)
+
+    (out / "summary.md").write_text("\n".join(lines))
+
+    # --- figures ------------------------------------------------------------
+    curves = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
+    for r in q3:
+        v = variant_of(r["run_name"])
+        e, s = int(r["epoch"]), int(r["train_seed"])
+        curves[v]["train"][s][e] = float(r["train_loss"])
+        curves[v]["val"][s][e] = float(r["val_loss"])
+        curves[v]["val_acc"][s][e] = float(r["val_accuracy"])
+        if r.get("train_accuracy") not in (None, ""):  # only in exports of runs trained after migration 004
+            curves[v]["train_acc"][s][e] = float(r["train_accuracy"])
+    fig, axes = plt.subplots(2, 3, figsize=(13, 7), sharex=True, sharey=True)
+    for ax, v in zip(axes.flat, VARIANTS):
+        for kind, color in (("train", "#2a6fdb"), ("val", "#d9534f")):
+            by_seed = curves[v][kind]
+            epochs = sorted(next(iter(by_seed.values())))
+            mat = [[by_seed[s][e] for e in epochs] for s in sorted(by_seed)]
+            mean = [st.mean(col) for col in zip(*mat)]
+            ax.plot([e + 1 for e in epochs], mean, color=color, label=f"{kind} loss")
+            ax.fill_between([e + 1 for e in epochs], [min(c) for c in zip(*mat)],
+                            [max(c) for c in zip(*mat)], color=color, alpha=0.15)
+        ax.set_title(v)
+        ax.grid(alpha=0.3)
+    for ax in axes[1]:
+        ax.set_xlabel("epoch")
+    for ax in axes[:, 0]:
+        ax.set_ylabel("cross-entropy loss")
+    axes[0, 0].legend()
+    fig.suptitle("Training vs validation loss (line = mean over seeds, band = min to max)")
+    fig.tight_layout()
+    fig.savefig(out / "loss_curves.png", dpi=130)
+    plt.close(fig)
+
+    has_train_acc = any(curves[v]["train_acc"] for v in VARIANTS)
+    fig, axes = plt.subplots(2, 3, figsize=(13, 7), sharex=True, sharey=True)
+    for ax, v in zip(axes.flat, VARIANTS):
+        for kind, color, label in (("train_acc", "#2a6fdb", "train accuracy"),
+                                   ("val_acc", "#d9534f", "validation accuracy")):
+            by_seed = curves[v][kind]
+            if not by_seed:
+                continue
+            epochs = sorted(next(iter(by_seed.values())))
+            mat = [[100 * by_seed[s][e] for e in epochs] for s in sorted(by_seed)]
+            ax.plot([e + 1 for e in epochs], [st.mean(c) for c in zip(*mat)], color=color, label=label)
+            ax.fill_between([e + 1 for e in epochs], [min(c) for c in zip(*mat)],
+                            [max(c) for c in zip(*mat)], color=color, alpha=0.15)
+        ax.set_title(v)
+        ax.grid(alpha=0.3)
+    for ax in axes[1]:
+        ax.set_xlabel("epoch")
+    for ax in axes[:, 0]:
+        ax.set_ylabel("accuracy (%)")
+    axes[0, 0].legend(loc="lower right")
+    fig.suptitle("Validation accuracy (line = mean over seeds, band = min to max)"
+                 + ("" if has_train_acc else "\nTraining accuracy was not recorded for these runs"))
+    fig.tight_layout()
+    fig.savefig(out / "accuracy_curves.png", dpi=130)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(2, 3, figsize=(7.2 * 3, 6.6 * 2))
+    for ax, v in zip(axes.flat, VARIANTS):
+        m = cm[v]
+        ax.imshow(m, cmap="Blues")
+        for i in range(K):
+            for j in range(K):
+                ax.text(j, i, m[i][j], ha="center", va="center", fontsize=8 if K > 5 else 10,
+                        color="white" if m[i][j] > max(map(max, m)) / 2 else "black")
+        ax.set_xticks(range(K), CLASSES, rotation=60, ha="right", fontsize=8)
+        ax.set_yticks(range(K), CLASSES, fontsize=8)
+        ax.set_title(f"{v} ({len(seeds)} seeds summed)")
+        ax.set_xlabel("predicted")
+        ax.set_ylabel("true")
+    fig.suptitle("Test confusion matrices (rows = true class, columns = predicted; counts summed over seeds)")
+    fig.tight_layout()
+    fig.savefig(out / "confusion_matrices.png", dpi=110)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.5 * 2, 4.6), sharey=True)
+    for ax, key, title in zip(axes, ("precision", "recall"), ("Test precision", "Test recall")):
+        grid = [[100 * st.mean(pc[v][c][key]) for c in CLASSES] for v in VARIANTS]
+        im = ax.imshow(grid, cmap="viridis", vmin=0, vmax=100, aspect="auto")
+        for i, row in enumerate(grid):
+            for j, val in enumerate(row):
+                ax.text(j, i, f"{val:.0f}", ha="center", va="center", fontsize=8,
+                        color="black" if val > 60 else "white")
+        ax.set_xticks(range(K), CLASSES, rotation=45, ha="right", fontsize=8)
+        ax.set_yticks(range(len(VARIANTS)), VARIANTS, fontsize=8)
+        ax.set_title(f"{title} (%, mean over seeds)")
+    fig.colorbar(im, ax=axes, shrink=0.8)
+    fig.savefig(out / "per_class_precision_recall.png", dpi=130, bbox_inches="tight")
+    plt.close(fig)
+
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+    for k, v in enumerate(VARIANTS):
+        accs = [100 * a for a in per[v]["acc"]]
+        ax.scatter([k] * len(accs), accs, color="#555", zorder=3)
+        ax.hlines(st.mean(accs), k - 0.25, k + 0.25, color="#d9534f", lw=2, zorder=4)
+    ax.set_xticks(range(len(VARIANTS)), VARIANTS, rotation=20)
+    ax.set_ylabel("test accuracy (%)")
+    ax.set_title("Test accuracy per seed (dots) and mean (red line)")
+    ax.grid(axis="y", alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out / "test_metrics_by_seed.png", dpi=130)
+    plt.close(fig)
+    print((out / "summary.md").read_text())
+
+
+if __name__ == "__main__":
+    args = [a for a in sys.argv[1:] if not a.startswith("--classes")]
+    which = "fashion"
+    if "--classes" in sys.argv:
+        which = sys.argv[sys.argv.index("--classes") + 1]
+        args = [a for a in args if a != which]
+    main(Path(args[0]), Path(args[1]), CLASS_SETS[which])
+Bash
+IN
+grep -n "^def \|^_RUN_COLS" api/db.py | head -50; sed -n 1,60p experiments/gradcam_evidence.py; grep -n "supabase\|argv\|def main" experiments/gradcam_evidence.py | tail -20; cat config/served_model.json; ls experiments/results/fashion-pilot
+
+OUT
+47:_RUN_COLS = "*"
+50:def get_client() -> Client:
+60:def ping() -> bool:
+71:def insert_dataset(
+86:def get_dataset(dataset_id: int) -> Optional[dict]:
+101:def experiment_columns(
+156:def insert_run(
+192:def run_name_exists(experiment_group: str, run_name: str) -> bool:
+205:def get_run(run_id: int) -> Optional[dict]:
+212:def get_run_artifact(run_id: int) -> Optional[str]:
+224:def latest_runs(limit: int = 50) -> List[dict]:
+251:def log_prediction(
+290:def _prediction_select(extra: str = "") -> str:
+294:def list_predictions(limit: int = 50) -> List[dict]:
+308:def get_prediction(prediction_id: int) -> Optional[dict]:
+"""Grad-CAM evidence: genuinely correct and incorrect Fashion-MNIST test predictions.
+
+Loads one saved checkpoint, classifies every official test image with it, checks that the
+regenerated test accuracy equals the accuracy stored with the run (otherwise this is not the
+same model), and saves Grad-CAM overlays for a deterministic selection of correct and
+incorrect predictions.
+
+    python -m experiments.gradcam_evidence <local_db.json> <run_name> <group> <out_dir>
+    python -m experiments.gradcam_evidence --supabase <run_name> <group> <out_dir>
+
+Writes <out_dir>/gradcam_correct.png, gradcam_incorrect.png, examples.csv and source.json.
+The weights come from run_artifacts; nothing is retrained. --supabase is read-only, takes
+credentials from .env / the environment, never prints them, keeps the checkpoint in memory,
+and refuses to run if SEE_SENSE_LOCAL_DB is set. The Fashion-MNIST files must be on disk
+(``python tools/fetch_fashion_mnist.py``).
+
+SELECTION RULE (fixed here, before any figure is looked at; not chosen by appearance):
+  * correct   - for every class, the first correctly classified test image in test order
+                (10 examples, one per class);
+  * incorrect - wrong predictions sorted by confidence (highest first), taking one example
+                per distinct (true -> predicted) pair first, then filling with the next most
+                confident wrong predictions, up to 10. "Incorrect" means predicted != true.
+
+``cam_mass_on_garment`` in examples.csv is the share of the Grad-CAM map that falls on pixels
+brighter than 20% of the image maximum, a number to support (not replace) reading the figure.
+Interpretations of failures are written by a person in docs/ after viewing the figures.
+"""
+from __future__ import annotations
+
+import csv
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+from PIL import Image  # noqa: E402
+
+from api import calibration  # noqa: E402
+from api.training import cam_for_class, load_artifact, predict_with_cam, to01, normalize  # noqa: E402
+from shared import fashion  # noqa: E402
+
+SELECTION_RULE = (
+    "correct: first correctly classified test image of each class in test order; "
+    "incorrect: wrong predictions by descending confidence, one per distinct (true, predicted) pair "
+    "first, then the next most confident, up to 10."
+)
+
+
+def load_from_file(db_file: str, run_name: str, group: str):
+    """(run, dataset, model_b64) from an offline SEE_SENSE_LOCAL_DB json file."""
+    db = json.loads(Path(db_file).read_text())
+    run = next(r for r in db["runs"] if r["experiment_group"] == group and r["run_name"] == run_name)
+    ds = next(d for d in db["datasets"] if d["id"] == run["dataset_id"])
+    model_b64 = next(a["model_b64"] for a in db["run_artifacts"] if a["run_id"] == run["id"])
+9:    python -m experiments.gradcam_evidence --supabase <run_name> <group> <out_dir>
+12:The weights come from run_artifacts; nothing is retrained. --supabase is read-only, takes
+64:def load_from_supabase(run_name: str, group: str, client=None):
+74:        raise SystemExit("Refusing --supabase: SEE_SENSE_LOCAL_DB (offline storage) is set. "
+78:            raise SystemExit("Refusing --supabase: SUPABASE_URL / SUPABASE_SERVICE_KEY are not set.")
+216:            "source": "supabase-or-local-store", "experiment_group": run.get("experiment_group"),
+225:def main(db_file: str, run_name: str, group: str, out_dir: str, supabase: bool = False) -> None:
+226:    if supabase:
+227:        run, _ds, model_b64 = load_from_supabase(run_name, group)
+238:    args = sys.argv[1:]
+239:    if args and args[0] == "--supabase":
+240:        main("", *args[1:4], supabase=True)
+{
+  "dataset": "fashion-mnist",
+  "n_classes": 10,
+  "experiment_group": "fashion-official-1",
+  "run_name": "full_improved-seed0",
+  "served_run_id": null,
+  "chosen_on": "2026-10-17",
+  "chosen_before_official_results": true,
+  "rationale": "The served model is the project's full improved configuration trained with the lowest training seed (0). It was fixed here on 2026-10-17, before any official Fashion-MNIST run or test result existed, so it is not selected by test score. Do not change run_name after results exist.",
+  "how_to_fill_served_run_id": "After the official runs finish, copy the run_id of the 'full_improved-seed0' record from experiments/results/fashion-official-1-runs.jsonl into served_run_id. tests/test_ui_tryit.py and the UI verify it against those records and against GET /runs/{id}. Leave it null until then: Try It then reports that no Fashion-MNIST model is configured instead of serving a different model."
+}
+pilot_all_variants_3ep.jsonl
+pilot_all_variants_3ep.log
+pilot_convergence_20ep.jsonl
+pilot_convergence_20ep.log
+pilot_timing_parallel3_2ep.jsonl
+pilot_timing_parallel3_proc0.log
+pilot_timing_parallel3_proc1.log
+pilot_timing_parallel3_proc2.log
+pilot_timing_sequential_2ep.jsonl
+pilot_timing_sequential_2ep.log
+summary.md
+3:23 PM
+I've read the existing analysis tooling and I'm now building the read-only export of runs 53–70 from Supabase, plus a verifier for the matched protocol.
+
+
+
+Write export_records.py
+125 lines
+"""Read the official run records from Supabase (READ-ONLY) and verify the matched protocol.
+
+    python -m experiments.export_records <group> <out_dir> [--frozen config/fashion_protocol.json]
+
+Credentials come from .env / the environment and are never printed. Only ``select`` calls are made; the
+checkpoint blobs (run_artifacts) are not fetched here. Writes <out_dir>/runs.json: the run rows exactly as
+PostgREST returned them, the dataset row, and a small provenance header.
+
+IMPORTANT: this is an API read, not a SQL export. Nothing derived from runs.json may be described as
+"SQL-sourced from Supabase". Its legitimate uses are (1) this verification and (2) loading a LOCAL Postgres
+replica (experiments/sql_check.mjs) to check the queries before the real SQL export is run in Supabase.
+"""
+from __future__ import annotations
+
+import datetime as dt
+import hashlib
+import json
+import os
+import sys
+from pathlib import Path
+
+VARIANTS = ["baseline", "full_improved", "no_augmentation", "no_batchnorm", "no_dropout", "no_scheduler"]
+
+
+def fetch(group: str) -> dict:
+    if os.environ.get("SEE_SENSE_LOCAL_DB"):
+        raise SystemExit("Refusing: SEE_SENSE_LOCAL_DB is set (offline store); unset it to read Supabase.")
+    from api import db  # loads .env
+
+    cl = db.get_client()
+    runs = (cl.table("runs").select("*").eq("experiment_group", group).order("id").execute().data)
+    ds_ids = sorted({r["dataset_id"] for r in runs})
+    datasets = [cl.table("datasets").select("*").eq("id", i).execute().data[0] for i in ds_ids]
+    return {"runs": runs, "datasets": datasets}
+
+
+def verify(runs: list[dict], datasets: list[dict], proto: dict) -> list[str]:
+    """Return a list of problems (empty = every check passed)."""
+    bad: list[str] = []
+    p, seeds = proto["protocol"], proto["seeds"]
+    want = {f"{v}-seed{s}" for v in VARIANTS for s in seeds}
+    got = [r["run_name"] for r in runs]
+    if sorted(got) != sorted(want):
+        bad.append(f"run names differ: missing={sorted(want - set(got))} extra={sorted(set(got) - want)}")
+    if len(set(got)) != len(got):
+        bad.append("duplicate run names")
+    if {r["dataset_id"] for r in runs} != {proto["frozen_dataset_id"]}:
+        bad.append("runs are not all on the frozen dataset id")
+    for d in datasets:
+        if d.get("source") != "fashion_mnist" or len(d.get("class_names") or []) != 10:
+            bad.append(f"dataset {d.get('id')} is not a 10-class fashion_mnist row")
+    for r in runs:
+        n, c = r["run_name"], r.get("config") or {}
+        checks = {
+            "epochs": r["epochs"] == p["epochs"], "batch_size": r["batch_size"] == p["batch_size"],
+            "lr": abs(r["lr"] - p["lr"]) < 1e-12, "split_seed": r["split_seed"] == p["split_seed"],
+            "optimizer": r["optimizer"] == p["optimizer"],
+            "train_seed": r["train_seed"] == int(n.rsplit("-seed", 1)[1]),
+            "dataset": c.get("dataset") == "fashion-mnist", "val_size": c.get("val_size") == p["val_size"],
+            "train_limit": c.get("train_limit") in (None, p["train_limit"]),
+            "sizes": (r["n_train"], r["n_val"], r["n_test"]) == (54000, 6000, 10000),
+            "ten_classes": len(c.get("class_names") or []) == 10,
+            "history_lengths": all(len(r[k]) == p["epochs"] for k in (
+                "train_loss_history", "val_loss_history", "val_accuracy_history",
+                "train_accuracy_history", "lr_history")),
+            "confusion_10x10": len(r["confusion_matrix"]) == 10 and all(len(x) == 10 for x in r["confusion_matrix"]),
+            "calibration": bool(r.get("calibration")) and r["calibration"]["temperature"] > 0,
+            "per_class": len((r.get("test_per_class") or {}).get("precision", [])) == 10,
+        }
+        bad += [f"{n}: {k} failed" for k, ok in checks.items() if not ok]
+    for s in seeds:  # matched: same split, same preprocessing within a seed AND across seeds (split_seed fixed)
+        sub = [r for r in runs if r["train_seed"] == s]
+        for k in ("split_sha256", "n_train", "n_val", "n_test", "dataset_id", "split_seed"):
+            if len({json.dumps(r[k]) for r in sub}) != 1:
+                bad.append(f"seed {s}: {k} not identical across the six variants")
+    if len({r["split_sha256"] for r in runs}) != 1:
+        bad.append("split_sha256 differs between seeds although split_seed is fixed")
+    if len({json.dumps(r["config"]["preprocessing"], sort_keys=True) for r in runs}) != 1:
+        bad.append("preprocessing differs between runs")
+    # Declared technique differences only.
+    exp = {
+        "baseline": dict(use_batchnorm=False, dropout=0, augment=False, scheduler="constant"),
+        "full_improved": dict(use_batchnorm=True, dropout=p["dropout"], augment=True, scheduler=p["scheduler"]),
+        "no_augmentation": dict(use_batchnorm=True, dropout=p["dropout"], augment=False, scheduler=p["scheduler"]),
+        "no_batchnorm": dict(use_batchnorm=False, dropout=p["dropout"], augment=True, scheduler=p["scheduler"]),
+        "no_dropout": dict(use_batchnorm=True, dropout=0, augment=True, scheduler=p["scheduler"]),
+        "no_scheduler": dict(use_batchnorm=True, dropout=p["dropout"], augment=True, scheduler="constant"),
+    }
+    for r in runs:
+        v = r["run_name"].rsplit("-seed", 1)[0]
+        for k, want_v in exp.get(v, {}).items():
+            if r[k] != want_v:
+                bad.append(f"{r['run_name']}: {k}={r[k]!r}, expected {want_v!r}")
+        if r["augment"] and r["augment_max_shift"] != p["augment_max_shift"]:
+            bad.append(f"{r['run_name']}: augment_max_shift {r['augment_max_shift']}")
+    return bad
+
+
+def main(group: str, out_dir: str, frozen: str = "config/fashion_protocol.json") -> int:
+    proto = json.loads(Path(frozen).read_text())
+    if proto["status"] != "frozen" or proto["experiment_group"] != group:
+        raise SystemExit("protocol file is not the frozen protocol of this group")
+    data = fetch(group)
+    problems = verify(data["runs"], data["datasets"], proto)
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    body = {"provenance": {
+        "kind": "PostgREST read via service key (NOT a SQL export)", "group": group,
+        "read_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "n_runs": len(data["runs"]), "run_ids": [r["id"] for r in data["runs"]],
+        "verification_problems": problems}, **data}
+    text = json.dumps(body, indent=1, sort_keys=True)
+    (out / "runs.json").write_text(text)
+    print(f"runs read: {len(data['runs'])}  ids {min(r['id'] for r in data['runs'])}-{max(r['id'] for r in data['runs'])}")
+    print(f"sha256(runs.json) = {hashlib.sha256(text.encode()).hexdigest()}")
+    print("matched-protocol verification:", "ALL CHECKS PASSED" if not problems else f"{len(problems)} PROBLEM(S)")
+    for x in problems:
+        print("  -", x)
+    return 1 if problems else 0
+
+
+if __name__ == "__main__":
+    a = sys.argv[1:]
+    sys.exit(main(a[0], a[1], a[a.index("--frozen") + 1] if "--frozen" in a else "config/fashion_protocol.json"))
+Bash
+IN
+.venv/bin/python -m experiments.export_records fashion-official-1 experiments/results/fashion-official-1-records 2>&1 | tail -20
+
+OUT
+runs read: 18  ids 53-70
+sha256(runs.json) = 63062d6b5dda1d2a2a4bdf96273c8765af41b7420c52f71d1183cc2c35794e0c
+matched-protocol verification: 6 PROBLEM(S)
+  - baseline-seed0: scheduler='none', expected 'constant'
+  - no_scheduler-seed0: scheduler='none', expected 'constant'
+  - baseline-seed1: scheduler='none', expected 'constant'
+  - no_scheduler-seed1: scheduler='none', expected 'constant'
+  - baseline-seed2: scheduler='none', expected 'constant'
+  - no_scheduler-seed2: scheduler='none', expected 'constant'
+3:24 PM
+The six problems come from my own check. The API stores a constant schedule as none, not constant. I'll correct the check.
+
+
+
+Bash
+IN
+sed -i '' 's/scheduler="constant"/scheduler="none"/g' experiments/export_records.py && .venv/bin/python -m experiments.export_records fashion-official-1 experiments/results/fashion-official-1-records 2>&1 | tail -6; .venv/bin/python - <<'EOF'
+import json
+d=json.load(open("experiments/results/fashion-official-1-records/runs.json"))
+print(sorted(d["runs"][0].keys()))
+r=[x for x in d["runs"] if x["id"]==54][0]
+print(r["run_name"],r["accuracy"],r["macro_f1"],r["dataset_id"],r["experiment_group"],r["config"]["preprocessing"], r["config"]["class_names"])
+print(d["datasets"][0]["id"], d["datasets"][0]["name"], d["datasets"][0]["source"])
+EOF
+
+OUT
+runs read: 18  ids 53-70
+sha256(runs.json) = b568c15f3c393155bda7adb2d5bcc0c938fdcee21feb04f2b1c4303491804345
+matched-protocol verification: ALL CHECKS PASSED
+['accuracy', 'artifact_version', 'augment', 'augment_max_shift', 'batch_size', 'best_epoch', 'calibration', 'config', 'confusion_matrix', 'created_at', 'data_seed', 'dataset_id', 'dropout', 'epochs', 'experiment_group', 'id', 'lr', 'lr_history', 'macro_f1', 'model_variant', 'n_test', 'n_train', 'n_val', 'optimizer', 'param_count', 'run_name', 'scheduler', 'split_seed', 'split_sha256', 'test_loss', 'test_per_class', 'train_accuracy_history', 'train_loss_history', 'train_seconds', 'train_seed', 'use_batchnorm', 'val_accuracy_history', 'val_loss_history']
+full_improved-seed0 0.8782 0.877070729797938 24 fashion-official-1 {'mean': 0.286, 'mode': 'L', 'resize': 'bicubic (PIL default)', 'scale': 255.0, 'size': [28, 28], 'std': 0.353} ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+24 fashion-mnist fashion_mnist
+3:24 PM
+All 18 runs pass the matched-protocol check. Next, a per-class SQL query, since the existing queries only cover per-class results indirectly through the confusion matrix.
+
+
+
+Bash
+IN
+.venv/bin/python - <<'EOF'
+import json
+d=json.load(open("experiments/results/fashion-official-1-records/runs.json"))
+r=d["runs"][0]
+print({k:(v if not isinstance(v,list) else f"list{len(v)}") for k,v in r["test_per_class"].items()})
+print(json.dumps(r["calibration"])[:600])
+EOF
+sed -n 60,120p experiments/sql_check.mjs; cat /private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/pg/package.json; diff experiments/sql_check.mjs /private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/pg/sql_check.mjs && echo same
+
+OUT
+{'f1': 'list10', 'macro_f1': 0.8998246191612367, 'precision': 'list10', 'recall': 'list10', 'support': 'list10'}
+{"fit_n": 6000, "fit_split": "validation", "method": "temperature_scaling", "n_bins": 15, "note": "T is fitted on validation logits only. Test measures are reported, not used to fit or select anything. Calibration holds only to the extent the 'after' test numbers show.", "temperature": 1.122398845602099, "test": {"after": {"brier": 0.14501304098978277, "ece": 0.005491702511938259, "nll": 0.2829685939911635}, "before": {"brier": 0.14559067113138371, "ece": 0.014221165086468392, "nll": 0.2872079428087225}, "reliability_after": [{"accuracy": null, "hi": 0.06666666666666667, "lo": 0.0, "mean_confi
+    return v === null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v));
+  }).join(','))).join('\n');
+  fs.writeFileSync(path.join(outDir, `q${n}.csv`), csv + '\n');
+  console.log(`query ${n}: ${res.rows.length} rows -> q${n}.csv`);
+}
+{
+  "name": "pg",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}
+same
+Bash
+IN
+cat >> docs/comparison_queries.sql <<'EOF'
+
+-- =========================================================================
+-- 10. [TEST results - after protocol freeze] Per-class test precision, recall, F1 and support,
+--     one row per (run, class), exactly as stored with each run (runs.test_per_class).
+--     Precision/recall of a class a run never predicts is stored as 0 (macro-F1 convention).
+--     Cross-check: experiments.analyze recomputes the same numbers from query 7's confusion cells.
+-- =========================================================================
+select r.run_name, r.train_seed,
+       t.i - 1                                                           as class_index,
+       r.config -> 'class_names' ->> (t.i - 1)                           as class_name,
+       (r.test_per_class -> 'precision' ->> (t.i - 1))::double precision as precision,
+       (r.test_per_class -> 'recall'    ->> (t.i - 1))::double precision as recall,
+       (r.test_per_class -> 'f1'        ->> (t.i - 1))::double precision as f1,
+       (r.test_per_class -> 'support'   ->> (t.i - 1))::integer          as support
+from runs r
+cross join lateral generate_series(1, jsonb_array_length(r.test_per_class -> 'precision')) as t(i)
+where r.experiment_group = 'REPLACE-WITH-GROUP' and r.test_per_class is not null
+order by r.train_seed, r.run_name, t.i;
+EOF
+cat > experiments/package_sql.py <<'EOF'
+"""Package docs/comparison_queries.sql into ONE statement you can run once in the Supabase SQL editor.
+
+    python -m experiments.package_sql <group> <out.sql>
+
+The statement returns one row per query (query_id, rows) where ``rows`` is that query's result as a JSON
+array, plus a ``meta`` row (server time, version, database). Download the result (CSV or "copy as JSON")
+and turn it into q1.csv ... with  python -m experiments.ingest_sql_export <export> <out_dir>.
+Read-only: it contains only SELECTs. The queries are taken verbatim from comparison_queries.sql.
+"""
+from __future__ import annotations
+
+import hashlib
+import re
+import sys
+from pathlib import Path
+
+SRC = Path(__file__).resolve().parent.parent / "docs" / "comparison_queries.sql"
+
+
+def queries(text: str) -> dict[int, str]:
+    parts = re.split(r"^-- =+\n-- (\d+)\.", text, flags=re.M)
+    out = {}
+    for i in range(1, len(parts), 2):
+        body = parts[i + 1].split("\n", 1)[1]
+        body = "\n".join(l for l in body.split("\n") if not l.lstrip().startswith("--")).strip().rstrip(";")
+        out[int(parts[i])] = body
+    return out
+
+
+def package(group: str) -> str:
+    text = SRC.read_text()
+    digest = hashlib.sha256(text.encode()).hexdigest()
+    sel = []
+    for n, body in sorted(queries(text).items()):
+        body = body.replace("REPLACE-WITH-GROUP", group)
+        sel.append(f"select 'q{n}' as query_id, coalesce(json_agg(to_json(t)), '[]'::json) as rows from (\n{body}\n) t")
+    sel.append("select 'meta', json_build_array(json_build_object('executed_at', now(), 'server_version', version(), "
+               f"'database', current_database(), 'experiment_group', '{group}', "
+               f"'queries_file', 'docs/comparison_queries.sql', 'queries_file_sha256', '{digest}'))")
+    head = (f"-- Packaged read-only export for experiment group '{group}'.\n"
+            f"-- Source: docs/comparison_queries.sql (sha256 {digest}); generated by experiments/package_sql.py.\n"
+            "-- Run ONCE in the Supabase SQL editor, then download the result (CSV or JSON).\n")
+    return head + "\nunion all\n".join(f"{s}" for s in sel).replace("\nselect ", "\nselect ") + ";\n"
+
+
+if __name__ == "__main__":
+    Path(sys.argv[2]).write_text(package(sys.argv[1]))
+    print(f"wrote {sys.argv[2]}")
+EOF
+.venv/bin/python -m experiments.package_sql fashion-official-1 docs/fashion_official_1_export.sql && grep -c "union all" docs/fashion_official_1_export.sql
+
+OUT
+wrote docs/fashion_official_1_export.sql
+10
+Bash
+IN
+python3 - <<'EOF'
+p="experiments/sql_check.mjs"
+s=open(p).read()
+s=s.rstrip()+"""
+
+// Optional: also run a PACKAGED single-statement export (experiments/package_sql.py) and save its result
+// the way the Supabase editor's "download as JSON" would: [{query_id, rows}, ...].
+if (process.env.PACKAGED_SQL) {
+  const res = await pg.query(fs.readFileSync(process.env.PACKAGED_SQL, 'utf8'));
+  fs.writeFileSync(path.join(outDir, 'packaged_export.json'), JSON.stringify(res.rows));
+  console.log(`packaged export: ${res.rows.length} rows -> packaged_export.json`);
+}
+"""
+s=s.replace("""// Needs:  npm install""","""// Env PACKAGED_SQL=<file> additionally runs a packaged one-statement export.
+// Needs:  npm install""")
+open(p,"w").write(s)
+EOF
+cat > experiments/ingest_sql_export.py <<'EOF'
+"""Turn the packaged SQL export (docs/fashion_official_1_export.sql, run once in Supabase) into q*.csv files.
+
+    python -m experiments.ingest_sql_export <export.csv|export.json> <out_dir> [--source supabase-sql-editor]
+
+Accepts the SQL editor's CSV download (columns query_id, rows) or "copy as JSON" / the JSON download.
+Writes <out_dir>/q1.csv ... plus PROVENANCE.md (sha256 of the export, the executed_at / server_version / SQL
+file hash reported by the database itself, row counts). Refuses to run without the ``meta`` row, because
+without it nothing shows that the numbers came from a SQL execution.
+"""
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+csv.field_size_limit(1 << 30)
+
+
+def load(path: Path) -> dict[str, list[dict]]:
+    raw = path.read_text()
+    if raw.lstrip().startswith(("[", "{")):
+        data = json.loads(raw)
+        rows = data if isinstance(data, list) else data.get("rows", data)
+    else:
+        rows = list(csv.DictReader(raw.splitlines(keepends=True)))
+    out = {}
+    for r in rows:
+        v = r["rows"]
+        out[r["query_id"]] = json.loads(v) if isinstance(v, str) else v
+    return out
+
+
+def fmt(v) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, (dict, list)):
+        return json.dumps(v)
+    return str(v)
+
+
+def main(export: str, out_dir: str, source: str = "unspecified") -> None:
+    src = Path(export)
+    res = load(src)
+    if "meta" not in res:
+        raise SystemExit("export has no 'meta' row: not produced by the packaged SQL (or truncated)")
+    meta = res["meta"][0]
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    counts = {}
+    for q, rows in sorted(res.items()):
+        if q == "meta":
+            continue
+        cols = list(rows[0]) if rows else []
+        with open(out / f"{q}.csv", "w", newline="") as f:
+            w = csv.writer(f, lineterminator="\n")
+            w.writerow(cols)
+            w.writerows([fmt(r.get(c)) for c in cols] for r in rows)
+        counts[q] = len(rows)
+    prov = [
+        "# SQL provenance", "",
+        f"- source: **{source}**",
+        f"- export file: `{src.name}` sha256 `{hashlib.sha256(src.read_bytes()).hexdigest()}`",
+        f"- executed_at (reported by the database): {meta.get('executed_at')}",
+        f"- server_version: {meta.get('server_version')}", f"- database: {meta.get('database')}",
+        f"- experiment_group: {meta.get('experiment_group')}",
+        f"- queries file: {meta.get('queries_file')} sha256 `{meta.get('queries_file_sha256')}`",
+        "", "| query | rows |", "|---|---|", *[f"| {q} | {n} |" for q, n in counts.items()], "",
+    ]
+    (out / "PROVENANCE.md").write_text("\n".join(prov))
+    print(f"wrote {len(counts)} csv files to {out}")
+
+
+if __name__ == "__main__":
+    a = [x for x in sys.argv[1:]]
+    src = a[a.index("--source") + 1] if "--source" in a else "unspecified"
+    main(a[0], a[1], src)
+EOF
+P=/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/pg
+cp experiments/sql_check.mjs $P/ && cd $P && SEE_SENSE_ROOT=/Users/emmarogoveanu/Documents/GitHub/see-sense PACKAGED_SQL=/Users/emmarogoveanu/Documents/GitHub/see-sense/docs/fashion_official_1_export.sql node sql_check.mjs /Users/emmarogoveanu/Documents/GitHub/see-sense/experiments/results/fashion-official-1-records/runs.json fashion-official-1 /Users/emmarogoveanu/Documents/GitHub/see-sense/experiments/results/fashion-official-1-sql-localreplica 1,2,3,4,5,6,7,9,10 2>&1 | tail -15
+
+OUT
+query 1: 3 rows -> q1.csv
+query 2: 18 rows -> q2.csv
+query 3: 360 rows -> q3.csv
+query 4: 18 rows -> q4.csv
+query 5: 6 rows -> q5.csv
+query 6: 15 rows -> q6.csv
+query 7: 1800 rows -> q7.csv
+query 9: 18 rows -> q9.csv
+query 10: 180 rows -> q10.csv
+packaged export: 11 rows -> packaged_export.json
+Shell cwd was reset to /Users/emmarogoveanu/Documents/GitHub/see-sense
+3:24 PM
+The packaged statement runs on a local Postgres replica. I'll now check that ingesting its output reproduces the per-query CSVs.
+
+
+
+Bash
+IN
+R=experiments/results/fashion-official-1-sql-localreplica && .venv/bin/python -m experiments.ingest_sql_export $R/packaged_export.json /tmp/x_ingest_chk --source "LOCAL PGlite replica (check only)" >/dev/null 2>&1; .venv/bin/python - <<'EOF'
+import csv
+R="experiments/results/fashion-official-1-sql-localreplica"
+import subprocess
+subprocess.run([".venv/bin/python","-m","experiments.ingest_sql_export",R+"/packaged_export.json","/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/ingest_chk","--source","local replica check"],check=True,capture_output=True)
+S="/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/ingest_chk"
+for q in (1,2,3,4,5,6,7,9,10):
+    a=list(csv.DictReader(open(f"{R}/q{q}.csv"))); b=list(csv.DictReader(open(f"{S}/q{q}.csv")))
+    ok=len(a)==len(b)
+    def eq(x,y):
+        if x==y: return True
+        try: return abs(float(x)-float(y))<1e-9
+        except: return False
+    ok=ok and all(all(eq(ra[k],rb[k]) for k in ra) for ra,rb in zip(a,b))
+    print(q,len(a),ok)
+EOF
+rm -rf /tmp/x_ingest_chk; ls $R
+
+OUT
+1 3 True
+2 18 False
+3 360 True
+4 18 True
+5 6 True
+6 15 True
+7 1800 True
+9 18 True
+10 180 True
+packaged_export.json
+q1.csv
+q10.csv
+q2.csv
+q3.csv
+q4.csv
+q5.csv
+q6.csv
+q7.csv
+q9.csv
+Bash
+IN
+S=/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/ingest_chk; head -3 experiments/results/fashion-official-1-sql-localreplica/q2.csv; head -3 $S/q2.csv
+
+OUT
+run_name,model_variant,use_batchnorm,dropout,augment,scheduler,train_seed,param_count,best_epoch,best_val_loss,val_accuracy_at_best,final_train_loss,train_seconds
+baseline-seed0,baseline,false,0,false,none,0,9098,18,0.25709405541419983,0.9088333249092102,0.2157162399954266,120.0
+full_improved-seed0,improved,true,0.3,true,cosine,0,9146,17,0.30504193902015686,0.8883333206176758,0.39713862644301523,154.5
+run_name,model_variant,use_batchnorm,dropout,augment,scheduler,train_seed,param_count,best_epoch,best_val_loss,val_accuracy_at_best,final_train_loss,train_seconds
+baseline-seed0,baseline,False,0,False,none,0,9098,18,0.25709405541419983,0.9088333249092102,0.2157162399954266,120
+full_improved-seed0,improved,True,0.3,True,cosine,0,9146,17,0.30504193902015686,0.8883333206176758,0.39713862644301523,154.5
+3:25 PM
+The only differences are cosmetic: Python writes True where SQL writes true. I'll fix that in the ingest script.
+
+
+
+Bash
+IN
+python3 - <<'EOF'
+p="experiments/ingest_sql_export.py"
+s=open(p).read()
+s=s.replace("    if isinstance(v, (dict, list)):","    if isinstance(v, bool):\n        return \"true\" if v else \"false\"\n    if isinstance(v, (dict, list)):")
+open(p,"w").write(s)
+EOF
+mkdir -p experiments/results/fashion-official-1-sql
+echo ok
+
+OUT
+ok
+Bash
+IN
+python3 - <<'EOF'
+p="experiments/analyze.py"
+s=open(p).read()
+# 1. provenance header
+s=s.replace("""    lines: list[str] = []
+
+    # --- audit""","""    lines: list[str] = []
+    prov = sql_dir / "PROVENANCE.md"
+    lines.append(prov.read_text().strip() if prov.exists() else "# SQL provenance\\n\\n- source: **not recorded** (no PROVENANCE.md next to the CSVs)")
+    lines.append("")
+
+    # --- audit""",1)
+# 2. train/val gap table + q10 crosscheck, inserted before the confusion section
+s=s.replace("""    # --- confusion (query 7) ---""","""    # --- final-epoch train vs validation accuracy (query 3): the fit/generalisation picture ----
+    last = defaultdict(dict)
+    for r in q3:
+        if r.get("train_accuracy") not in (None, ""):
+            last[(variant_of(r["run_name"]), int(r["train_seed"]))][int(r["epoch"])] = (
+                float(r["train_accuracy"]), float(r["val_accuracy"]), float(r["train_loss"]), float(r["val_loss"]))
+    if last:
+        lines.append("### Fit at the last epoch: training vs validation (from query 3, mean over seeds)\\n")
+        lines.append("A small gap with low accuracy = under-fitting; a large gap = over-fitting. Training metrics are "
+                     "measured on the (augmented, dropout-on) training batches during the epoch, so they are not directly "
+                     "comparable to validation numbers for the regularized variants.\\n")
+        lines.append("| Variant | Train acc | Val acc | Gap (pp) | Train loss | Val loss |")
+        lines.append("|---|---|---|---|---|---|")
+        for v in VARIANTS:
+            vals = [last[(v, s_)][max(last[(v, s_)])] for s_ in sorted({k[1] for k in last if k[0] == v})]
+            ta, va, tl, vl = (st.mean(x[i] for x in vals) for i in range(4))
+            lines.append(f"| {v} | {100*ta:.2f}% | {100*va:.2f}% | {100*(ta-va):+.2f} | {tl:.4f} | {vl:.4f} |")
+        lines.append("")
+
+    # --- confusion (query 7) ---""",1)
+s=s.replace("""    with open(out / "per_class_metrics.csv", "w", newline="") as f:
+        csv.writer(f).writerows(csv_rows)
+""","""    with open(out / "per_class_metrics.csv", "w", newline="") as f:
+        csv.writer(f).writerows(csv_rows)
+    q10_path = sql_dir / "q10.csv"
+    if q10_path.exists():  # stored per-class metrics (query 10) must equal the ones recomputed from query 7
+        q10 = read(q10_path)
+        worst = 0.0
+        for r in q10:
+            cell_p = pc[variant_of(r["run_name"])][r["class_name"]]
+            # per-run order is sorted run_name, so locate this run by position among its variant's runs
+        by_run: dict = defaultdict(dict)
+        for r in q10:
+            by_run[r["run_name"]][r["class_name"]] = (float(r["precision"]), float(r["recall"]))
+        runs7: dict = defaultdict(lambda: [[0] * K for _ in range(K)])
+        for r in q7:
+            runs7[r["run_name"]][CLASSES.index(r["true_class"])][CLASSES.index(r["predicted_class"])] += int(r["n"])
+        for name, m in runs7.items():
+            for k, c in enumerate(CLASSES):
+                pred = sum(m[i][k] for i in range(K))
+                p_ = m[k][k] / pred if pred else 0.0
+                r_ = m[k][k] / sum(m[k])
+                worst = max(worst, abs(p_ - by_run[name][c][0]), abs(r_ - by_run[name][c][1]))
+        lines.append(f"**Cross-check:** stored per-class precision/recall (query 10, {len(q10)} rows) vs recomputed from "
+                     f"confusion matrices (query 7): max absolute difference {worst:.2e}.\\n")
+""",1)
+open(p,"w").write(s)
+EOF
+python3 - <<'EOF'
+# remove the dead loop I left in
+p="/Users/emmarogoveanu/Documents/GitHub/see-sense/experiments/analyze.py"
+s=open(p).read()
+dead="""        for r in q10:
+            cell_p = pc[variant_of(r["run_name"])][r["class_name"]]
+            # per-run order is sorted run_name, so locate this run by position among its variant's runs
+"""
+assert dead in s
+open(p,"w").write(s.replace(dead,""))
+EOF
+cd /Users/emmarogoveanu/Documents/GitHub/see-sense && R=experiments/results/fashion-official-1-sql-localreplica && cat > $R/PROVENANCE.md <<'EOF'
+# SQL provenance
+
+- source: **LOCAL REPLICA, NOT Supabase SQL.** The 18 run rows (ids 53-70) were read from Supabase with a read-only
+  PostgREST call (`experiments/export_records.py`), loaded into a local in-memory Postgres engine (PGlite) built from
+  `db/migrations/001,002,004,005`, and `docs/comparison_queries.sql` was executed there unchanged (`experiments/sql_check.mjs`).
+- The queries are the real ones and the data are the real records, but this is NOT an export from the Supabase SQL editor.
+  It is provisional: run `docs/fashion_official_1_export.sql` once in Supabase and ingest it
+  (`experiments/ingest_sql_export.py`) to produce the SQL-sourced set in `../fashion-official-1-sql/`.
+EOF
+.venv/bin/python -m experiments.analyze $R experiments/results/fashion-official-1-analysis-provisional 2>&1 | head -150
+
+OUT
+# SQL provenance
+
+- source: **LOCAL REPLICA, NOT Supabase SQL.** The 18 run rows (ids 53-70) were read from Supabase with a read-only
+  PostgREST call (`experiments/export_records.py`), loaded into a local in-memory Postgres engine (PGlite) built from
+  `db/migrations/001,002,004,005`, and `docs/comparison_queries.sql` was executed there unchanged (`experiments/sql_check.mjs`).
+- The queries are the real ones and the data are the real records, but this is NOT an export from the Supabase SQL editor.
+  It is provisional: run `docs/fashion_official_1_export.sql` once in Supabase and ingest it
+  (`experiments/ingest_sql_export.py`) to produce the SQL-sourced set in `../fashion-official-1-sql/`.
+
+**Matched-configuration audit (query 1):** PASS - 3 seeds, 6 runs each, one dataset/split/budget per seed.
+
+### Test results per variant (mean ± sd across seeds; from query 4)
+
+| Variant | Seeds | Test accuracy | Macro-F1 | Test loss | Params |
+|---|---|---|---|---|---|
+| baseline | 3 | 89.73% ± 0.47 | 0.8973 ± 0.0047 | 0.2884 ± 0.0093 | 9098 |
+| full_improved | 3 | 88.10% ± 0.29 | 0.8801 ± 0.0031 | 0.3327 ± 0.0057 | 9146 |
+| no_augmentation | 3 | 90.30% ± 0.13 | 0.9024 ± 0.0015 | 0.2720 ± 0.0043 | 9146 |
+| no_batchnorm | 3 | 87.12% ± 0.30 | 0.8701 ± 0.0031 | 0.3591 ± 0.0072 | 9098 |
+| no_dropout | 3 | 88.94% ± 0.07 | 0.8888 ± 0.0006 | 0.3093 ± 0.0029 | 9146 |
+| no_scheduler | 3 | 88.23% ± 0.40 | 0.8810 ± 0.0039 | 0.3274 ± 0.0094 | 9146 |
+
+### Test accuracy by seed
+
+| Variant | seed 0 | seed 1 | seed 2 |
+|---|---|---|---|
+| baseline | 90.01% | 89.19% | 89.98% |
+| full_improved | 87.82% | 88.10% | 88.39% |
+| no_augmentation | 90.29% | 90.44% | 90.18% |
+| no_batchnorm | 86.89% | 87.02% | 87.46% |
+| no_dropout | 88.97% | 88.86% | 88.98% |
+| no_scheduler | 87.77% | 88.50% | 88.41% |
+
+### Difference from full_improved, same seed (from query 6)
+
+Negative accuracy delta = scored lower than the full model. Accuracy deltas in percentage points (pp).
+
+| Variant | Technique removed | Δ accuracy per seed (pp) | Mean Δ acc (pp) | 95% CI of mean Δ (pp, paired t) | Mean Δ macro-F1 | Mean Δ test loss | Seeds lower than full |
+|---|---|---|---|---|---|---|---|
+| baseline | architecture + all four | +2.19, +1.09, +1.59 | +1.62 | [+0.26, +2.99] | +0.0172 | -0.0443 | 0 of 3 |
+| no_augmentation | augmentation | +2.47, +2.34, +1.79 | +2.20 | [+1.30, +3.10] | +0.0223 | -0.0607 | 0 of 3 |
+| no_batchnorm | batch norm | -0.93, -1.08, -0.93 | -0.98 | [-1.20, -0.76] | -0.0101 | +0.0264 | 3 of 3 |
+| no_dropout | dropout | +1.15, +0.76, +0.59 | +0.83 | [+0.12, +1.55] | +0.0087 | -0.0234 | 0 of 3 |
+| no_scheduler | LR scheduler | -0.05, +0.40, +0.02 | +0.12 | [-0.48, +0.72] includes 0 | +0.0009 | -0.0054 | 1 of 3 |
+
+### Validation / training evidence (from query 2)
+
+| Variant | Best val loss | Val acc at best | Best epoch (0-based) per seed | Final train loss |
+|---|---|---|---|---|
+| baseline | 0.2571 | 90.75% | 18, 15, 18 | 0.2173 |
+| full_improved | 0.3072 | 88.98% | 17, 19, 19 | 0.3951 |
+| no_augmentation | 0.2472 | 91.25% | 19, 19, 19 | 0.2602 |
+| no_batchnorm | 0.3340 | 88.04% | 18, 19, 18 | 0.4207 |
+| no_dropout | 0.2810 | 89.84% | 19, 18, 19 | 0.3266 |
+| no_scheduler | 0.3013 | 89.09% | 13, 18, 19 | 0.3920 |
+
+### Fit at the last epoch: training vs validation (from query 3, mean over seeds)
+
+A small gap with low accuracy = under-fitting; a large gap = over-fitting. Training metrics are measured on the (augmented, dropout-on) training batches during the epoch, so they are not directly comparable to validation numbers for the regularized variants.
+
+| Variant | Train acc | Val acc | Gap (pp) | Train loss | Val loss |
+|---|---|---|---|---|---|
+| baseline | 92.39% | 90.69% | +1.70 | 0.2173 | 0.2641 |
+| full_improved | 88.95% | 88.97% | -0.02 | 0.3951 | 0.3074 |
+| no_augmentation | 92.23% | 91.25% | +0.98 | 0.2602 | 0.2472 |
+| no_batchnorm | 88.03% | 88.01% | +0.02 | 0.4207 | 0.3341 |
+| no_dropout | 90.06% | 89.85% | +0.21 | 0.3266 | 0.2810 |
+| no_scheduler | 89.12% | 88.99% | +0.13 | 0.3920 | 0.3041 |
+
+### Most common confusions (summed over seeds, from query 7)
+
+| Variant | Errors | Top confusions (true → predicted: count) |
+|---|---|---|
+| baseline | 3082 | T-shirt/top → Shirt: 354; Shirt → T-shirt/top: 319; Shirt → Coat: 207; Shirt → Pullover: 202; Coat → Shirt: 202 |
+| full_improved | 3569 | Shirt → T-shirt/top: 462; Shirt → Coat: 337; T-shirt/top → Shirt: 244; Pullover → Shirt: 240; Pullover → Coat: 220 |
+| no_augmentation | 2909 | Shirt → T-shirt/top: 391; T-shirt/top → Shirt: 257; Shirt → Coat: 242; Shirt → Pullover: 204; Pullover → Coat: 184 |
+| no_batchnorm | 3863 | Shirt → T-shirt/top: 514; Shirt → Coat: 359; Pullover → Coat: 261; Pullover → Shirt: 259; Shirt → Pullover: 222 |
+| no_dropout | 3319 | Shirt → T-shirt/top: 419; Shirt → Coat: 297; T-shirt/top → Shirt: 257; Pullover → Shirt: 244; Shirt → Pullover: 190 |
+| no_scheduler | 3532 | Shirt → T-shirt/top: 441; Shirt → Coat: 360; T-shirt/top → Shirt: 251; Pullover → Coat: 230; Shirt → Pullover: 220 |
+
+### Per-class test precision and recall (mean ± sd over seeds; from query 7)
+
+Computed from each run's saved confusion matrix. Precision = correct / predicted as that class; recall = correct / truly that class. A class never predicted by a run has precision scored as 0 (shown with *).
+
+| Variant | Class | Precision | Recall |
+|---|---|---|---|
+| baseline | T-shirt/top | 85.2% ± 2.2 | 82.4% ± 2.7 |
+| baseline | Trouser | 98.1% ± 0.4 | 98.4% ± 0.0 |
+| baseline | Pullover | 83.8% ± 5.2 | 84.2% ± 3.3 |
+| baseline | Dress | 90.0% ± 0.9 | 89.7% ± 1.6 |
+| baseline | Coat | 83.3% ± 1.0 | 84.0% ± 0.2 |
+| baseline | Sandal | 97.6% ± 0.6 | 97.6% ± 1.0 |
+| baseline | Shirt | 70.8% ± 2.3 | 71.2% ± 3.5 |
+| baseline | Sneaker | 93.9% ± 1.5 | 97.0% ± 0.3 |
+| baseline | Bag | 97.5% ± 0.9 | 97.9% ± 0.7 |
+| baseline | Ankle boot | 97.8% ± 0.6 | 94.8% ± 0.8 |
+| full_improved | T-shirt/top | 82.2% ± 0.9 | 83.7% ± 0.6 |
+| full_improved | Trouser | 98.6% ± 0.3 | 97.5% ± 0.3 |
+| full_improved | Pullover | 84.1% ± 1.4 | 82.5% ± 0.9 |
+| full_improved | Dress | 84.8% ± 1.0 | 89.8% ± 0.5 |
+| full_improved | Coat | 78.6% ± 0.2 | 83.8% ± 0.5 |
+| full_improved | Sandal | 97.8% ± 0.4 | 94.1% ± 1.0 |
+| full_improved | Shirt | 69.4% ± 1.1 | 61.5% ± 1.6 |
+| full_improved | Sneaker | 91.4% ± 0.7 | 96.1% ± 0.3 |
+| full_improved | Bag | 98.0% ± 0.4 | 96.9% ± 0.7 |
+| full_improved | Ankle boot | 95.3% ± 0.4 | 95.2% ± 0.3 |
+| no_augmentation | T-shirt/top | 84.2% ± 1.0 | 86.2% ± 0.6 |
+| no_augmentation | Trouser | 99.1% ± 0.2 | 97.5% ± 0.2 |
+| no_augmentation | Pullover | 84.9% ± 0.4 | 85.4% ± 0.4 |
+| no_augmentation | Dress | 88.9% ± 0.1 | 91.4% ± 0.2 |
+| no_augmentation | Coat | 83.3% ± 1.2 | 86.0% ± 0.8 |
+| no_augmentation | Sandal | 98.0% ± 0.2 | 97.6% ± 0.2 |
+| no_augmentation | Shirt | 74.0% ± 0.5 | 67.8% ± 1.4 |
+| no_augmentation | Sneaker | 94.8% ± 0.3 | 96.9% ± 0.1 |
+| no_augmentation | Bag | 97.7% ± 0.4 | 97.9% ± 0.3 |
+| no_augmentation | Ankle boot | 97.4% ± 0.1 | 96.2% ± 0.2 |
+| no_batchnorm | T-shirt/top | 80.4% ± 1.4 | 83.4% ± 1.6 |
+| no_batchnorm | Trouser | 98.6% ± 0.2 | 97.7% ± 0.3 |
+| no_batchnorm | Pullover | 82.6% ± 0.7 | 80.4% ± 1.0 |
+| no_batchnorm | Dress | 84.0% ± 0.8 | 88.4% ± 0.7 |
+| no_batchnorm | Coat | 76.6% ± 0.6 | 83.0% ± 1.0 |
+| no_batchnorm | Sandal | 97.6% ± 0.4 | 93.4% ± 0.5 |
+| no_batchnorm | Shirt | 67.1% ± 1.1 | 58.1% ± 1.7 |
+| no_batchnorm | Sneaker | 90.9% ± 0.2 | 95.7% ± 0.6 |
+| no_batchnorm | Bag | 97.6% ± 0.2 | 96.3% ± 0.4 |
+| no_batchnorm | Ankle boot | 94.9% ± 0.8 | 95.0% ± 0.6 |
+| no_dropout | T-shirt/top | 83.3% ± 1.5 | 84.2% ± 0.5 |
+| no_dropout | Trouser | 98.3% ± 0.4 | 97.7% ± 0.3 |
+| no_dropout | Pullover | 84.3% ± 0.4 | 83.8% ± 1.3 |
+| no_dropout | Dress | 86.9% ± 1.4 | 90.3% ± 0.3 |
+| no_dropout | Coat | 80.9% ± 0.2 | 83.5% ± 0.5 |
+| no_dropout | Sandal | 97.6% ± 0.5 | 95.6% ± 0.3 |
+| no_dropout | Shirt | 70.6% ± 0.8 | 65.5% ± 1.2 |
+| no_dropout | Sneaker | 92.8% ± 0.4 | 96.4% ± 0.5 |
+| no_dropout | Bag | 98.3% ± 0.2 | 97.1% ± 0.5 |
+| no_dropout | Ankle boot | 95.9% ± 0.4 | 95.3% ± 0.2 |
+| no_scheduler | T-shirt/top | 82.8% ± 0.3 | 83.0% ± 1.6 |
+| no_scheduler | Trouser | 98.8% ± 0.2 | 97.6% ± 0.1 |
+| no_scheduler | Pullover | 83.4% ± 2.8 | 82.8% ± 2.5 |
+| no_scheduler | Dress | 83.9% ± 2.4 | 90.7% ± 0.2 |
+| no_scheduler | Coat | 78.0% ± 2.0 | 84.6% ± 3.3 |
+| no_scheduler | Sandal | 97.3% ± 0.9 | 95.5% ± 0.8 |
+| no_scheduler | Shirt | 70.8% ± 1.4 | 60.2% ± 1.1 |
+| no_scheduler | Sneaker | 93.3% ± 0.6 | 95.2% ± 1.4 |
+| no_scheduler | Bag | 98.1% ± 0.4 | 96.9% ± 0.8 |
+| no_scheduler | Ankle boot | 94.9% ± 1.8 | 95.7% ± 0.9 |
+
+**Cross-check:** stored per-class precision/recall (query 10, 180 rows) vs recomputed from confusion matrices (query 7): max absolute difference 0.00e+00.
+
+### Calibration: temperature scaling fitted on validation (query 9)
+Bash
+IN
+sed -n '/### Calibration/,$p' experiments/results/fashion-official-1-analysis-provisional/summary.md; .venv/bin/python - <<'EOF'
+import csv
+rows=list(csv.DictReader(open("experiments/results/fashion-official-1-sql-localreplica/q9.csv")))
+for r in rows: print(r["run_name"], *(f"{float(r[k]):.4f}" for k in ("temperature","val_ece_before","val_ece_after","test_ece_before","test_ece_after","test_nll_before","test_nll_after")))
+EOF
+ls experiments/results/fashion-official-1-analysis-provisional
+
+OUT
+### Calibration: temperature scaling fitted on validation (query 9)
+
+ECE = expected calibration error (15 bins; lower is better); NLL = negative log-likelihood. 'Before' is plain softmax (T = 1); 'after' divides the logits by the temperature fitted on validation data. Test columns are held-out measurements, never used to fit T. Mean over seeds.
+
+| Variant | Mean T | Test ECE before | Test ECE after | Test NLL before | Test NLL after |
+|---|---|---|---|---|---|
+| baseline | 1.085 | 0.0134 | 0.0071 | 0.2884 | 0.2856 |
+| full_improved | 0.884 | 0.0173 | 0.0069 | 0.3327 | 0.3325 |
+| no_augmentation | 0.935 | 0.0087 | 0.0068 | 0.2720 | 0.2726 |
+| no_batchnorm | 0.884 | 0.0190 | 0.0079 | 0.3591 | 0.3586 |
+| no_dropout | 0.953 | 0.0073 | 0.0082 | 0.3093 | 0.3100 |
+| no_scheduler | 0.917 | 0.0108 | 0.0071 | 0.3274 | 0.3277 |
+baseline-seed0 1.1224 0.0123 0.0086 0.0142 0.0055 0.2872 0.2830
+full_improved-seed0 0.8705 0.0224 0.0092 0.0168 0.0091 0.3393 0.3400
+no_augmentation-seed0 0.9296 0.0130 0.0070 0.0081 0.0071 0.2769 0.2778
+no_batchnorm-seed0 0.8915 0.0228 0.0139 0.0177 0.0074 0.3651 0.3644
+no_dropout-seed0 0.9432 0.0126 0.0090 0.0068 0.0096 0.3105 0.3116
+no_scheduler-seed0 0.8988 0.0182 0.0099 0.0105 0.0090 0.3383 0.3393
+baseline-seed1 1.0813 0.0086 0.0058 0.0160 0.0081 0.2982 0.2954
+full_improved-seed1 0.8934 0.0233 0.0122 0.0173 0.0055 0.3287 0.3279
+no_augmentation-seed1 0.9363 0.0099 0.0045 0.0093 0.0056 0.2687 0.2691
+no_batchnorm-seed1 0.8858 0.0261 0.0096 0.0199 0.0112 0.3613 0.3611
+no_dropout-seed1 0.9688 0.0120 0.0089 0.0061 0.0072 0.3060 0.3063
+no_scheduler-seed1 0.9201 0.0167 0.0075 0.0130 0.0061 0.3223 0.3220
+baseline-seed2 1.0518 0.0067 0.0055 0.0099 0.0078 0.2798 0.2785
+full_improved-seed2 0.8871 0.0228 0.0104 0.0180 0.0061 0.3303 0.3297
+no_augmentation-seed2 0.9404 0.0131 0.0093 0.0086 0.0076 0.2705 0.2708
+no_batchnorm-seed2 0.8738 0.0232 0.0073 0.0193 0.0051 0.3511 0.3502
+no_dropout-seed2 0.9462 0.0131 0.0094 0.0088 0.0077 0.3114 0.3123
+no_scheduler-seed2 0.9306 0.0148 0.0069 0.0089 0.0062 0.3216 0.3218
+accuracy_curves.png
+calibration.csv
+confusion_matrices.png
+loss_curves.png
+per_class_metrics.csv
+per_class_precision_recall.png
+summary.md
+test_metrics_by_seed.png
+Read loss_curves.png
+Read confusion_matrices.png
+3:25 PM
+The figures are legible. Next is Grad-CAM from the saved run 54 checkpoint. This is a read-only artifact fetch, and nothing is retrained.
+
+
+
+Bash
+IN
+.venv/bin/python -m experiments.gradcam_evidence --supabase full_improved-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam 2>&1 | tail -30; ls experiments/results/fashion-official-1-gradcam; cat experiments/results/fashion-official-1-gradcam/source.json | head -40
+
+OUT
+full_improved-seed0: test accuracy 0.8782 (matches stored), 8782 correct, 1218 wrong
+set,test_index,true,predicted,confidence,cam_mass_on_garment,p_T-shirt/top,p_Trouser,p_Pullover,p_Dress,p_Coat,p_Sandal,p_Shirt,p_Sneaker,p_Bag,p_Ankle boot
+correct,19,T-shirt/top,T-shirt/top,0.934,0.986,0.934,0.000,0.002,0.001,0.000,0.000,0.062,0.000,0.000,0.000
+correct,2,Trouser,Trouser,1.000,0.613,0.000,1.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+correct,1,Pullover,Pullover,0.998,0.899,0.000,0.000,0.998,0.000,0.002,0.000,0.000,0.000,0.000,0.000
+correct,13,Dress,Dress,0.994,0.000,0.005,0.001,0.000,0.994,0.000,0.000,0.000,0.000,0.000,0.000
+correct,6,Coat,Coat,0.853,0.000,0.000,0.000,0.044,0.001,0.853,0.000,0.102,0.000,0.000,0.000
+correct,8,Sandal,Sandal,0.938,0.100,0.000,0.000,0.000,0.000,0.000,0.938,0.000,0.062,0.000,0.000
+correct,4,Shirt,Shirt,0.848,0.904,0.055,0.000,0.012,0.027,0.057,0.000,0.848,0.000,0.000,0.000
+correct,9,Sneaker,Sneaker,0.998,0.056,0.000,0.000,0.000,0.000,0.000,0.002,0.000,0.998,0.000,0.000
+correct,18,Bag,Bag,0.998,0.748,0.001,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.998,0.001
+correct,0,Ankle boot,Ankle boot,0.978,0.092,0.000,0.000,0.000,0.000,0.000,0.003,0.000,0.018,0.000,0.978
+incorrect,3466,T-shirt/top,Sandal,1.000,0.122,0.000,0.000,0.000,0.000,0.000,1.000,0.000,0.000,0.000,0.000
+incorrect,4462,Dress,Trouser,0.999,0.523,0.000,0.999,0.000,0.001,0.000,0.000,0.000,0.000,0.000,0.000
+incorrect,2914,Sneaker,Ankle boot,0.999,0.088,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.999
+incorrect,1111,T-shirt/top,Dress,0.999,0.000,0.001,0.000,0.000,0.999,0.000,0.000,0.000,0.000,0.000,0.000
+incorrect,3084,Coat,Dress,0.999,0.000,0.000,0.000,0.000,0.999,0.001,0.000,0.000,0.000,0.000,0.000
+incorrect,4405,Sandal,Sneaker,0.997,0.081,0.000,0.000,0.000,0.000,0.000,0.002,0.000,0.997,0.000,0.000
+incorrect,9922,Sandal,Ankle boot,0.995,0.067,0.000,0.000,0.000,0.000,0.000,0.005,0.000,0.000,0.000,0.995
+incorrect,787,Trouser,Dress,0.993,0.000,0.000,0.007,0.000,0.993,0.000,0.000,0.000,0.000,0.000,0.000
+incorrect,3188,Shirt,Pullover,0.991,0.428,0.001,0.000,0.991,0.000,0.000,0.000,0.008,0.000,0.000,0.000
+incorrect,5077,Ankle boot,Sneaker,0.989,0.073,0.000,0.000,0.000,0.000,0.000,0.005,0.000,0.989,0.000,0.006
+
+examples.csv
+gradcam_correct.png
+gradcam_incorrect.png
+source.json
+{
+  "dataset": "fashion-mnist",
+  "class_names": [
+    "T-shirt/top",
+    "Trouser",
+    "Pullover",
+    "Dress",
+    "Coat",
+    "Sandal",
+    "Shirt",
+    "Sneaker",
+    "Bag",
+    "Ankle boot"
+  ],
+  "selection_rule": "correct: first correctly classified test image of each class in test order; incorrect: wrong predictions by descending confidence, one per distinct (true, predicted) pair first, then the next most confident, up to 10.",
+  "n_test": 10000,
+  "n_correct": 8782,
+  "n_incorrect": 1218,
+  "regenerated_accuracy": 0.8782,
+  "temperature": 0.8705441487903772,
+  "checkpoint": {
+    "artifact_version": 3,
+    "dataset": "fashion-mnist"
+  },
+  "source": "supabase-or-local-store",
+  "experiment_group": "fashion-official-1",
+  "run_name": "full_improved-seed0",
+  "run_id": 54,
+  "dataset_id": 24,
+  "stored_accuracy": 0.8782,
+  "split_sha256": "786ed8107e43ef83d70d4905a8813c26927b352362675804427894557914b7b9",
+  "run_created_at": "2026-10-17T21:24:23.99621+00:00"
+}
+3:25 PM
+Regenerated test accuracy is 0.8782, which matches the stored value for run 54. Now I'll look at the actual overlays before writing any interpretation.
+
+
+
+Read gradcam_incorrect.png
+Read gradcam_correct.png
+I noticed several predicted-class overlay maps are blank, including some correct Dress and Coat predictions. I'll check whether this is a genuine property of the method or a bug.
+Bash
+IN
+grep -n "def cam_for_class" -A45 api/training.py | head -80
+
+OUT
+522:def cam_for_class(loaded: LoadedModel, gray_uint8: np.ndarray, class_idx: int) -> np.ndarray:
+523-    """Grad-CAM map (0..1, feature resolution) of ``class_idx`` for one preprocessed image."""
+524-    x = normalize(to01(gray_uint8[None, :, :]), loaded.preprocessing)
+525-    return _grad_cam(loaded.model, x, class_idx)
+526-
+527-
+528-def predict_with_cam(model_b64: str, gray_uint8: np.ndarray, top_k: int = 5) -> Dict[str, Any]:
+529-    """Classify one preprocessed grayscale image and build a Grad-CAM overlay.
+530-
+531-    ``gray_uint8`` must be [img_size, img_size] uint8. Returns a dict matching the
+532-    PredictResponse fields (minus run_id / true_class, which main.py fills in).
+533-    ``probs`` / ``confidence`` / ``top5`` are the temperature-scaled probabilities when the
+534-    checkpoint carries a temperature (format 3), else plain softmax.
+535-    """
+536-    loaded = load_artifact(model_b64)
+537-    x = normalize(to01(gray_uint8[None, :, :]), loaded.preprocessing)  # [1, 1, H, W]
+538-
+539-    with torch.no_grad():
+540-        logits = loaded.model(x)[0].double().numpy()
+541-    probs = calibration.softmax(logits[None, :], loaded.temperature)[0]
+542-    label = int(probs.argmax())
+543-    order = np.argsort(-probs, kind="stable")[:top_k]
+544-    cam = _grad_cam(loaded.model, x, label)
+545-    return {
+546-        "label": label,
+547-        "class_name": loaded.class_names[label],
+548-        "confidence": float(probs[label]),
+549-        "probs": [float(p) for p in probs],
+550-        "top5": [{"label": int(i), "class_name": loaded.class_names[int(i)], "prob": float(probs[i])} for i in order],
+551-        "class_names": loaded.class_names,
+552-        "temperature": loaded.temperature,
+553-        "calibrated": loaded.calibration is not None,
+554-        "input_png": _png_b64(Image.fromarray(gray_uint8, "L")),
+555-        "cam_png": _overlay_png(gray_uint8, cam),
+556-    }
+Bash
+IN
+grep -n "def _grad_cam" -A40 api/training.py | head -60
+
+OUT
+472:def _grad_cam(model: nn.Module, x: torch.Tensor, class_idx: int) -> np.ndarray:
+473-    """Return a Grad-CAM map in [0, 1] at the conv feature resolution.
+474-
+475-    Uses the gradient of the RAW class logit (before softmax and before any temperature
+476-    scaling), so calibration never changes the heatmap.
+477-    """
+478-    captured: Dict[str, torch.Tensor] = {}
+479-
+480-    def fwd_hook(_m, _i, out):
+481-        captured["act"] = out
+482-
+483-    def bwd_hook(_m, _gi, gout):
+484-        captured["grad"] = gout[0]
+485-
+486-    h1 = model.features.register_forward_hook(fwd_hook)
+487-    h2 = model.features.register_full_backward_hook(bwd_hook)
+488-    try:
+489-        logits = model(x)
+490-        model.zero_grad()
+491-        logits[0, class_idx].backward()
+492-    finally:
+493-        h1.remove()
+494-        h2.remove()
+495-
+496-    act = captured["act"][0]           # [C, h, w]
+497-    grad = captured["grad"][0]          # [C, h, w]
+498-    weights = grad.mean(dim=(1, 2))     # [C]
+499-    cam = torch.relu((weights[:, None, None] * act).sum(0))
+500-    cam = cam / (cam.max() + 1e-8)
+501-    return cam.detach().numpy()
+502-
+503-
+504-def _png_b64(img: Image.Image) -> str:
+505-    buf = io.BytesIO()
+506-    img.save(buf, format="PNG")
+507-    return base64.b64encode(buf.getvalue()).decode("ascii")
+508-
+509-
+510-def _overlay_png(gray_uint8: np.ndarray, cam01: np.ndarray) -> str:
+511-    """Blend a red Grad-CAM heatmap over the grayscale input; return base64 PNG."""
+512-    h, w = gray_uint8.shape
+Bash
+IN
+S=/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad && cat > $S/camdiag.py <<'EOF'
+import numpy as np, torch
+from experiments import gradcam_evidence as g
+from api.training import load_artifact, to01, normalize
+from shared import fashion
+run, ds, b64 = g.load_from_supabase("full_improved-seed0", "fashion-official-1")
+L = load_artifact(b64); m = L.model.eval()
+d = fashion.load(include_test=True); X, Y = d.x_test, d.y_test
+rng = np.random.RandomState(0); idx = rng.choice(len(Y), 1000, replace=False)  # fixed-seed diagnostic sample
+names = L.class_names; zero = {n: [0, 0] for n in names}
+for i in idx:
+    x = normalize(to01(X[i][None]), L.preprocessing)
+    cap = {}
+    h1 = m.features.register_forward_hook(lambda _m, _i, o: cap.__setitem__("a", o))
+    h2 = m.features.register_full_backward_hook(lambda _m, _gi, go: cap.__setitem__("g", go[0]))
+    lg = m(x); p = int(lg.argmax()); m.zero_grad(); lg[0, p].backward(); h1.remove(); h2.remove()
+    w = cap["g"][0].mean((1, 2)); raw = (w[:, None, None] * cap["a"][0]).sum(0)
+    z = names[p]; zero[z][1] += 1; zero[z][0] += int(float(raw.max()) <= 0)
+print("share of predictions whose Grad-CAM (pre-normalisation) is all <= 0, by PREDICTED class:")
+for n, (a, b) in zero.items(): print(f"  {n:12s} {a}/{b}")
+print(m.features)
+EOF
+.venv/bin/python $S/camdiag.py 2>&1 | tail -30
+
+OUT
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/camdiag.py", line 2, in <module>
+    from experiments import gradcam_evidence as g
+ModuleNotFoundError: No module named 'experiments'
+Bash
+IN
+S=/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad && PYTHONPATH=. .venv/bin/python $S/camdiag.py 2>&1 | tail -30
+
+OUT
+share of predictions whose Grad-CAM (pre-normalisation) is all <= 0, by PREDICTED class:
+  T-shirt/top  2/106
+  Trouser      0/91
+  Pullover     0/88
+  Dress        105/106
+  Coat         94/107
+  Sandal       0/104
+  Shirt        1/86
+  Sneaker      0/103
+  Bag          0/95
+  Ankle boot   0/114
+Sequential(
+  (0): Conv2d(1, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (2): ReLU()
+  (3): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  (4): Conv2d(8, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (5): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (6): ReLU()
+  (7): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+)
+Confirmed this isn't a fluke: in a fixed-seed sample of 1,000 test images, Grad-CAM is empty for nearly all Dress (105/106) and most Coat (94/107) predictions, while other classes are unaffected. I'll keep the method as-is but disclose this limitation in the app, and now I'll check how the UI loads evidence.
+Bash
+IN
+grep -n "FASHION\|HISTORICAL\|EvidenceSet\|Path(" ui/evidence.py | head -40; grep -n "def " ui/evidence.py
+
+OUT
+1:"""Loaders for saved experiment evidence: the FINAL Fashion-MNIST set and the HISTORICAL synthetic set.
+4:  * ``FASHION``    - the final 10-class Fashion-MNIST comparison (files appear only after the
+6:  * ``HISTORICAL`` - the earlier 4-class synthetic-shape experiment (group official-supabase-1),
+23:REPO_ROOT = Path(__file__).resolve().parent.parent
+28:FASHION_CLASSES = ("T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
+40:class EvidenceSet(NamedTuple):
+71:HISTORICAL = EvidenceSet(
+77:FASHION = EvidenceSet(
+79:    classes=FASHION_CLASSES, failure_doc=REPO_ROOT / "docs" / "FASHION_GRADCAM_FAILURE_ANALYSIS.md",
+84:GROUP = HISTORICAL.group
+85:SQL_DIR, ANALYSIS_DIR, GRADCAM_DIR = HISTORICAL.sql_dir, HISTORICAL.analysis_dir, HISTORICAL.gradcam_dir
+86:FAILURE_DOC = HISTORICAL.failure_doc
+103:FIGURES = {n: HISTORICAL.figure(n) for n in FIGURE_NAMES}  # historical set (kept for compatibility)
+327:def figures_for(ev: EvidenceSet) -> dict[str, Path]:
+33:def _fashion_group(path: Path = PROTOCOL_CONFIG) -> str:
+52:    def sql_dir(self) -> Path:
+56:    def analysis_dir(self) -> Path:
+60:    def gradcam_dir(self) -> Path:
+63:    def figure(self, name: str) -> Path:
+67:    def available(self) -> bool:
+119:def _read_csv(path: Path) -> list[dict]:
+132:def _rel(path: Path) -> str:
+139:def _num(row: dict, col: str, path: Path) -> float:
+146:def load_variant_summary(sql_dir: Path = SQL_DIR) -> list[dict]:
+167:def load_param_counts(sql_dir: Path = SQL_DIR) -> dict[str, int]:
+174:def load_audit(sql_dir: Path = SQL_DIR, expected_seeds: Optional[int] = EXPECTED_SEEDS) -> dict:
+193:def load_paired_differences(sql_dir: Path = SQL_DIR, expected_seeds: Optional[int] = EXPECTED_SEEDS) -> list[dict]:
+238:def load_per_class_metrics(analysis_dir: Path = ANALYSIS_DIR, class_order: tuple = CLASS_ORDER) -> list[dict]:
+263:def load_gradcam_examples(gradcam_dir: Path = GRADCAM_DIR,
+293:def load_gradcam_source(gradcam_dir: Path = GRADCAM_DIR) -> dict:
+302:def load_failure_interpretations(doc: Path = FAILURE_DOC) -> dict:
+323:def missing_figures(figures: dict[str, Path] = FIGURES) -> list[str]:
+327:def figures_for(ev: EvidenceSet) -> dict[str, Path]:
+331:def load_calibration_summary(analysis_dir: Path) -> list[dict]:
+354:def load_model_card(path: Path = MODEL_CARD) -> str:
+3:26 PM
+Status: the numbers and Grad-CAM are done. I'm now wiring the app to the evidence directories, then the reports.
+
+
+
+Bash
+IN
+sed -n 28,84p ui/evidence.py; sed -n 296,360p ui/evidence.py
+
+OUT
+FASHION_CLASSES = ("T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
+                   "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot")
+LEGACY_SYNTHETIC_CLASSES = ("horizontal", "vertical", "diagonal", "block")
+
+
+def _fashion_group(path: Path = PROTOCOL_CONFIG) -> str:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))["experiment_group"]
+    except (OSError, ValueError, KeyError):
+        return "fashion-official-1"
+
+
+class EvidenceSet(NamedTuple):
+    """Where one experiment's saved evidence lives and what shape it must have."""
+
+    key: str
+    title: str
+    group: str
+    classes: tuple
+    failure_doc: Path
+    expected_seeds: Optional[int]          # None = whatever the protocol used (>= 1)
+    gradcam_counts: Optional[tuple]        # exact (n_correct, n_incorrect), or None = at least 5 each
+
+    @property
+    def sql_dir(self) -> Path:
+        return RESULTS / f"{self.group}-sql"
+
+    @property
+    def analysis_dir(self) -> Path:
+        return RESULTS / f"{self.group}-analysis"
+
+    @property
+    def gradcam_dir(self) -> Path:
+        return RESULTS / f"{self.group}-gradcam"
+
+    def figure(self, name: str) -> Path:
+        folder = self.gradcam_dir if name.startswith("gradcam") else self.analysis_dir
+        return folder / f"{name}.png"
+
+    def available(self) -> bool:
+        return (self.sql_dir / "q5.csv").is_file()
+
+
+HISTORICAL = EvidenceSet(
+    key="historical-synthetic", title="Historical: 4-class synthetic shapes (NOT Fashion-MNIST)",
+    group="official-supabase-1", classes=LEGACY_SYNTHETIC_CLASSES,
+    failure_doc=REPO_ROOT / "docs" / "SUPABASE_GRADCAM_FAILURE_ANALYSIS.md",
+    expected_seeds=5, gradcam_counts=(5, 8),
+)
+FASHION = EvidenceSet(
+    key="fashion-mnist", title="Final: Fashion-MNIST, 10 classes", group=_fashion_group(),
+    classes=FASHION_CLASSES, failure_doc=REPO_ROOT / "docs" / "FASHION_GRADCAM_FAILURE_ANALYSIS.md",
+    expected_seeds=None, gradcam_counts=None,
+)
+
+# Backwards-compatible names for the historical set.
+GROUP = HISTORICAL.group
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        raise EvidenceError(f"Missing or unreadable evidence file: {_rel(path)}") from None
+
+
+def load_failure_interpretations(doc: Path = FAILURE_DOC) -> dict:
+    """Parse the existing write-up. Returns {'examples': {index: {title, text}},
+    'limits': str}. Text is taken verbatim; nothing is generated."""
+    try:
+        text = doc.read_text(encoding="utf-8")
+    except OSError:
+        raise EvidenceError(f"Missing evidence file: {_rel(doc)}") from None
+    sections = re.split(r"^## ", text, flags=re.M)[1:]
+    examples, limits = {}, ""
+    for sec in sections:
+        head, _, body = sec.partition("\n")
+        m = re.match(r"Example (\d+): (.*)", head)
+        if m:
+            examples[int(m.group(1))] = {"title": m.group(2).strip(), "text": body.strip()}
+        elif head.strip().lower().startswith("interpretation limits"):
+            limits = body.strip()
+    if not examples:
+        raise EvidenceError(f"No example interpretations found in {_rel(doc)}")
+    return {"examples": examples, "limits": limits}
+
+
+def missing_figures(figures: dict[str, Path] = FIGURES) -> list[str]:
+    return [_rel(p) for p in figures.values() if not p.is_file()]
+
+
+def figures_for(ev: EvidenceSet) -> dict[str, Path]:
+    return {n: ev.figure(n) for n in FIGURE_NAMES}
+
+
+def load_calibration_summary(analysis_dir: Path) -> list[dict]:
+    """Per-variant mean temperature and test ECE / NLL before and after, from calibration.csv.
+
+    Raises EvidenceError if calibration was not measured (file missing). Values are averages of
+    the saved per-run measurements; nothing is estimated here.
+    """
+    path = analysis_dir / "calibration.csv"
+    by: dict[str, dict[str, list[float]]] = {}
+    keys = ("temperature", "test_ece_before", "test_ece_after", "test_nll_before", "test_nll_after")
+    for r in _read_csv(path):
+        d = by.setdefault(r["run_name"].rsplit("-seed", 1)[0], {k: [] for k in keys})
+        for k in keys:
+            d[k].append(_num(r, k, path))
+    out = []
+    for v in EXPECTED_VARIANTS:
+        if v in by:
+            out.append({"variant": v, "n_runs": len(by[v]["temperature"]),
+                        **{k: sum(by[v][k]) / len(by[v][k]) for k in keys}})
+    if not out:
+        raise EvidenceError(f"{_rel(path)}: no calibration rows")
+    return out
+
+
+def load_model_card(path: Path = MODEL_CARD) -> str:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        raise EvidenceError(f"Missing file: {_rel(path)}") from None
+    if not text.strip():
+        raise EvidenceError(f"{_rel(path)} is empty")
+Bash
+IN
+cd /Users/emmarogoveanu/Documents/GitHub/see-sense/experiments/results && mv fashion-official-1-sql-localreplica/* fashion-official-1-sql/ && rmdir fashion-official-1-sql-localreplica && rm -rf fashion-official-1-analysis-provisional && cd ../.. && .venv/bin/python -m experiments.analyze experiments/results/fashion-official-1-sql experiments/results/fashion-official-1-analysis >/dev/null && ls experiments/results/fashion-official-1-sql experiments/results/fashion-official-1-analysis; grep -n "FASHION\|ev\.\|def _section\|evidence\." ui/app.py | head -60
+
+OUT
+experiments/results/fashion-official-1-analysis:
+accuracy_curves.png
+calibration.csv
+confusion_matrices.png
+loss_curves.png
+per_class_metrics.csv
+per_class_precision_recall.png
+summary.md
+test_metrics_by_seed.png
+
+experiments/results/fashion-official-1-sql:
+PROVENANCE.md
+packaged_export.json
+q1.csv
+q10.csv
+q2.csv
+q3.csv
+q4.csv
+q5.csv
+q6.csv
+q7.csv
+q9.csv
+438:def _show_figure(ev: "evidence.EvidenceSet", key: str, caption: str):
+439:    path = ev.figure(key)
+446:def _section(title: str, loader, render):
+451:    except evidence.EvidenceError as exc:
+461:        params = evidence.load_param_counts(ev.sql_dir)
+462:    except evidence.EvidenceError:
+549:        source = evidence.load_gradcam_source(ev.gradcam_dir)
+550:    except evidence.EvidenceError:
+564:        interp = evidence.load_failure_interpretations(ev.failure_doc)
+565:    except evidence.EvidenceError as exc:
+604:def _render_evidence_set(ev: "evidence.EvidenceSet", historical: bool):
+605:    expected = ev.expected_seeds
+606:    _section("Six-variant results", lambda: evidence.load_variant_summary(ev.sql_dir), lambda r: _render_summary(ev, r))
+607:    _section("Matched-configuration audit", lambda: evidence.load_audit(ev.sql_dir, expected), lambda a: _render_audit(ev, a))
+609:             lambda: evidence.load_paired_differences(ev.sql_dir, expected), lambda r: _render_paired(ev, r))
+627:                 lambda: evidence.load_per_class_metrics(ev.analysis_dir, ev.classes), lambda r: _render_per_class(ev, r))
+629:                 lambda: evidence.load_calibration_summary(ev.analysis_dir), lambda r: _render_calibration(ev, r))
+633:             lambda: evidence.load_gradcam_examples(ev.gradcam_dir, ev.gradcam_counts), lambda e: _render_gradcam(ev, e))
+638:    fm = evidence.FASHION
+656:    hs = evidence.HISTORICAL
+663:            "it is not the final evidence. These runs have no training-accuracy history or calibration."
+665:        gone = evidence.missing_figures(evidence.figures_for(hs))
+675:        st.markdown(evidence.load_model_card())
+676:    except evidence.EvidenceError as exc:
+Bash
+IN
+rm experiments/results/fashion-official-1-sql/packaged_export.json && sed -n 520,672p ui/app.py; cat docs/FASHION_GRADCAM_FAILURE_ANALYSIS.md; sed -n 255,296p ui/evidence.py
+
+OUT
+def _render_per_class(ev, rows):
+    df = pd.DataFrame(
+        {"Variant": r["variant"], "Class": r["class"],
+         "Precision": f"{r['precision'] * 100:.1f}% ± {r['precision_sd'] * 100:.1f}",
+         "Recall": f"{r['recall'] * 100:.1f}% ± {r['recall_sd'] * 100:.1f}"}
+        for r in rows
+    )
+    _show_figure(ev, "per_class_precision_recall", "Per-class test precision and recall (mean over seeds)")
+    with st.expander("Per-class table (mean ± sd over seeds)"):
+        st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+def _render_calibration(ev, rows):
+    st.markdown(
+        "Temperature scaling divides the logits by a single number fitted on **validation** data. "
+        "ECE (expected calibration error) and NLL (negative log-likelihood) are lower when the stated "
+        "confidences match how often the model is right. The test columns are held-out measurements."
+    )
+    st.dataframe(pd.DataFrame(
+        {"Variant": r["variant"], "Runs": r["n_runs"], "Mean T": f"{r['temperature']:.3f}",
+         "Test ECE before → after": f"{r['test_ece_before']:.4f} → {r['test_ece_after']:.4f}",
+         "Test NLL before → after": f"{r['test_nll_before']:.4f} → {r['test_nll_after']:.4f}"}
+        for r in rows), use_container_width=True, hide_index=True)
+
+
+def _render_gradcam(ev, examples):
+    source = {}
+    try:
+        source = evidence.load_gradcam_source(ev.gradcam_dir)
+    except evidence.EvidenceError:
+        pass
+    if source:
+        st.caption(
+            f"Source: run `{source.get('run_name')}` (run id {source.get('run_id')}), regenerated test accuracy "
+            f"{source.get('regenerated_accuracy', 0):.2%}"
+            + (f" matching the stored {source['stored_accuracy']:.2%}" if "stored_accuracy" in source else "")
+            + f"; {source.get('n_correct')} correct and {source.get('n_incorrect')} incorrect of "
+            f"{source.get('n_test')} test images."
+        )
+        if source.get("selection_rule"):
+            st.caption("Selection rule (fixed before looking at the figures): " + source["selection_rule"])
+    interp = None
+    try:
+        interp = evidence.load_failure_interpretations(ev.failure_doc)
+    except evidence.EvidenceError as exc:
+        st.warning(f"Failure interpretations unavailable. {exc}")
+
+    n_by = {k: sum(e["set"] == k for e in examples) for k in ("correct", "incorrect")}
+    for set_name, label, fig in (
+        ("correct", f"Correct predictions ({n_by['correct']})", "gradcam_correct"),
+        ("incorrect", f"Incorrect predictions ({n_by['incorrect']})", "gradcam_incorrect"),
+    ):
+        st.markdown(f"#### {label}")
+        _show_figure(ev, fig, (
+            f"Grad-CAM, {set_name} examples: one example per row, top to bottom = table order below. "
+            + ("Columns: input, Grad-CAM for the predicted class."
+               if set_name == "correct" else
+               "Columns: input, Grad-CAM for the predicted class, Grad-CAM for the true class.")
+        ))
+        subset = [e for e in examples if e["set"] == set_name]
+        df = pd.DataFrame(
+            {
+                "Test index": e["test_index"],
+                "True": e["true"],
+                "Predicted": e["predicted"],
+                "Confidence": f"{e['confidence']:.1%}",
+                "Note": f"Correct but uncertain ({e['confidence']:.0%} confidence)" if e["uncertain"] else "",
+            }
+            for e in subset
+        )
+        st.dataframe(df, use_container_width=True, hide_index=True)
+
+    st.markdown("#### Failure interpretations")
+    if interp:
+        st.caption(f"{len(interp['examples'])} of the incorrect examples have a written analysis.")
+        for idx, item in interp["examples"].items():
+            with st.expander(f"Example {idx}: {item['title']}", expanded=True):
+                st.markdown(item["text"])
+        if interp["limits"]:
+            st.markdown("**Interpretation limits**")
+            st.markdown(interp["limits"])
+
+
+def _render_evidence_set(ev: "evidence.EvidenceSet", historical: bool):
+    expected = ev.expected_seeds
+    _section("Six-variant results", lambda: evidence.load_variant_summary(ev.sql_dir), lambda r: _render_summary(ev, r))
+    _section("Matched-configuration audit", lambda: evidence.load_audit(ev.sql_dir, expected), lambda a: _render_audit(ev, a))
+    _section("Paired ablation differences vs full_improved",
+             lambda: evidence.load_paired_differences(ev.sql_dir, expected), lambda r: _render_paired(ev, r))
+    if historical:
+        st.info(
+            "Reading this historical table: removing augmentation lowered accuracy on all 5 seeds (interval "
+            "excludes 0). For dropout and the LR scheduler the intervals include 0 and the seeds disagree in "
+            "sign. These statements describe the synthetic-shape data only."
+        )
+    else:
+        st.caption("A 95% interval that includes 0 means these runs do not show a clear difference. "
+                   "Conclusions are written in the results report once all runs are complete.")
+    st.subheader("Training and validation loss curves")
+    _show_figure(ev, "loss_curves", "Training vs validation loss by variant (mean over seeds, band = min to max)")
+    st.subheader("Training and validation accuracy curves")
+    _show_figure(ev, "accuracy_curves", "Validation accuracy by variant; training accuracy where it was recorded")
+    st.subheader("Confusion matrices")
+    _show_figure(ev, "confusion_matrices", "Test confusion matrices by variant, summed over seeds")
+    if not historical:
+        _section("Per-class precision and recall",
+                 lambda: evidence.load_per_class_metrics(ev.analysis_dir, ev.classes), lambda r: _render_per_class(ev, r))
+        _section("Probability calibration (temperature scaling)",
+                 lambda: evidence.load_calibration_summary(ev.analysis_dir), lambda r: _render_calibration(ev, r))
+    st.divider()
+    st.header("Grad-CAM gallery")
+    _section("Correct and incorrect examples",
+             lambda: evidence.load_gradcam_examples(ev.gradcam_dir, ev.gradcam_counts), lambda e: _render_gradcam(ev, e))
+
+
+with compare_tab:
+    st.header("Compare Models")
+    fm = evidence.FASHION
+    st.subheader(fm.title)
+    if fm.available():
+        st.info(
+            f"**Saved experiment results** — group `{fm.group}`. Tables come from the Supabase SQL exports "
+            f"(saved as CSV in `experiments/results/{fm.group}-sql/`); figures were generated from those "
+            "exports. This tab displays files saved in the repository; it does not re-query Supabase or retrain."
+        )
+        _render_evidence_set(fm, historical=False)
+    else:
+        st.warning(
+            "**Final Fashion-MNIST results are not available yet.** The official 10-class comparison has not "
+            "been completed, so no numbers, curves or Grad-CAM examples are shown for it here. Nothing below "
+            "this section describes Fashion-MNIST."
+        )
+
+    st.divider()
+    # A toggle (not an expander): the historical gallery itself uses expanders, which cannot be nested.
+    hs = evidence.HISTORICAL
+    if st.toggle(f"Show {hs.title} — earlier experiment, kept for transparency", value=False):
+        st.warning(
+            "**This is not Fashion-MNIST.** It is the earlier version of the project, which classified four "
+            "generated shapes (horizontal bar, vertical bar, diagonal line, filled block) on 2,000 synthetic "
+            f"images (group `{hs.group}`, 5 seeds × 6 variants = 30 runs). It was kept because the project "
+            "starter shipped with that dataset, but the assignment asks for CIFAR-10 or Fashion-MNIST, so "
+            "it is not the final evidence. These runs have no training-accuracy history or calibration."
+        )
+        gone = evidence.missing_figures(evidence.figures_for(hs))
+        if gone:
+            st.caption("Some historical figures are missing: " + ", ".join(f for f in gone if "per_class" not in f))
+        _render_evidence_set(hs, historical=True)
+
+# ---------------------------------------------------------------------------
+# Model Card
+# ---------------------------------------------------------------------------
+# Grad-CAM failure analysis: Fashion-MNIST (PENDING)
+
+**Status: PENDING. Nothing below is a finding.** The final Fashion-MNIST checkpoint has not been
+trained, so no Grad-CAM figures exist yet and no failure has been examined. This page deliberately
+contains no example interpretations; the Compare Models tab reports the analysis as unavailable until
+they are written.
+
+## How to complete it (after the official runs)
+
+1. Generate the evidence from the saved served checkpoint:
+   `python -m experiments.gradcam_evidence --supabase full_improved-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam`
+   (selection rule, fixed in advance: first correct example of each class; incorrect examples by
+   descending confidence, one per distinct true→predicted pair first).
+2. Look at `gradcam_incorrect.png`, `examples.csv` (including `cam_mass_on_garment`) and the confusion matrix.
+3. Choose **at least two** incorrect examples and, for each, write a section headed
+   `## Example <test index>: <short title>` that argues from what the saliency map and the image
+   actually show whether the error looks like a **dataset** problem (ambiguous or arguably mislabelled
+   image, classes that overlap visually such as T-shirt/top vs Shirt) or a **model** problem (the map
+   sits on irrelevant regions, the capacity of this small CNN, a missing cue). Say what evidence would
+   change the conclusion.
+4. End with `## Interpretation limits` (Grad-CAM at 7×7 resolution is coarse; one image is an anecdote;
+   a heatmap is not proof of reasoning).
+5. Replace the PENDING marker in this file's title and status line.
+
+The two interpretations in `SUPABASE_GRADCAM_FAILURE_ANALYSIS.md` describe the earlier synthetic
+shapes and must not be reused here.
+        })
+    missing = {(v, c) for v in EXPECTED_VARIANTS for c in class_order} - {(r["variant"], r["class"]) for r in out}
+    if missing:
+        raise EvidenceError(f"{_rel(path)}: missing variant/class rows {sorted(missing)[:3]}...")
+    order = {v: i for i, v in enumerate(EXPECTED_VARIANTS)}
+    return sorted(out, key=lambda r: (order[r["variant"]], class_order.index(r["class"])))
+
+
+def load_gradcam_examples(gradcam_dir: Path = GRADCAM_DIR,
+                          counts: Optional[tuple] = (N_CORRECT_EXPECTED, N_INCORRECT_EXPECTED)) -> list[dict]:
+    """Rows of examples.csv. ``counts`` is an exact (correct, incorrect) pair, or None to
+    require at least five of each."""
+    path = gradcam_dir / "examples.csv"
+    out = []
+    for r in _read_csv(path):
+        if r.get("set") not in ("correct", "incorrect"):
+            raise EvidenceError(f"{_rel(path)}: unexpected set value {r.get('set')!r}")
+        conf = _num(r, "confidence", path)
+        out.append({
+            "set": r["set"],
+            "test_index": int(_num(r, "test_index", path)),
+            "true": r["true"],
+            "predicted": r["predicted"],
+            "confidence": conf,
+            "uncertain": r["set"] == "correct" and conf < UNCERTAIN_BELOW,
+        })
+    n_c = sum(e["set"] == "correct" for e in out)
+    n_i = sum(e["set"] == "incorrect" for e in out)
+    if counts is not None and (n_c, n_i) != tuple(counts):
+        raise EvidenceError(
+            f"{_rel(path)}: expected {counts[0]} correct and {counts[1]} incorrect examples, "
+            f"found {n_c} and {n_i}"
+        )
+    if counts is None and (n_c < 5 or n_i < 5):
+        raise EvidenceError(f"{_rel(path)}: need at least 5 correct and 5 incorrect examples, found {n_c} and {n_i}")
+    return out
+
+
+def load_gradcam_source(gradcam_dir: Path = GRADCAM_DIR) -> dict:
+    import json
+    path = gradcam_dir / "source.json"
+    try:
+Bash
+IN
+python3 - <<'EOF'
+import json,re
+p="config/served_model.json"
+s=open(p).read()
+s=s.replace('"served_run_id": null','"served_run_id": 54')
+s=s.replace("Leave it null until then: Try It then reports that no Fashion-MNIST model is configured instead of serving a different model.","Filled with 54 on 2026-10-17 after the 18 official runs (ids 53-70) were saved; verified against Supabase (group fashion-official-1, dataset 24, ten class names, mean 0.286 / std 0.353). If it is ever null Try It reports that no Fashion-MNIST model is configured instead of serving a different model.")
+open(p,"w").write(s); json.loads(s)
+EOF
+grep -n "def verify_served_run" -A40 ui/tryit.py | head -70; grep -n "cam_png\|Grad-CAM" ui/app.py | head -20; sed -n 1,40p api/local_db.py
+
+OUT
+94:def verify_served_run(api_url: str, served: dict, get=None) -> None:
+95-    """Ask the API for the configured run and confirm it is the Fashion-MNIST model we expect.
+96-
+97-    Raises TryItError if the API's run has a different name, group, dataset or class count. An
+98-    unreachable API raises a different, retryable message; nothing is predicted or logged here.
+99-    """
+100-    get = get or requests.get  # looked up at call time
+101-    try:
+102-        resp = get(f"{api_url}/runs/{served['run_id']}", timeout=WARMUP_TIMEOUT * 3)
+103-    except requests.exceptions.RequestException:
+104-        raise TryItError("Couldn't reach the prediction service to verify the model. It may be "
+105-                         "waking up; please check again in a moment.") from None
+106-    if resp.status_code == 404:
+107-        raise TryItError("The configured model does not exist on the prediction service.")
+108-    if resp.status_code != 200:
+109-        raise TryItError("Couldn't verify the configured model right now. Please try again shortly.")
+110-    try:
+111-        run = resp.json()
+112-    except ValueError:
+113-        raise TryItError("The prediction service returned an unreadable run record.") from None
+114-    cfg = run.get("config") or {}
+115-    if (run.get("run_name") != served["run_name"] or run.get("experiment_group") != served["group"]
+116-            or cfg.get("dataset") != "fashion-mnist" or cfg.get("n_classes") != 10):
+117-        raise TryItError("The configured run on the prediction service is not the expected "
+118-                         "Fashion-MNIST model, so Try It is disabled instead of guessing.")
+119-
+120-
+121-# ---------------------------------------------------------------------------
+122-# Held-out example images (official Fashion-MNIST test partition)
+123-# ---------------------------------------------------------------------------
+124-def load_samples(samples_dir: Path | None = None) -> dict:
+125-    """Manifest of bundled held-out examples, or {} if none are bundled."""
+126-    samples_dir = samples_dir or SAMPLES_DIR
+127-    try:
+128-        m = json.loads((samples_dir / "manifest.json").read_text(encoding="utf-8"))
+129-    except (OSError, ValueError):
+130-        return {}
+131-    items = [s for s in m.get("samples", []) if (samples_dir / s.get("file", "")).is_file()]
+132-    return {**m, "samples": items} if items else {}
+133-
+134-
+9:Grad-CAM images arrive from the API already rendered as base64 PNGs; the UI just
+38:st.title("🔍 See-Sense — Fashion-MNIST CNN Classifier with Grad-CAM")
+39:st.caption("Streamlit (this UI) → FastAPI (CNN + Grad-CAM) → Supabase (data). Three clouds.")
+77:    st.header("How a CNN sees: convolution, receptive fields and Grad-CAM")
+175:        "Each of the 7×7 cells Grad-CAM works with therefore looks at a **10×10-pixel patch** of "
+176:        "the 28×28 image, and neighbouring cells are 4 pixels apart. This is why Grad-CAM maps "
+180:    # ---- 4. Grad-CAM -------------------------------------------------------
+181:    st.subheader("4. Grad-CAM: where did the network look?")
+196:    st.latex(r"L^c_{\text{Grad-CAM}} = \mathrm{ReLU}\!\left(\sum_k \alpha_k^c\, A^k\right)")
+210:        "**Limitations.** Grad-CAM is coarse: its resolution is 7×7 and each cell sees a "
+246:    right.image(tryit.decode_png(resp["cam_png"]), caption="Grad-CAM for the predicted class (red = most influential)", width=224)
+309:                    with st.spinner("Running the CNN + Grad-CAM..."):
+337:                        with st.spinner("Running the CNN + Grad-CAM..."):
+432:# Compare Models + Grad-CAM gallery
+575:            f"Grad-CAM, {set_name} examples: one example per row, top to bottom = table order below. "
+576:            + ("Columns: input, Grad-CAM for the predicted class."
+578:               "Columns: input, Grad-CAM for the predicted class, Grad-CAM for the true class.")
+631:    st.header("Grad-CAM gallery")
+650:            "been completed, so no numbers, curves or Grad-CAM examples are shown for it here. Nothing below "
+"""Offline stand-in for the Supabase layer, for running the API locally.
+
+Turned on only when ``SEE_SENSE_LOCAL_DB`` is set (in ``.env`` or the shell) to a
+JSON file path, e.g. ``SEE_SENSE_LOCAL_DB=.local_db.json``. Then ``api/db.py``
+routes every call here instead of Supabase, so the whole API -- ``/train``,
+``/runs``, ``/predict`` and the experiment runner -- works with no credentials.
+
+This is for trying things out and checking the plumbing (Part 2 step 1). It is
+NOT the project's source of truth: official runs belong in Supabase so the team,
+the dashboard and ``docs/comparison_queries.sql`` can see them. Unset the
+variable to go back to Supabase.
+
+On first use the file is seeded with dataset id 1 = Fashion-MNIST (parameters only; the
+training tool reads the pixels from local files). The earlier synthetic-shape datasets
+exist only in the shared Supabase project and are not retrainable.
+"""
+from __future__ import annotations
+
+import json
+import os
+import threading
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, List, Mapping, Optional
+
+_LOCK = threading.Lock()
+
+DEFAULT_DATASET = {
+    "name": "fashion-mnist",
+    "n_rows": 60000,
+    "img_size": 28,
+    "n_classes": 10,
+    "noise": 0.0,
+    "seed": 0,
+    "source": "fashion_mnist",
+    "class_names": [
+        "T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
+        "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot",
+    ],
+}
+Bash
+IN
+python3 - <<'EOF'
+p="ui/evidence.py"
+s=open(p).read()
+s=s.replace('''def load_model_card(path: Path = MODEL_CARD) -> str:''','''def load_provenance(sql_dir: Path) -> dict:
+    """What the saved q*.csv files say about where they came from (their PROVENANCE.md).
+
+    Returns {'source': str, 'is_supabase_sql': bool}. The files are only treated as a Supabase SQL
+    export when PROVENANCE.md says so (written by experiments/ingest_sql_export.py from a result that
+    contains the database's own ``meta`` row); anything else is reported as it describes itself.
+    """
+    try:
+        text = (sql_dir / "PROVENANCE.md").read_text(encoding="utf-8")
+    except OSError:
+        return {"source": "not recorded", "is_supabase_sql": False}
+    m = re.search(r"^- source: \\*\\*(.+?)\\*\\*", text, flags=re.M)
+    source = m.group(1).strip() if m else "not recorded"
+    return {"source": source, "is_supabase_sql": source.lower().startswith("supabase")}
+
+
+def load_model_card(path: Path = MODEL_CARD) -> str:''',1)
+open(p,"w").write(s)
+
+p="ui/app.py"
+s=open(p).read()
+old=s[s.index("        st.info(\n            f\"**Saved experiment results** — group `{fm.group}`."):s.index("        _render_evidence_set(fm, historical=False)")]
+new='''        prov = evidence.load_provenance(fm.sql_dir)
+        st.info(
+            f"**Saved experiment results** — group `{fm.group}`. Tables are read from CSV files saved in "
+            f"`experiments/results/{fm.group}-sql/`; figures were generated from them. This tab displays files "
+            "saved in the repository; it does not re-query Supabase or retrain."
+        )
+        if prov["is_supabase_sql"]:
+            st.caption(f"SQL provenance: **{prov['source']}** (see PROVENANCE.md next to the CSVs).")
+        else:
+            st.warning(
+                f"**SQL provenance: {prov['source']}.** These numbers are the real saved run records, but the CSVs "
+                "were produced by the project's queries on a local copy, not by the Supabase SQL editor. They are "
+                "provisional until the packaged SQL export has been run once in Supabase and ingested."
+            )
+'''
+s=s.replace(old,new,1)
+s=s.replace('''right.image(tryit.decode_png(resp["cam_png"]), caption="Grad-CAM for the predicted class (red = most influential)", width=224)''','''right.image(tryit.decode_png(resp["cam_png"]), caption="Grad-CAM for the predicted class (red = most influential)", width=224)
+        st.caption("A plain image with no coloured overlay means Grad-CAM found no positive evidence for the predicted "
+                   "class. This is common for **Dress** and **Coat** predictions with this model (see the Model Card), "
+                   "so a blank map is not a bug in your upload.")''',1)
+open(p,"w").write(s)
+EOF
+sed -n 240,252p ui/app.py
+
+OUT
+            st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True,
+                         column_config={"Probability": st.column_config.ProgressColumn(
+                             min_value=0.0, max_value=1.0, format="%.3f")})
+        else:
+            st.warning("The service did not return a probability list.")
+    mid.image(tryit.decode_png(resp["input_png"]), caption="Input (28×28, enlarged)", width=224)
+    right.image(tryit.decode_png(resp["cam_png"]), caption="Grad-CAM for the predicted class (red = most influential)", width=224)
+        st.caption("A plain image with no coloured overlay means Grad-CAM found no positive evidence for the predicted "
+                   "class. This is common for **Dress** and **Coat** predictions with this model (see the Model Card), "
+                   "so a blank map is not a bug in your upload.")
+    if resp.get("logged") is True:
+        st.caption(f"Logged to Supabase as prediction #{resp.get('prediction_id')}: image hash {resp['image_sha256'][:16]}…, "
+                   "label and probabilities. No pixels are stored.")
+3:27 PM
+Indentation is wrong on the caption I just added; fixing it.
+
+
+
+Bash
+IN
+python3 - <<'EOF'
+p="ui/app.py"
+s=open(p).read()
+s=s.replace('''        st.caption("A plain image with no coloured overlay means Grad-CAM found no positive evidence for the predicted "
+                   "class. This is common for **Dress** and **Coat** predictions with this model (see the Model Card), "
+                   "so a blank map is not a bug in your upload.")''','''    st.caption("A plain image with no coloured overlay means Grad-CAM found no positive evidence for the predicted "
+               "class. This is common for **Dress** and **Coat** predictions with this model (see the Model Card), "
+               "so a blank map is not a bug in your upload.")''')
+open(p,"w").write(s)
+EOF
+.venv/bin/python -c "import ast;ast.parse(open('ui/app.py').read())" && echo ok
+
+OUT
+ok
+3:27 PM
+I'll make the blank-map diagnostic a proper reproducible script and run it over all 10,000 test images instead of a sample.
+
+
+
+Bash
+IN
+cat > experiments/cam_blank_check.py <<'EOF'
+"""How often is the Grad-CAM map of the predicted class empty (no positive evidence) for one saved checkpoint?
+
+    python -m experiments.cam_blank_check --supabase <run_name> <group> <out.csv>
+
+Grad-CAM = ReLU(sum_k mean(grad_k) * A_k). If every cell is <= 0 before the final normalisation the map is
+all zero and the overlay shows nothing. This counts that over ALL official test images, by predicted class.
+Read-only (downloads the checkpoint into memory; nothing is saved to the cloud or retrained).
+"""
+from __future__ import annotations
+
+import csv
+import sys
+from collections import Counter
+
+import numpy as np
+
+from api.training import load_artifact, normalize, to01
+from experiments.gradcam_evidence import load_from_supabase
+from shared import fashion
+
+
+def main(run_name: str, group: str, out: str) -> None:
+    _run, _ds, b64 = load_from_supabase(run_name, group)
+    loaded = load_artifact(b64)
+    model = loaded.model.eval()
+    data = fashion.load(include_test=True)
+    names = loaded.class_names
+    blank, total = Counter(), Counter()
+    for img in data.x_test:
+        x = normalize(to01(img[None]), loaded.preprocessing)
+        cap: dict = {}
+        h1 = model.features.register_forward_hook(lambda _m, _i, o: cap.__setitem__("a", o))
+        h2 = model.features.register_full_backward_hook(lambda _m, _gi, go: cap.__setitem__("g", go[0]))
+        logits = model(x)
+        pred = int(logits.argmax())
+        model.zero_grad()
+        logits[0, pred].backward()
+        h1.remove(); h2.remove()
+        raw = (cap["g"][0].mean((1, 2))[:, None, None] * cap["a"][0]).sum(0)
+        total[names[pred]] += 1
+        blank[names[pred]] += int(float(raw.max()) <= 0)
+    with open(out, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["predicted_class", "n_predictions", "n_blank_cam", "share_blank"])
+        for n in names:
+            w.writerow([n, total[n], blank[n], f"{blank[n] / max(total[n], 1):.4f}"])
+            print(f"{n:12s} {blank[n]:4d}/{total[n]:4d}  {blank[n] / max(total[n], 1):.1%}")
+
+
+if __name__ == "__main__":
+    if sys.argv[1] != "--supabase":
+        raise SystemExit(__doc__)
+    main(*sys.argv[2:5])
+EOF
+.venv/bin/python -m experiments.cam_blank_check --supabase full_improved-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam/blank_cam_by_class.csv 2>&1 | tail -12
+
+OUT
+T-shirt/top    12/1021  1.2%
+Trouser         0/ 988  0.0%
+Pullover        0/ 988  0.0%
+Dress        1032/1055  97.8%
+Coat          935/1067  87.6%
+Sandal          0/ 961  0.0%
+Shirt           3/ 874  0.3%
+Sneaker         0/1047  0.0%
+Bag             0/ 998  0.0%
+Ankle boot      0/1001  0.0%
+Write FASHION_GRADCAM_FAILURE_ANALYSIS.md
+61 lines
+# Grad-CAM failure analysis: Fashion-MNIST (DRAFT for human review)
+
+**Status: DRAFT written by Claude (an AI assistant) after viewing the generated figures, for Emma and Komal to read, check
+against the figures themselves, and rewrite in their own words before submission.** It is not a finding until a person has
+confirmed it. Every number comes from files in `experiments/results/fashion-official-1-gradcam/` and
+`experiments/results/fashion-official-1-sql/`.
+
+**Model:** `full_improved-seed0` (run 54, the model chosen in advance as the served model). Regenerated test accuracy 87.82%,
+identical to the stored value. Figures: `gradcam_correct.png`, `gradcam_incorrect.png`; table: `examples.csv`.
+
+**Selection rule, fixed before the figures were generated:** correct = first correctly classified test image of each class;
+incorrect = wrong predictions in descending confidence, one per distinct (true → predicted) pair first. This means the incorrect
+set is the model's **most confident mistakes**, not a random or typical sample of its errors. The most common error in the
+data, Shirt confused with T-shirt/top, Coat or Pullover, appears only once in the ten (test #3188).
+
+## Example 2914: Sneaker predicted as Ankle boot (99.9% confident)
+**What the evidence shows.** The image is a tall sneaker whose upper rises towards the ankle, with a bulky sole. The Grad-CAM map for
+the *predicted* class (Ankle boot) is spread over the shoe's upper outline and the area above it (`cam_mass_on_garment` 0.088, so
+most of the highlighted mass lies on dark background pixels, not on the shoe); the map for the *true* class (Sneaker) is a small
+blob in the empty upper-left. This is one of four of the ten most confident errors that are footwear-for-footwear swaps (also #4405
+Sandal→Sneaker, #9922 Sandal→Ankle boot, #5077 Ankle boot→Sneaker). The same direction shows up in aggregate: summed over the three
+`full_improved` seeds, 127 Ankle boots were called Sneakers, 84 Sneakers were called Ankle boots, and 133 Sandals were called Sneakers
+(confusion matrices, query 7).
+
+**Cautious reading.** This looks more like a **dataset problem** than a model problem: at 28×28 pixels a high-top sneaker and a low
+ankle boot differ by a few rows of pixels, and a person looking at #2914 or at the closed-looking "sandal" #4405 could reasonably
+hesitate. The model is, however, *confidently* wrong (more than 99%), so the confidence is not a signal that an item is ambiguous.
+The aggregate calibration is good (test ECE 0.0168 → 0.0091 for this run after temperature scaling), but average calibration says
+nothing about these individual cases.
+
+**What would change this conclusion.** If a larger or better-regularized model, or a person asked to relabel these images blind,
+resolved most of these cases, the problem would be the model's capacity or training, not the labels.
+
+## Example 787: Trouser predicted as Dress (99.3% confident)
+**What the evidence shows.** The image is one solid white vertical shape with no visible gap between the legs, which is the main cue that
+separates a trouser from a dress. The Grad-CAM map for the *predicted* class (Dress) is **completely empty**
+(`cam_mass_on_garment` 0.000); only the map for the true class (Trouser) shows any highlight (the legs and lower sides). The same
+empty map appears for two other confident errors predicted as Dress (#1111 T-shirt/top→Dress, #3084 Coat→Dress) and for correct Dress
+and Coat predictions (#13, #6). Checking this over all 10,000 test images (`blank_cam_by_class.csv`), the predicted-class map is empty
+for **97.8% of Dress** (1,032 of 1,055) and **87.6% of Coat** (935 of 1,067) predictions, against at most 1.2% for every other class.
+
+**Cautious reading.** Two separate things are visible. (1) For this image the input really is ambiguous (#4462, a Dress predicted as
+Trouser, is the mirror case: two parallel vertical bars). (2) More important, **Grad-CAM cannot explain a Dress or Coat prediction of this
+model**: the map keeps only locations that push the class logit up, and for these classes no location does. A plausible but untested
+explanation is that the Dress/Coat logits are driven by what is *absent* (for example the lack of a gap or of sleeves), which a
+positive-evidence map cannot show. I did not test this, and I did not change the Grad-CAM method after seeing results; the frozen
+protocol uses the raw class logit. The practical consequence is that a blank overlay in the app is a property of the method and
+model, not a failed upload.
+
+**What would change this conclusion.** A different attribution method (for example one that also shows negative evidence), or the same
+analysis on the other seeds' checkpoints. If other seeds show blank maps for different classes, this is an artifact of one training run.
+
+## Interpretation limits
+- The Grad-CAM resolution is 7×7 (each cell looks at a roughly 10×10-pixel patch of a 28×28 image), so it cannot localize fine cues.
+- A heat map shows where the classification score was sensitive, not why the network decided; it is not proof of reasoning.
+- Ten errors chosen by confidence are anecdotes. Neither example says how often this kind of mistake occurs; the confusion matrices
+  and per-class tables do.
+- Whether a particular image is mislabelled or ambiguous is my reading of 28×28 pictures; it needs a person's judgement.
+- Only one checkpoint (seed 0, the lowest-scoring `full_improved` seed at 87.82% vs 88.10% and 88.39%) was examined.
+- These interpretations apply to Fashion-MNIST only. The interpretations in `SUPABASE_GRADCAM_FAILURE_ANALYSIS.md` describe the earlier synthetic shapes and must not be reused.
+3:27 PM
+The failure analysis is drafted. For the real UI check I'll build a local, offline copy of run 54 so that /predict logging never touches your Supabase project.
+
+
+
+Bash
+IN
+grep -n "def _load\|def _save\|next_id\|\"runs\"\|run_artifacts\|\"predictions\"\|image_metadata\|\"datasets\"" api/local_db.py | head -30; grep -n "local_db" .gitignore
+
+OUT
+53:            self._write({"datasets": [], "runs": [], "run_artifacts": [], "image_metadata": [],
+54:                          "predictions": []})
+67:    def _next_id(rows: list) -> int:
+83:                "id": self._next_id(data["datasets"]), "name": name, "n_rows": n_rows,
+88:            data["datasets"].append(row)
+93:        return next((r for r in self._read()["datasets"] if r["id"] == dataset_id), None)
+105:                for r in data["runs"]
+110:                "id": self._next_id(data["runs"]), "dataset_id": dataset_id, "lr": lr,
+117:            data["runs"].append(row)
+118:            data["run_artifacts"].append({"run_id": row["id"], "model_b64": model_b64})
+125:            for r in self._read()["runs"]
+129:        return next((r for r in self._read()["runs"] if r["id"] == run_id), None)
+133:            (a["model_b64"] for a in self._read()["run_artifacts"] if a["run_id"] == run_id),
+138:        return list(reversed(self._read()["runs"]))[:limit]
+145:            data.setdefault("predictions", [])
+146:            if not any(r["id"] == run_id for r in data["runs"]):
+149:            data["image_metadata"].append({
+150:                "id": self._next_id(data["image_metadata"]), "run_id": run_id,
+155:                "id": self._next_id(data["predictions"]), "image_sha256": sha256,
+160:            data["predictions"].append(row)
+167:        return {**public, "runs": {k: run.get(k) for k in (
+172:        runs = {r["id"]: r for r in data["runs"]}
+173:        return [self._with_run(r, runs) for r in reversed(data.get("predictions", []))][:limit]
+177:        runs = {r["id"]: r for r in data["runs"]}
+178:        row = next((r for r in data.get("predictions", []) if r["id"] == prediction_id), None)
+20:.local_db.json
+21:.local_db.json.tmp
+Bash
+IN
+S=/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad && cat > $S/mklocal.py <<'EOF'
+import json, sys
+sys.path.insert(0, ".")
+from api import db
+cl = db.get_client()
+run = cl.table("runs").select("*").eq("id", 54).execute().data[0]
+ds = cl.table("datasets").select("*").eq("id", run["dataset_id"]).execute().data[0]
+b64 = db.get_run_artifact(54)
+out = {"datasets": [ds], "runs": [run], "run_artifacts": [{"run_id": 54, "model_b64": b64}], "image_metadata": [], "predictions": []}
+json.dump(out, open("/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/ui_check_db.json", "w"))
+print("local copy written; config keys:", sorted(run["config"])[:12])
+EOF
+.venv/bin/python $S/mklocal.py
+
+OUT
+local copy written; config keys: ['arch', 'augment', 'augment_max_shift', 'batch_size', 'class_names', 'dataset', 'dropout', 'epochs', 'img_size', 'lr', 'n_classes', 'optimizer']
+Bash
+IN
+grep -n "API_URL" ui/*.py | head; ls ~/.streamlit 2>/dev/null; which playwright chromium 2>/dev/null; .venv/bin/python -c "import playwright" 2>&1 | tail -1
+
+OUT
+ui/app.py:13:    API_URL              -> your Render.com base URL
+ui/app.py:35:API_URL = st.secrets["API_URL"].rstrip("/")
+ui/app.py:48:    r = requests.get(f"{API_URL}{path}", params=params, timeout=60)
+ui/app.py:54:    r = requests.post(f"{API_URL}{path}", json=payload, timeout=180)
+ui/app.py:277:                st.session_state["api_ready"] = tryit.wake_api(API_URL)
+ui/app.py:289:                tryit.verify_served_run(API_URL, served)
+ui/app.py:313:                        resp = tryit.predict_upload(API_URL, run_id, up.name, up.getvalue(), up.type)
+ui/app.py:341:                            resp = tryit.predict_upload(API_URL, run_id, item["file"], path.read_bytes(), "image/png")
+credentials.toml
+machine_id_v4
+playwright not found
+chromium not found
+ModuleNotFoundError: No module named 'playwright'
+Bash
+IN
+S=/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad && cp $S/ui_check_db.json $S/ui_check_live.json && (SEE_SENSE_LOCAL_DB=$S/ui_check_live.json OMP_NUM_THREADS=2 nohup .venv/bin/uvicorn api.main:app --port 8765 > $S/api.log 2>&1 &) ; sleep 8; curl -s localhost:8765/healthz; echo; curl -s localhost:8765/runs/54 | .venv/bin/python -c "import sys,json;r=json.load(sys.stdin);print(r['id'],r['run_name'],r['experiment_group'],r['dataset_id'],r['config']['dataset'],r['config']['n_classes'],r['config']['preprocessing']['mean'],r['config']['preprocessing']['std'])"
+curl -s -X POST localhost:8765/predict -F run_id=54 -F "file=@ui/assets/samples/$(ls ui/assets/samples | grep png | sed -n 5p)" | .venv/bin/python -c "import sys,json;r=json.load(sys.stdin);print(r['class_name'],round(r['confidence'],3),len(r['top5']),r['logged'],r['calibrated'],r['temperature'])"
+
+OUT
+{"status":"offline","model_loader":true,"supabase":false,"storage":"offline"}
+54 full_improved-seed0 fashion-official-1 24 fashion-mnist 10 0.286 0.353
+Pullover 0.998 5 True True 0.8705441487903772
+3:28 PM
+The local API serves run 54 from the offline store, so no cloud writes happen. Now the real Streamlit server and a full-app run against that live API.
+
+
+
+Bash
+IN
+S=/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad && mkdir -p $S/uicwd/.streamlit && sed -E 's#^(API_URL *=).*#\1 "http://127.0.0.1:8765"#' ui/.streamlit/secrets.toml > $S/uicwd/.streamlit/secrets.toml && grep -c 127.0.0.1:8765 $S/uicwd/.streamlit/secrets.toml
+cd $S/uicwd && (nohup /Users/emmarogoveanu/Documents/GitHub/see-sense/.venv/bin/streamlit run /Users/emmarogoveanu/Documents/GitHub/see-sense/ui/app.py --server.port 8766 --server.headless true > ../st.log 2>&1 &); sleep 8; curl -s -o /dev/null -w "streamlit health %{http_code}\n" localhost:8766/_stcore/health
+cat > $S/uicheck.py <<'EOF'
+import sys, os
+sys.path.insert(0, "/Users/emmarogoveanu/Documents/GitHub/see-sense")
+from streamlit.testing.v1 import AppTest
+at = AppTest.from_file("/Users/emmarogoveanu/Documents/GitHub/see-sense/ui/app.py", default_timeout=180).run()
+print("exceptions on load:", [e.value for e in at.exception])
+print("tabs:", [t.label for t in at.tabs])
+txt = lambda: " | ".join([m.value for m in at.markdown] + [c.value for c in at.caption] + [w.value for w in at.warning] + [i.value for i in at.info] + [s.value for s in at.subheader] + [h.value for h in at.header])
+t = txt()
+for needle in ["SQL provenance", "Final: Fashion-MNIST, 10 classes", "Grad-CAM gallery", "Failure interpretations", "Example 2914", "Example 787"]:
+    print(f"{needle!r}:", needle in t)
+print("warnings:", [w.value[:140] for w in at.warning])
+print("errors:", [e.value[:140] for e in at.error])
+# Try It: click first held-out example button(s)
+print("buttons:", [b.label for b in at.button][:6])
+EOF
+/Users/emmarogoveanu/Documents/GitHub/see-sense/.venv/bin/python $S/uicheck.py 2>&1 | grep -v Warning | tail -20
+
+OUT
+1
+streamlit health 200
+2026-10-17 15:28:37.743 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+exceptions on load: []
+tabs: ['Concepts', 'Try It', 'Compare Models', 'Recent Classifications', 'Model Card']
+'SQL provenance': True
+'Final: Fashion-MNIST, 10 classes': True
+'Grad-CAM gallery': True
+'Failure interpretations': True
+'Example 2914': False
+'Example 787': False
+warnings: ['**Limitations.** Grad-CAM is coarse: its resolution is 7×7 and each cell sees a 10×10 patch. It shows regions *associated with* a class scor', '**SQL provenance: LOCAL REPLICA, NOT Supabase SQL..** These numbers are the real saved run records, but the CSVs were produced by the projec']
+errors: []
+buttons: ['Classify this example', 'Refresh']
+Shell cwd was reset to /Users/emmarogoveanu/Documents/GitHub/see-sense
+Bash
+IN
+S=/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad && sed -i '' 's/\*\*SQL provenance: {prov\[.source.\]}.\*\*/**SQL provenance: {prov["source"].rstrip(".")}.**/' ui/app.py && grep -n 'SQL provenance: {' ui/app.py && cat >> $S/uicheck.py <<'EOF'
+from ui import evidence
+print("interpretations parsed:", sorted(evidence.load_failure_interpretations(evidence.FASHION.failure_doc)["examples"]))
+at.button[0].click().run()
+print("after classify | exceptions:", [e.value for e in at.exception], "| errors:", [e.value[:120] for e in at.error])
+out = " | ".join(c.value for c in at.caption) + " | ".join(s.value for s in at.success) + " | ".join(m.value for m in at.markdown)
+for needle in ["Logged to Supabase", "Grad-CAM for the predicted class", "no coloured overlay"]:
+    print(f"{needle!r} present:", needle in out)
+print("images shown:", len(at.get("imgs")) if hasattr(at, "get") else "n/a")
+print("dataframes:", len(at.dataframe))
+EOF
+cd $S/uicwd && /Users/emmarogoveanu/Documents/GitHub/see-sense/.venv/bin/python $S/uicheck.py 2>&1 | grep -v "Warning\|WARNING" | tail -12; tail -3 $S/api.log | cut -c1-160
+
+OUT
+654:                f"**SQL provenance: {prov["source"].rstrip(".")}.** These numbers are the real saved run records, but the CSVs "
+warnings: []
+errors: []
+buttons: []
+interpretations parsed: [787, 2914]
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad/uicheck.py", line 17, in <module>
+    at.button[0].click().run()
+    ~~~~~~~~~^^^
+  File "/Users/emmarogoveanu/Documents/GitHub/see-sense/.venv/lib/python3.11/site-packages/streamlit/testing/v1/element_tree.py", line 228, in __getitem__
+    return self._list[idx]
+           ~~~~~~~~~~^^^^^
+IndexError: list index out of range
+INFO:     127.0.0.1:55864 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55871 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55872 - "GET /runs/54 HTTP/1.1" 200 OK
+Shell cwd was reset to /Users/emmarogoveanu/Documents/GitHub/see-sense
+3:28 PM
+My sed edit put double quotes inside an f-string, which breaks on Python 3.11. Fixing it.
+
+
+
+Bash
+IN
+S=/private/tmp/claude-501/-Users-emmarogoveanu-Documents-GitHub-see-sense/ef4709b9-24ef-483b-8aed-1d5303f92334/scratchpad && sed -i '' "s/{prov\[\"source\"\].rstrip(\".\")}/{prov['source'].rstrip('.')}/" ui/app.py && .venv/bin/python -c "import ast;ast.parse(open('ui/app.py').read());print('syntax ok')" && cd $S/uicwd && /Users/emmarogoveanu/Documents/GitHub/see-sense/.venv/bin/python $S/uicheck.py 2>&1 | grep -v "Warning\|WARNING" | tail -16
+
+OUT
+syntax ok
+'SQL provenance': True
+'Final: Fashion-MNIST, 10 classes': True
+'Grad-CAM gallery': True
+'Failure interpretations': True
+'Example 2914': False
+'Example 787': False
+warnings: ['**Limitations.** Grad-CAM is coarse: its resolution is 7×7 and each cell sees a 10×10 patch. It shows regions *associated with* a class scor', '**SQL provenance: LOCAL REPLICA, NOT Supabase SQL.** These numbers are the real saved run records, but the CSVs were produced by the project']
+errors: []
+buttons: ['Classify this example', 'Refresh']
+interpretations parsed: [787, 2914]
+after classify | exceptions: [] | errors: []
+'Logged to Supabase' present: True
+'Grad-CAM for the predicted class' present: False
+'no coloured overlay' present: True
+images shown: 10
+dataframes: 14
+Shell cwd was reset to /Users/emmarogoveanu/Documents/GitHub/see-sense
+3:28 PM
+The UI works end to end against the live local API. Before writing the reports I need to find them: "each individual report" suggests one per person, so I'll look for where they are.
+
+
+
+Bash
+IN
+git ls-files | grep -iv "^tests/\|\.png$\|\.csv$\|\.jsonl$\|ui/assets" | grep -i "report\|emma\|komal\|engineer\|reflect\|individual\|PART2_RESULTS\|\.docx\|\.pdf" ; ls; ls ai-usage reports 2>/dev/null; grep -n "report" docs/PROJECT_NOTES.md docs/CONTRIBUTIONS.md | head -20; wc -w PART2_RESULTS.md docs/PART2_RESULTS.md
+
+OUT
+PART2_RESULTS.md
+ai-usage/Emma-Session1.md
+ai-usage/Emma-Session3.md
+ai-usage/Komal-Session1.md
+ai-usage/Komal-Session2.md
+docs/PART2_RESULTS.md
+MODEL_CARD.md
+PART2_RESULTS.md
+README.md
+ai-usage
+api
+config
+data
+db
+docs
+experiments
+pytest.ini
+render.yaml
+requirements-dev.txt
+shared
+tests
+tools
+ui
+ai-usage:
+Emma-Session1.md
+Emma-Session3.md
+Komal-Session1.md
+Komal-Session2.md
+docs/PROJECT_NOTES.md:3:Working notes, not a technical report. Technical documents (model card, dataset card, results) describe the final system only.
+    1985 PART2_RESULTS.md
+    1985 docs/PART2_RESULTS.md
+    3970 total
+Bash
+IN
+grep -rIil "engineering report\|individual report\|technical report" --exclude-dir=.venv --exclude-dir=node_modules --exclude-dir=.git . | head; grep -rIn -i "engineering report\|individual report\|technical report" --exclude-dir=.venv --exclude-dir=.git docs README.md PART2_RESULTS.md ai-usage 2>/dev/null | cut -c1-220 | head -12; ls -la ~/Downloads 2>/dev/null | grep -i "see\|sense\|report\|AIT" | head
+
+OUT
+docs/PROJECT_NOTES.md
+docs/PROJECT_NOTES.md:3:Working notes, not a technical report. Technical documents (model card, dataset card, results) describe the final system only.
+-rw-r--r--@  1 emmarogoveanu  staff     162 Sep 17  2024 ~$am 8 Weekly Report.docx
+Bash
+IN
+cat docs/CONTRIBUTIONS.md; sed -n 1,25p PART2_RESULTS.md; diff -q PART2_RESULTS.md docs/PART2_RESULTS.md && echo identical; grep -n "^#" PART2_RESULTS.md
+
+OUT
+# Contribution statements and individual videos
+
+**Placeholders only.** Nothing below describes what either person did or believes; each person
+must write their own statement and record their own video. Commit history and `ai-usage/`
+records exist, but they are not a substitute for a personal statement.
+
+## Emma Rogoveanu
+
+**Contribution statement:**
+> TODO (Emma): describe in your own words what you built, decided and learned. Mention which
+> parts of the work were yours and which were done jointly.
+
+**Individual video link:** TODO — not yet recorded or linked: `<paste URL here>`
+
+**Disclosure reflection:** see the draft in [ETHICS_AND_DISCLOSURE.md](ETHICS_AND_DISCLOSURE.md) §6 (for Emma to review).
+
+## Komal Khan
+
+**Contribution statement:**
+> TODO (Komal): describe in your own words what you built, decided and learned. Mention which
+> parts of the work were yours and which were done jointly.
+
+**Individual video link:** TODO — not yet recorded or linked: `<paste URL here>`
+
+## Dataset correction (2026-10-17)
+The move from the synthetic shapes to Fashion-MNIST (branch `correction/fashion-mnist`) was done in an AI-assisted session on Emma's
+machine and repository. It is **not attributed to Komal**, and it does not replace either person's own statement. Komal's and Emma's earlier
+work (see the records below) is unchanged. Each person still writes, in their own words, what they did, decided and learned.
+
+## Supporting records (to cite, not to replace the statements)
+- AI-usage records: [Emma Session 1](../ai-usage/Emma-Session1.md), [Emma Session 3](../ai-usage/Emma-Session3.md), [Komal Session 1](../ai-usage/Komal-Session1.md), [Komal Session 2](../ai-usage/Komal-Session2.md)
+- Git history: `git log --format='%an %s'`
+# Part 2 results: baseline vs improved CNN and ablations
+
+> **DRAFT — HISTORICAL (synthetic shapes), not the final evidence.** This report describes the first experiment on the four-class synthetic-shape
+> dataset (`official-1` / `official-supabase-1`). The assignment's dataset is Fashion-MNIST; the final report will be written only after the
+> official Fashion-MNIST runs exist. It stays a draft until then, and its numbers must not be read as Fashion-MNIST results.
+
+Experiment group `official-1`: 6 configurations × 5 training seeds = **30 runs**,
+all under the protocol frozen in [PART2_PROTOCOL.md](PART2_PROTOCOL.md) before
+any test result existed. The task is 4-class shape classification on 28×28
+images (2000 images, noise 1.0; 1400 train / 200 validation / 400 test). Every
+run keeps its lowest-validation-loss epoch, and the test set is scored once.
+
+> **Where these runs live.** The runs were made through the real API
+> (`POST /train`, read back with `GET /runs/{id}`) using the offline database
+> (`SEE_SENSE_LOCAL_DB`), on a Linux CPU machine. The numbers below come from
+> running `docs/comparison_queries.sql` **unchanged** on a Postgres engine
+> (PGlite) with migrations 001 + 002 applied (`experiments/sql_check.mjs`). They
+> were then checked against a separate Python recomputation (0 mismatches).
+> Emma will repeat the same frozen protocol on Supabase. Expect small numerical
+> differences on another machine (see [RUN_API_LOCALLY.md](RUN_API_LOCALLY.md) §5b).
+
+## 1. Headline results (SQL queries 4–5)
+
+| Variant | Test accuracy (mean ± sd, 5 seeds) | Macro-F1 | Test loss |
+|---|---|---|---|
+identical
+1:# Part 2 results: baseline vs improved CNN and ablations
+22:## 1. Headline results (SQL queries 4–5)
+46:## 2. Each technique's contribution (SQL query 6)
+61:### What this does and does not show
+92:## 3. Training and validation curves (SQL query 3)
+107:## 4. Confusion matrices (SQL query 7)
+119:## 5. Grad-CAM evidence
+145:### Failure 1: #292, true horizontal → predicted block (83%)
+157:### Failure 2: #135, true block → predicted horizontal (93%)
+175:## 6. Limitations
+196:## 7. Reproduce
+199:# API (offline DB) in one terminal:
+201:# register dataset (id 2 on a fresh local DB), then the official run: see PART2_PROTOCOL.md
+204:# SQL on local Postgres (needs: npm install @electric-sql/pglite@0.2.17 in some folder,
+205:# copy experiments/sql_check.mjs there):
+214:## Files
+Bash
+IN
+grep -rn "PART2_RESULTS" --include=*.md --include=*.py --include=*.json --include=*.yml . 2>/dev/null | grep -v "^./.venv\|^./PART2_RESULTS.md\|^./docs/PART2_RESULTS.md" | cut -c1-200; cat experiments/results/fashion-official-1-analysis/summary.md | sed -n '/Calibration/,$p' | head -3; sed -n 1,60p MODEL_CARD.md
+
+OUT
+(eval):1: no matches found: --include=*.md
+### Calibration: temperature scaling fitted on validation (query 9)
+
+ECE = expected calibration error (15 bins; lower is better); NLL = negative log-likelihood. 'Before' is plain softmax (T = 1); 'after' divides the logits by the temperature fitted on validation data. Test columns are held-out measurements, never used to fit T. Mean over seeds.
+# Model Card — See-Sense (Fashion-MNIST)
+
+> **Status: DRAFT. Final Fashion-MNIST results are pending.** The official 10-class comparison has not
+> been run yet, so this card reports **no Fashion-MNIST accuracy, calibration or Grad-CAM findings**. Sections
+> marked *pending* are filled in only from saved experiment records. The earlier four-class
+> *synthetic-shape* experiment is documented separately under **Historical** at the end; it is not
+> Fashion-MNIST and must not be read as Fashion-MNIST performance.
+
+## Summary
+See-Sense classifies 28×28 grayscale pictures of clothing into the ten Fashion-MNIST categories and explains
+each prediction with a Grad-CAM heatmap and its five most probable classes. It is a teaching and evaluation
+demo and is not a general photo classifier.
+
+## Model details
+Two architectures share the same layout: two blocks of
+`Conv2d(3×3, padding 1) → [BatchNorm] → ReLU → MaxPool(2)` with 8 then 16
+channels, followed by a linear layer from the 16×7×7 feature maps to **10 class scores**.
+
+| Variant | What it is | Parameters |
+|---|---|---|
+| `baseline` | `SmallCNN`: no batch norm, no dropout, no augmentation, constant learning rate | 9,098 |
+| `full_improved` | `ImprovedCNN` with batch norm, dropout 0.3, augmentation and a cosine learning-rate schedule | 9,146 |
+| `no_augmentation`, `no_batchnorm`, `no_dropout`, `no_scheduler` | `full_improved` with exactly one technique removed | 9,146 (9,098 without batch norm) |
+
+- **Augmentation (training batches only):** random shifts of up to 2 pixels (zero = black background, no wrap-around)
+  and a random **horizontal** flip. There is **no vertical flip**: an upside-down dress or boot is not a realistic
+  garment, so flipping vertically would teach the model something false. No rotations or crops are used.
+- **Training:** Adam, cross-entropy loss. Epochs, batch size, learning rate and seeds are frozen in
+  `config/fashion_protocol.json` before the official runs (see *Evaluation protocol*). Each run keeps the
+  weights of its lowest-**validation**-loss epoch; the official test set is scored once afterwards.
+- **Per-epoch records:** training loss and accuracy, validation loss and accuracy, and learning rate, for every epoch of
+  every run (training accuracy is the un-augmented training split scored in eval mode).
+- **Calibration:** softmax probabilities are not automatically calibrated. Each checkpoint stores a single
+  **temperature** fitted by *temperature scaling* on the validation logits only (`softmax(logits / T)`); the
+  Top-5 probabilities and the confidence in the app are the temperature-scaled ones. Calibration is measured with ECE
+  (15 equal-width bins), negative log-likelihood and the Brier score, before and after, on validation and on the held-out
+  test set (`runs.calibration`). **A fitted temperature is not evidence that the model is well calibrated;**
+  the app and this card claim calibration only to the extent the stored test measures show it. *Result: pending.*
+- **Explainability:** Grad-CAM on the output of the last pooling block (16 maps of 7×7) for the predicted class,
+  computed from the **raw class logit** (so the temperature never changes the heatmap): gradients are averaged into one
+  weight per map, the weighted maps are summed, passed through ReLU, scaled to [0, 1], upsampled to 28×28 and overlaid
+  in red. Each 7×7 cell has a 10×10-pixel receptive field.
+- **Checkpoint contents (format 3):** weights, ordered class names, preprocessing (grayscale, 28×28, ÷255, mean 0.2860,
+  std 0.3530), architecture options, dataset identity (source, file SHA-256 hashes, split seed and index hashes),
+  temperature, selected epoch and artifact version. Earlier four-class checkpoints (format 1–2) still load and are
+  labelled `synthetic_shapes`.
+- **Served model:** chosen in advance in `config/served_model.json` (`full_improved-seed0`, fixed on 2026-10-17 before any
+  official run), matched to the saved experiment records and verified against the API; not picked by test score. Its run ID is
+  filled in after the official runs. *Pending.*
+
+## Intended use
+- **Primary:** showing how a small CNN, regularization techniques, calibration and Grad-CAM behave on a standard
+  benchmark, with every number traceable to a stored run.
+- **Out of scope:** real photos of clothing from shops or phones, fashion recommendation, any decision about
+  people, medical or safety use. Uploaded pictures are converted to 28×28 grayscale but are **not** inverted or
+  background-removed: Fashion-MNIST items are light on a dark background, and a dark garment on a white
+  background is far outside the training distribution. A picture of a cat or a face would still be given one of the
+  ten clothing labels, and that label would mean nothing.
+
+## Data
+3:29 PM
+The model card and the analysis caption disagree on how training accuracy is measured. I'll check the code for the truth.
+
+
+
+Bash
+IN
+grep -n "train_acc\|train_loss\|eval()\|\.train()" api/training.py | sed -n 1,40p
+
+OUT
+194:    model.eval()
+232:    Recorded every epoch: ``train_loss`` (mean mini-batch loss in training mode, i.e. on
+233:    augmented data with dropout/batch-norm batch statistics), ``train_accuracy`` (the whole
+255:                                    ("train_loss", "train_accuracy", "val_loss", "val_accuracy", "lr_history", "epoch_seconds")}
+262:        model.train()
+277:        hist["train_loss"].append(epoch_loss / n)
+280:        hist["train_accuracy"].append(_loss_acc(_logits(model, xt, pre), yt)[1])
+393:        "train_loss": out["train_loss"],
+396:        "train_accuracy": out["train_accuracy"],
+447:    model.eval()
+Bash
+IN
+sed -n 228,240p api/training.py
+
+OUT
+    Takes NO test data, so it cannot leak it. Returns the model (best-epoch weights),
+    per-epoch histories and the validation logits of the selected epoch.
+
+    Recorded every epoch: ``train_loss`` (mean mini-batch loss in training mode, i.e. on
+    augmented data with dropout/batch-norm batch statistics), ``train_accuracy`` (the whole
+    un-augmented training split scored in eval mode), ``val_loss`` and ``val_accuracy``.
+    """
+    pre = preprocessing or default_preprocessing()
+    if arch == "baseline":
+        # SmallCNN has no BatchNorm or dropout and ignores these options, so record
+        # what the model really uses rather than what the caller passed.
+        use_batchnorm, dropout = False, 0.0
+Training loss is computed on augmented batches in train mode, while training accuracy is computed on the un-augmented split in eval mode—so accuracy compares to validation accuracy but loss doesn't. I'll correct the caption and regenerate it.
+Bash
+IN
+python3 - <<'EOF'
+p="experiments/analyze.py"
+s=open(p).read()
+old=s[s.index('        lines.append("A small gap with low accuracy'):s.index('        lines.append("| Variant | Train acc | Val acc')]
+new='''        lines.append("Training accuracy is the whole un-augmented training split scored in eval mode, so it is comparable "
+                     "to validation accuracy: a small gap with modest accuracy suggests under-fitting, a large gap "
+                     "over-fitting. Training LOSS is different: it is the mean mini-batch loss in training mode on augmented "
+                     "data with dropout, so it sits above the validation loss for the regularized variants and is not "
+                     "comparable to it.\\n")
+'''
+s=s.replace(old,new)
+open(p,"w").write(s)
+EOF
+.venv/bin/python -m experiments.analyze experiments/results/fashion-official-1-sql experiments/results/fashion-official-1-analysis > /dev/null && grep -n "Training accuracy is the" experiments/results/fashion-official-1-analysis/summary.md | cut -c1-80
+
+OUT
+59:Training accuracy is the whole un-augmented training split scored in eval mod
+Bash
+IN
+sed -n 60,200p MODEL_CARD.md
+
+OUT
+## Data
+- **Fashion-MNIST** (Zalando Research; MIT licence): 70,000 grayscale 28×28 images, ten classes, official partitions of
+  60,000 training and 10,000 test images (1,000 per class in test). Details: [docs/DATASET_CARD.md](docs/DATASET_CARD.md).
+- **Validation** images are carved out of the *official training* images (10%, 6,000, class-stratified, split seed in the
+  protocol). The official test images are never used to train, to choose an epoch, to fit the temperature, or to choose
+  the served model.
+- Only dataset identity and file hashes are stored in Supabase; pixels are not.
+
+## Evaluation protocol
+- Frozen in `config/fashion_protocol.json` and `docs/FASHION_PROTOCOL.md` before the official runs. Within each seed the six
+  variants share the dataset, validation split, seed, epoch budget, batch size, optimizer and initial learning rate; only the
+  declared technique differs (checked by `experiments/configs.py` and SQL query 1).
+- Metrics on the 10,000 official test images: accuracy, macro-F1, loss, the 10×10 confusion matrix and per-class precision and
+  recall, plus calibration (ECE / NLL / Brier).
+- Ablations remove one technique from `full_improved` while the others stay on and compare the two on the same seed. They
+  measure a technique's contribution *given the others*, not its effect on its own.
+- Nothing was tuned after looking at test results; the budget came from a validation-only pilot
+  (`experiments/results/fashion-pilot/`).
+
+## Results
+*Pending.* No Fashion-MNIST test results exist yet. When the official runs finish, this section is replaced by the table
+generated from the Supabase SQL exports (`experiments/results/fashion-official-1-analysis/summary.md`).
+
+## Grad-CAM evidence
+*Pending.* At least five correct and five incorrect examples from the served checkpoint, with two evidence-based failure
+interpretations, will be added from `docs/FASHION_GRADCAM_FAILURE_ANALYSIS.md`. No interpretation is written before the figures exist.
+
+## Privacy and data handling
+- For every served prediction the API stores, in one transaction, a row in `image_metadata` (SHA-256 hash, width, height, label,
+  class, confidence) and a row in `predictions` (SHA-256 hash, predicted label and class, the **full probability vector**,
+  `served_by_run_id`, timestamp). **Pixels are never stored**, and uploaded files are processed in memory. If the
+  database cannot log the prediction, the API returns an error instead of a result.
+- The public Recent Classifications tab reads the view `recent_predictions` with the **anon key**: class, confidence,
+  probabilities and the producing run, for the latest 200 rows. **Image hashes are not exposed**, and neither are model
+  checkpoints. The older `recent_classifications` view remains as a fallback.
+- `run_artifacts` (model checkpoints), `image_metadata` and `predictions` are not readable by the anon key. All writes use the
+  service-role key, which stays on the API server and is never in the UI. Run metrics are readable with the anon key.
+- The public `GET /predictions` endpoint likewise omits hashes.
+
+## Limitations
+- **Small, standard benchmark:** Fashion-MNIST images are centred, low-resolution and uniform. Accuracy here says little about real clothing photos.
+- **Confusable classes** (for example shirt vs T-shirt/top vs pullover vs coat) are expected to account for most errors; the
+  confusion matrix will show whether they do. *Pending.*
+- **Small model:** about 9,000 parameters, chosen for transparency and cheap training, not for the best possible accuracy.
+- **Few seeds:** the number of training seeds is limited by this machine's compute (see `docs/FASHION_PROTOCOL.md`); intervals from a few seeds are rough.
+- **Grad-CAM is coarse** (7×7 cells) and class-discriminative only; it shows what is associated with a score and can look
+  plausible on a wrong prediction. A confident prediction can still be wrong.
+- **Calibration** is fitted on one validation split and measured on one test set; it may not hold for uploads from outside the benchmark distribution.
+- Results are saved experiment records. The app does not retrain, and the public UI has no training controls.
+
+## Ethical considerations
+Tell non-technical users plainly that this is a demonstration on a benchmark dataset, not a validated vision system. Grad-CAM
+can build trust by showing evidence, but a plausible heatmap is not proof of correctness. Report the spread across seeds, not
+only the best run. See [docs/ETHICS_AND_DISCLOSURE.md](docs/ETHICS_AND_DISCLOSURE.md).
+
+---
+
+# Historical: the earlier four-class synthetic-shape experiment (NOT Fashion-MNIST)
+
+> Everything below describes the **first version of the project**, built on the synthetic four-shape dataset that the
+> starter shipped with (horizontal bar, vertical bar, diagonal line, filled block; 2,000 generated images, noise 1.0, group
+> `official-supabase-1`, 30 runs, 4,388 / 4,436 parameters, trained 30 epochs at batch 32, lr 0.01, with 1-pixel shifts and
+> horizontal+vertical flips). The assignment asks for CIFAR-10 or Fashion-MNIST, so this is **not** the final evidence. It is kept
+> for transparency. Those runs have no training-accuracy history, no calibration and no per-class table. The deployed app at
+> the time served `full_improved-seed0` (run ID 4) from this experiment.
+
+## Historical results (synthetic shapes; mean ± sd over 5 seeds)
+| Variant | Test accuracy | Macro-F1 | Test loss |
+|---|---|---|---|
+| full_improved | 95.05% ± 0.67 | 0.9503 ± 0.0070 | 0.1456 |
+| no_scheduler | 95.05% ± 0.96 | 0.9496 ± 0.0103 | 0.1284 |
+| no_dropout | 94.70% ± 1.34 | 0.9464 ± 0.0139 | 0.1420 |
+| no_augmentation | 93.25% ± 1.09 | 0.9323 ± 0.0109 | 0.1737 |
+| baseline | 76.80% ± 8.93 | 0.7655 ± 0.0882 | 0.5686 |
+| no_batchnorm | 67.45% ± 22.93 | 0.6614 ± 0.2413 | 0.7725 |
+
+Paired difference from `full_improved` (same seed, 95% interval, 5 seeds):
+
+| Removed | Mean Δ accuracy | 95% interval |
+|---|---|---|
+| everything (baseline) | −18.25 pp | [−28.89, −7.61] |
+| augmentation | −1.80 pp | [−3.14, −0.46] |
+| batch norm | −27.60 pp | [−56.01, +0.81], includes 0 |
+| dropout | −0.35 pp | [−2.62, +1.92], includes 0 |
+| LR scheduler | −0.00 pp | [−0.93, +0.93], includes 0 |
+
+What the evidence supports:
+- The improved model beat the baseline on every seed, and was far more stable
+  (baseline accuracy ranged from 68% to 91% across seeds).
+- Removing augmentation lowered accuracy on all five seeds. Removing batch norm
+  lowered it on all five, but by very different amounts, so its interval is wide and
+  includes 0.
+- **Dropout and the learning-rate scheduler show no clear accuracy benefit** in
+  these data: their intervals include 0 and the seeds disagree in sign.
+- The most common errors are `block` confused with the bar classes (for example
+  block → horizontal, 33 of the 99 `full_improved` errors).
+
+## Historical Grad-CAM evidence (synthetic shapes)
+`docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md` and the Compare Models tab (historical section) show 5 correct and 8 incorrect
+test examples from `full_improved-seed0` of the synthetic experiment (run ID 4; 376 of 400 correct, matching the stored 94.00%).
+Two failures have written interpretations: example 924 (horizontal → diagonal, 95% confidence) fits heavy noise obscuring the
+shape, and example 1783 (horizontal → block, 59%) fits a reliance on background patterns. These are interpretations, not proof,
+and say nothing about clothing.
+
+## Historical limitations (synthetic shapes)
+- **Synthetic, narrow data:** four clean geometric shapes. Performance says nothing
+  about natural images or other kinds of noise.
+- **One dataset, one split, five seeds.** Intervals from five seeds are rough; the
+  400-image test set limits precision; conclusions about dropout and scheduling
+  cannot be separated from zero.
+- **Training instability:** the baseline and the no-batch-norm variants can fail on
+  some seeds (as low as 33% accuracy), so their averages hide a wide spread.
+- **Grad-CAM is coarse** (7×7 cells) and class-discriminative only; it shows what is
+  associated with a score and can look plausible on a wrong prediction. A confident
+  prediction can still be wrong.
+- Hyperparameters were tuned only on validation data from separate exploration seeds,
+  but they were tuned: the same budget may favour some variants.
+- Results are saved experiment records. The app does not retrain, and the public UI
+  has no training controls.
+Bash
+IN
+.venv/bin/python - <<'EOF'
+import csv
+rows=[r for r in csv.DictReader(open("experiments/results/fashion-official-1-sql/q10.csv")) if r["run_name"]=="full_improved-seed0"]
+for r in rows: print(f"{r['class_name']:12s} P {float(r['precision']):.3f} R {float(r['recall']):.3f} F1 {float(r['f1']):.3f}")
+q4=[r for r in csv.DictReader(open("experiments/results/fashion-official-1-sql/q4.csv")) if r["run_name"]=="full_improved-seed0"][0]
+print(q4)
+q2=[r for r in csv.DictReader(open("experiments/results/fashion-official-1-sql/q2.csv")) if r["run_name"]=="full_improved-seed0"][0]
+print(q2["best_epoch"],q2["best_val_loss"],q2["val_accuracy_at_best"],q2["train_seconds"])
+EOF
+cat docs/DATASET_CARD.md | grep -n "pending\|Pending\|PENDING\|not yet\|official run" | head
+
+OUT
+T-shirt/top  P 0.815 R 0.832 F1 0.823
+Trouser      P 0.985 R 0.973 F1 0.979
+Pullover     P 0.835 R 0.825 F1 0.830
+Dress        P 0.846 R 0.893 F1 0.869
+Coat         P 0.786 R 0.839 F1 0.812
+Sandal       P 0.974 R 0.936 F1 0.955
+Shirt        P 0.689 R 0.602 F1 0.642
+Sneaker      P 0.915 R 0.958 F1 0.936
+Bag          P 0.976 R 0.974 F1 0.975
+Ankle boot   P 0.949 R 0.950 F1 0.950
+{'run_name': 'full_improved-seed0', 'model_variant': 'improved', 'train_seed': '0', 'test_accuracy': '0.8782', 'test_macro_f1': '0.877070729797938', 'test_loss': '0.339264780282974', 'best_epoch': '17', 'param_count': '9146', 'train_seconds': '154.5'}
+17 0.30504193902015686 0.8883333206176758 154.5
+Bash
+IN
+python3 - <<'EOF'
+p="MODEL_CARD.md"
+s=open(p).read()
+a=s.index("> **Status: DRAFT."); b=s.index("## Summary")
+s=s[:a]+"""> **Status: DRAFT.** Official Fashion-MNIST results (group `fashion-official-1`, 18 runs, ids 53-70) are reported below.
+> They are real saved run records, but the tables were produced by running the project's SQL queries on a **local copy**
+> of those records, not yet by the Supabase SQL editor (see *Results*). The earlier four-class *synthetic-shape* experiment
+> is documented separately under **Historical** at the end; it is not Fashion-MNIST and must not be read as Fashion-MNIST performance.
+
+"""+s[b:]
+s=s.replace("""- **Served model:** chosen in advance in `config/served_model.json` (`full_improved-seed0`, fixed on 2026-10-17 before any
+  official run), matched to the saved experiment records and verified against the API; not picked by test score. Its run ID is
+  filled in after the official runs. *Pending.*""","""- **Served model:** `full_improved-seed0` = **run 54**, chosen in advance in `config/served_model.json` (fixed on 2026-10-17
+  before any official run), not picked by test score. Verified: group `fashion-official-1`, dataset 24, ten ordered class
+  names, mean 0.286 / std 0.353, regenerated test accuracy 87.82% = the stored value. It is **not the best model in the
+  comparison** (see *Results*); it is the pre-registered one.""")
+a=s.index("## Results\n*Pending.*"); b=s.index("## Privacy and data handling")
+res='''## Results
+Protocol frozen before any run: 3 training seeds (0, 1, 2) × 6 variants = 18 runs, 20 epochs, batch 128, Adam, learning rate 0.001,
+54,000 train / 6,000 validation / 10,000 official test images, matched splits (checked: one split hash, identical settings except the
+declared technique). Source of the numbers: SQL queries 1-7, 9 and 10 of `docs/comparison_queries.sql` over the 18 saved run records.
+**Provenance caveat:** the CSVs in `experiments/results/fashion-official-1-sql/` were produced by running those queries unchanged on a
+local Postgres engine loaded with the 18 records read from Supabase; the Supabase SQL-editor export (`docs/fashion_official_1_export.sql`)
+has not been run yet. Treat the numbers as provisional until it has and has been compared.
+
+| Variant | Test accuracy (mean ± sd, 3 seeds) | Macro-F1 | Test loss |
+|---|---|---|---|
+| no_augmentation | 90.30% ± 0.13 | 0.9024 | 0.2720 |
+| baseline | 89.73% ± 0.47 | 0.8973 | 0.2884 |
+| no_dropout | 88.94% ± 0.07 | 0.8888 | 0.3093 |
+| no_scheduler | 88.23% ± 0.40 | 0.8810 | 0.3274 |
+| **full_improved** | **88.10% ± 0.29** | 0.8801 | 0.3327 |
+| no_batchnorm | 87.12% ± 0.30 | 0.8701 | 0.3591 |
+
+**The improved configuration did not beat the baseline.** Paired by seed against `full_improved` (95% interval of the mean difference,
+3 seeds, so wide):
+
+| Removed from full_improved | Mean Δ accuracy | 95% interval | Reading |
+|---|---|---|---|
+| everything (the baseline) | +1.62 pp | [+0.26, +2.99] | baseline was higher on all 3 seeds |
+| augmentation | +2.20 pp | [+1.30, +3.10] | removing it **helped** on all 3 seeds |
+| dropout | +0.83 pp | [+0.12, +1.55] | removing it helped on all 3 seeds |
+| batch norm | −0.98 pp | [−1.20, −0.76] | removing it hurt on all 3 seeds: **the only technique that helped** |
+| LR scheduler | +0.12 pp | [−0.48, +0.72] | no clear difference |
+
+- **Why (evidence, not proof):** at 20 epochs the regularized variants are not over-fitting: for `full_improved` training accuracy
+  (88.95%) equals validation accuracy (88.97%), while the baseline fits more (92.39% vs 90.69%). With about 9,000 parameters the model
+  appears capacity-limited, so augmentation and dropout cost more than they save. This is consistent with the validation-only pilot, and
+  the protocol was deliberately not changed afterwards. More epochs, a larger model or milder regularization might change the ranking;
+  that was not tested.
+- **Served model (run 54):** test accuracy 87.82%, macro-F1 0.8771, test loss 0.3393. It is the lowest of the three `full_improved` seeds
+  (88.10% mean). Per-class F1: Shirt 0.64 (weakest), T-shirt/top 0.82, Coat 0.81, Pullover 0.83, Dress 0.87, Sneaker 0.94, Ankle boot 0.95,
+  Sandal 0.96, Bag 0.98, Trouser 0.98. Per-class tables for every variant: `fashion-official-1-analysis/per_class_metrics.csv`.
+- **Most common errors (all variants):** Shirt ↔ T-shirt/top, Shirt → Coat / Pullover, Pullover ↔ Coat, and footwear swaps (Ankle boot →
+  Sneaker, Sandal → Sneaker).
+- **Calibration (measured, held-out test set, mean over 3 seeds):** the temperature fitted on validation data lowered test ECE for five of
+  six variants (for `full_improved` 0.0173 → 0.0069); for `no_dropout` it did not (0.0073 → 0.0082). Test NLL barely changed (0.3327 → 0.3325
+  for `full_improved`). For run 54: T = 0.871 (below 1, i.e. the raw softmax was slightly *under*-confident), ECE 0.0168 → 0.0091, NLL
+  0.3393 → 0.3400. All variants were already within about 2 percentage points ECE before scaling, so the gain is small. Individual
+  confident mistakes still occur (next section).
+
+## Grad-CAM evidence
+Generated from the saved run-54 checkpoint (`experiments/results/fashion-official-1-gradcam/`): regenerated test accuracy 87.82%, identical
+to the stored value. Fixed selection rule: one correct example per class (10) and the ten most confident errors (one per distinct true →
+predicted pair first), so the error set is **not a typical sample of errors**. Two draft interpretations (to be checked by a person) are in
+`docs/FASHION_GRADCAM_FAILURE_ANALYSIS.md`: footwear confusions at over 99% confidence look like ambiguous 28×28 images rather than the model
+looking at the wrong place; and **Grad-CAM is empty for 97.8% of Dress and 87.6% of Coat predictions** (and for at most 1.2% of any other
+class), so for those classes the heat map cannot explain the decision. This is a property of the method and this checkpoint, found by
+looking at the results; the method was not changed.
+
+'''
+s=s[:a]+res+s[b:]
+s=s.replace("""- **Confusable classes** (for example shirt vs T-shirt/top vs pullover vs coat) are expected to account for most errors; the
+  confusion matrix will show whether they do. *Pending.*""","""- **Confusable classes:** Shirt is the weakest class (F1 0.64 for the served model) and is mostly confused with T-shirt/top, Coat and
+  Pullover; these four upper-body classes account for most errors in every variant.""")
+s=s.replace("- **Few seeds:** the number of training seeds is limited by this machine's compute (see `docs/FASHION_PROTOCOL.md`); intervals from a few seeds are rough.","- **Three seeds:** limited by this machine's compute (see `docs/FASHION_PROTOCOL.md`); the paired 95% intervals use t = 4.30 and are rough. All runs came from one machine.\n- **Grad-CAM is blank for most Dress and Coat predictions** of the served model (see above), so a missing overlay in the app is expected for those classes.\n- **The served model is not the most accurate configuration** (the no-augmentation and baseline variants scored higher); it was fixed in advance, as the protocol requires.")
+open(p,"w").write(s)
+EOF
+grep -n "Pending\|pending" MODEL_CARD.md | head
+
+OUT
+37:  the app and this card claim calibration only to the extent the stored test measures show it. *Result: pending.*
+3:30 PM
+Model card results are in. Next: dataset card, then the report drafts.
+
+
+
+Bash
+IN
+sed -i '' 's/ \*Result: pending\.\*/ *Result: see Results below (ECE fell for five of six variants; NLL barely moved).*/' MODEL_CARD.md && grep -n -i "pending\|not yet\|official\|draft\|status" docs/DATASET_CARD.md | head -20
+
+OUT
+3:> **Status: DRAFT.** Describes the dataset and how this project uses it. Class counts and hashes below were measured from the
+4:> downloaded official files on 2026-10-17. No model results are reported here.
+36:Official partitions (measured): **60,000 training images (6,000 per class)** and **10,000 test images (1,000 per class)**.
+42:| Train | 54,000 | official training images minus validation | fitting weights |
+43:| Validation | 6,000 (600 per class) | official training images, **class-stratified**, seeded | choosing the epoch (lowest validation loss), fitting the calibration temperature, pilot/protocol decisions |
+44:| Test | 10,000 | the **official test partition**, unchanged | scored once per run; never used to train, select, calibrate or choose the served model |
+49:- **Subsets:** the plan uses the **full** dataset. A subset (`train_limit`) is supported only for pilots/sizing and, if ever used for an official
+51:- Split seed for the official protocol: see `config/fashion_protocol.json`.
+55:2. Standardized with the mean and standard deviation of the 60,000 official **training** pixels (labels and test data not involved):
+64:`tools/export_samples.py` exports the first two official-**test** images of each class (in file order, 20 PNGs, `ui/assets/samples/`) with a manifest
+Bash
+IN
+sed -n 44,60p docs/DATASET_CARD.md; sed -n 60,90p docs/DATASET_CARD.md | head -40; .venv/bin/python - <<'EOF'
+import json
+d=json.load(open("experiments/results/fashion-official-1-records/runs.json"))
+r=d["runs"][0]; print(r["split_sha256"]); print(json.dumps(d["datasets"][0]["identity"])[:900])
+EOF
+
+OUT
+| Test | 10,000 | the **official test partition**, unchanged | scored once per run; never used to train, select, calibrate or choose the served model |
+
+- The validation split depends only on `(training labels, number of validation images, split_seed)` (`shared.fashion.split_train_val`)
+  and is identical for every variant and training seed that shares a `split_seed`. The index sets are identified by SHA-256 hashes
+  stored in each run's dataset identity (`train_index_sha256`, `val_index_sha256`) and by `runs.split_sha256`.
+- **Subsets:** the plan uses the **full** dataset. A subset (`train_limit`) is supported only for pilots/sizing and, if ever used for an official
+  run, must be justified in `docs/FASHION_PROTOCOL.md`; it is recorded in the run's config and verified by the experiment runner.
+- Split seed for the official protocol: see `config/fashion_protocol.json`.
+
+## Preprocessing and normalization
+1. Pixels are scaled to [0, 1] (÷255).
+2. Standardized with the mean and standard deviation of the 60,000 official **training** pixels (labels and test data not involved):
+   **mean 0.2860, std 0.3530** (measured 0.2860 / 0.3530; `tests/test_fashion_data.py` re-checks them when the files are present).
+3. Augmentation (training batches only, applied in [0, 1] space before normalization): random shift up to ±2 px with black padding, and a
+   random horizontal flip. **No vertical flips**, rotations or crops. Validation and test images are never augmented.
+4. Serving (uploads): convert to grayscale, resize to 28×28 (PIL bicubic), ÷255, same mean/std. Uploads are **not** inverted,
+   background-removed or otherwise adjusted, so photos far from the Fashion-MNIST look (dark item on white) are out of distribution.
+   background-removed or otherwise adjusted, so photos far from the Fashion-MNIST look (dark item on white) are out of distribution.
+   The preprocessing is stored in the checkpoint and the same function chain is used in training, evaluation and serving.
+
+## Held-out examples in the app
+`tools/export_samples.py` exports the first two official-**test** images of each class (in file order, 20 PNGs, `ui/assets/samples/`) with a manifest
+of test indices and hashes. The rule does not look at any model output. The Try It tab sends them through the normal upload path.
+
+## Known limitations of the data
+- Low resolution, centred, no background or lighting variation, one item per image; the benchmark is well known to be easy relative to real photographs.
+- Some categories are visually close (T-shirt/top, Shirt, Pullover, Coat) and a few labels are arguably ambiguous; this affects the ceiling of any model.
+- Western-market product images; no people. The dataset contains no personal data.
+
+## What is stored where
+Supabase `datasets` holds only the dataset's identity (name, `source = fashion_mnist`, class names, file hashes); never pixels. Uploaded images are never stored.
+786ed8107e43ef83d70d4905a8813c26927b352362675804427894557914b7b9
+{"file_sha256": {"t10k-images-idx3-ubyte.gz": "346e55b948d973a97e58d2351dde16a484bd415d4595297633bb08f03db6a073", "t10k-labels-idx1-ubyte.gz": "67da17c76eaffca5446c3361aaab5c3cd6d1c2608764d35dfb1850b086bf8dd5", "train-images-idx3-ubyte.gz": "3aede38d61863908ad78613f6a32ed271626dd12800ba2636569512369268a84", "train-labels-idx1-ubyte.gz": "a04f17134ac03560a47e3764e11b92fc97de4d1bfaf8ba1a3aa29af54cc90845"}, "name": "fashion-mnist", "normalization": {"mean": 0.286, "scale": "x/255", "std": 0.353}, "official_test_images": 10000, "official_train_images": 60000, "source": "fashion_mnist", "url": "https://github.com/zalandoresearch/fashion-mnist/raw/master/data/fashion/"}
+Bash
+IN
+for f in t10k-images-idx3-ubyte t10k-labels-idx1-ubyte train-images-idx3-ubyte train-labels-idx1-ubyte; do h=$(shasum -a 256 data/fashion-mnist/$f.gz | cut -d' ' -f1); grep -c $h docs/DATASET_CARD.md | tr '\n' ' '; done; echo; python3 - <<'EOF'
+p="docs/DATASET_CARD.md"
+s=open(p).read()
+s=s.replace("""> **Status: DRAFT.** Describes the dataset and how this project uses it. Class counts and hashes below were measured from the
+> downloaded official files on 2026-10-17. No model results are reported here.""","""> **Status: DRAFT.** Describes the dataset and how this project uses it. Class counts and hashes below were measured from the
+> downloaded official files on 2026-10-17. The 18 official runs (group `fashion-official-1`, Supabase dataset id 24) recorded this
+> same dataset identity (file SHA-256 hashes match the files measured here). Model results are in [MODEL_CARD.md](../MODEL_CARD.md), not here.""")
+s=s.replace("- Split seed for the official protocol: see `config/fashion_protocol.json`.","""- **Official protocol:** split seed 0, validation fraction 0.1, full data (`train_limit` null); all 18 runs share split hash
+  `786ed8107e43ef83d70d4905a8813c26927b352362675804427894557914b7b9` (checked from the saved records), so every variant and seed
+  trained and was validated on the same images. Frozen in `config/fashion_protocol.json`.""")
+dup="   background-removed or otherwise adjusted, so photos far from the Fashion-MNIST look (dark item on white) are out of distribution.\n"
+s=s.replace(dup+dup,dup)
+open(p,"w").write(s)
+EOF
+grep -c "otherwise adjusted" docs/DATASET_CARD.md
+
+OUT
+1 1 1 1
+1
+Bash
+IN
+cp docs/PART2_RESULTS.md docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md && grep -rn "PART2_RESULTS" --exclude-dir=.venv --exclude-dir=.git --exclude-dir=node_modules . | grep -v "^./PART2_RESULTS.md\|^./docs/PART2_RESULTS" | cut -c1-180; sed -n 1,6p docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md
+
+OUT
+README.md:35:**Historical (not Fashion-MNIST):** the first version of the project was built on four generated shapes (group `official-supabase-1`, 2,000 images, 30 runs). That expe
+docs/PART1_HANDOFF.md:231:Results: [PART2_RESULTS.md](PART2_RESULTS.md).
+ai-usage/Komal-Session2.md:18:  - `docs/PART2_PROTOCOL.md`, `docs/PART2_RESULTS.md` — **new**
+docs/SUBMISSION_CHECKLIST.md:14:| 1 | Baseline vs improved CNN, matched seeds and budgets | ⏳ | Plan + runner + matching checks ready ([FASHION_PROTOCOL.md](FASHION_PROTOCOL.md), `
+ai-usage/Emma-Session3.md:52:PART2_RESULTS.md
+ai-usage/Emma-Session3.md:70:docs/PART2_RESULTS.md
+ai-usage/Emma-Session3.md:795:PART2_RESULTS.md
+ai-usage/Emma-Session3.md:5189:PART2_RESULTS.md
+ai-usage/Emma-Session3.md:5587:sed -n 1,80p tests/test_training.py; grep -n -E '^def test' tests/test_gradcam_loading.py; grep -rn -E '^(import|from) ' ui/*.py | grep -v -E 'stream
+ai-usage/Emma-Session3.md:6596:wc -c ai-usage/*.md; diff -q PART2_RESULTS.md docs/PART2_RESULTS.md && echo identical; git diff --stat | tail -1
+ai-usage/Emma-Session3.md:6700:PART2_RESULTS.md
+ai-usage/Emma-Session3.md:6723:docs/PART2_RESULTS.md
+ai-usage/Emma-Session3.md:6801:PART2_RESULTS.md
+ai-usage/Emma-Session3.md:7096:-rw-r--r--@  1 emmarogoveanu  staff  12731 Oct 17 12:18 PART2_RESULTS.md
+ai-usage/Emma-Session3.md:7109:PART2_RESULTS.md
+ai-usage/Emma-Session3.md:7115:PART2_RESULTS.md
+ai-usage/Emma-Session3.md:7360:sed -n 15,70p ai-usage/Emma-Session3.md; grep -n -i -E "ethic|deployment context|worldview|christian|video|contribution|presentation|reflection" ai-u
+ai-usage/Emma-Session3.md:7399:PART2_RESULTS.md
+ai-usage/Emma-Session3.md:7417:docs/PART2_RESULTS.md
+ai-usage/Emma-Session3.md:7419:docs/PART2_RESULTS.md:42:## 2. Each technique's contribution (SQL query 6)
+ai-usage/Emma-Session3.md:7420:docs/PART2_RESULTS.md:65:  techniques help**; any real contribution is smaller than the seed-to-seed
+ai-usage/Emma-Session3.md:7421:docs/PART2_RESULTS.md:86:  contribution *given the other three are on*, not its effect on its own.
+ai-usage/Emma-Session3.md:7433:PART2_RESULTS.md:42:## 2. Each technique's contribution (SQL query 6)
+ai-usage/Emma-Session3.md:7434:PART2_RESULTS.md:65:  techniques help**; any real contribution is smaller than the seed-to-seed
+ai-usage/Emma-Session3.md:7435:PART2_RESULTS.md:86:  contribution *given the other three are on*, not its effect on its own.
+ai-usage/Emma-Session3.md:7441:grep -rn "left to right" --include=*.py --include=*.md . --exclude-dir=.venv --exclude-dir=ai-usage; sed -n 345,356p ui/app.py; grep -n "2 pixel\|2 p
+ai-usage/Emma-Session3.md:7448:grep -rn "left to right" . --include='*.py' --include='*.md' --exclude-dir=.venv --exclude-dir=ai-usage; sed -n 345,356p ui/app.py; grep -n -i "2 pix
+ai-usage/Emma-Session3.md:7680:grep -o -i '.\{0,20\}shift.\{0,12\}' experiments/results/official-supabase-1-runs.jsonl | sort | uniq -c | head -5; grep -n -i "shift\|1 px" experime
+ai-usage/Emma-Session3.md:7683:docs/PART2_RESULTS.md:190:  shift (1 px) were tuned on 2 exploration seeds only.
+ai-usage/Emma-Session3.md:8214:| 2 | ≥3 improvement techniques with controlled ablations | ✅ | [PART2_RESULTS.md](PART2_RESULTS.md), [summary.md](../experiments/results/official-su
+# Part 2 results: baseline vs improved CNN and ablations
+
+> **DRAFT — HISTORICAL (synthetic shapes), not the final evidence.** This report describes the first experiment on the four-class synthetic-shape
+> dataset (`official-1` / `official-supabase-1`). The assignment's dataset is Fashion-MNIST; the final report will be written only after the
+> official Fashion-MNIST runs exist. It stays a draft until then, and its numbers must not be read as Fashion-MNIST results.
+Bash
+IN
+python3 - <<'EOF'
+p="docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md"
+s=open(p).read()
+i=s.index("> **DRAFT — HISTORICAL"); j=s.index("Experiment group `official-1`")
+s=s[:i]+"""> **HISTORICAL (synthetic shapes) — not the final evidence and not Fashion-MNIST.** This is the report of the first experiment, on the
+> four-class synthetic-shape dataset (`official-1` / `official-supabase-1`), preserved unchanged below this note. The final report for
+> the Fashion-MNIST experiment is [PART2_RESULTS.md](PART2_RESULTS.md). Its numbers must never be read as Fashion-MNIST results.
+
+"""+s[j:]
+open(p,"w").write(s)
+EOF
+cat > PART2_RESULTS.md <<'EOF'
+# Part 2 results: baseline vs improved CNN on Fashion-MNIST
+
+> **DRAFT.** Numbers are the official saved run records (group `fashion-official-1`, runs 53–70). The tables come from the project's SQL
+> queries run on a local copy of those records; the Supabase SQL-editor export is still to be run and compared (see Deviations).
+> The earlier synthetic-shape experiment is kept separately in [docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md](docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md).
+
+## Question and design
+Does a small CNN improved with batch normalization, dropout, data augmentation and a cosine learning-rate schedule beat a plain CNN on
+Fashion-MNIST, and which technique contributes what? The data are the full official set: 54,000 training, 6,000 validation (a seeded,
+class-stratified 10% of the official training images) and the 10,000 official test images, ten classes. Six configurations were trained: the
+baseline, the full improved model, and four variants each removing one technique. For every training seed (0, 1, 2) all six used the same
+split, 20 epochs, batch size 128, Adam and learning rate 0.001. The protocol, seeds and a plan fingerprint were frozen before any
+official run; the checkpoint of each run is the lowest-validation-loss epoch, and the test set was scored once per run. A matched-protocol
+check on the saved records passed for all 18 runs.
+
+## Results (test set, mean ± sd over 3 seeds)
+| Variant | Accuracy | Macro-F1 |
+|---|---|---|
+| no_augmentation | 90.30% ± 0.13 | 0.902 |
+| baseline | 89.73% ± 0.47 | 0.897 |
+| no_dropout | 88.94% ± 0.07 | 0.889 |
+| no_scheduler | 88.23% ± 0.40 | 0.881 |
+| full_improved | 88.10% ± 0.29 | 0.880 |
+| no_batchnorm | 87.12% ± 0.30 | 0.870 |
+
+**The improved model did not beat the baseline.** Compared with `full_improved` on the same seed, the baseline scored 1.62 points higher
+(95% interval +0.26 to +2.99), removing augmentation 2.20 higher (+1.30 to +3.10) and removing dropout 0.83 higher (+0.12 to +1.55), each
+on all three seeds. Removing batch normalization lowered accuracy by 0.98 points (−1.20 to −0.76), so it was the only technique that
+helped. Removing the scheduler made no clear difference (+0.12, interval includes 0). Three seeds give wide intervals, and ablations measure
+a technique's contribution given the others.
+
+A likely reason, consistent with the curves: `full_improved` ends with training accuracy 88.95% and validation accuracy 88.97%, so it is not
+over-fitting, whereas the baseline reaches 92.39% training and 90.69% validation. A network of about 9,000 parameters appears
+capacity-limited, so augmentation and dropout cost more than they save at 20 epochs. This was not tested with a larger model or longer
+training, and the frozen protocol was not changed after the results.
+
+## Errors, per-class results and calibration
+Shirt is the hardest class in every variant (served model: precision 69%, recall 60%) and is confused mainly with T-shirt/top, Coat and
+Pullover; Trouser, Bag, Sandal and Ankle boot are above 94%. Temperature scaling, fitted on validation logits only, lowered test expected
+calibration error in five of six variants (`full_improved` 0.0173 → 0.0069) and left negative log-likelihood almost unchanged. Raw softmax was
+already within 2 points of calibrated, so the gain is small, and confident mistakes still occur.
+
+## Grad-CAM from the served model
+The served model is `full_improved-seed0` (run 54), chosen before any result and therefore not the most accurate model (87.82%). Regenerating
+its test predictions from the saved checkpoint reproduced the stored accuracy exactly. We examined 10 correct examples (one per class) and the
+10 most confident errors, and drafted two cautious interpretations for review. Confident footwear swaps (sneaker ↔ ankle boot ↔ sandal) look
+like ambiguous low-resolution images more than misplaced attention. The second is a limitation: Grad-CAM for the predicted class is empty for
+97.8% of Dress and 87.6% of Coat predictions, so for those classes it cannot explain the decision. This is a property of the method and this
+checkpoint, not evidence of reasoning, and the maps are coarse (7×7).
+
+## System
+A Streamlit interface (Concepts, Try It, Compare Models, Recent Classifications, Model Card) calls a FastAPI service that stores runs,
+checkpoints and predictions in Supabase. Each prediction writes its image hash, label, probability vector and producing run in one
+transaction, with no image pixels stored; if logging fails the API returns an error rather than a result. Public history reads a view
+without hashes. Try It shows the top five probabilities and Grad-CAM, and loads the served checkpoint only after checking its group, dataset,
+labels and preprocessing. Automated tests passed (mocks and a local Postgres engine); live Supabase checks passed on a small test run.
+
+## Deviations and unresolved items
+- The SQL provenance is a **local replica**, not a Supabase SQL export; this report is provisional until `docs/fashion_official_1_export.sql`
+  has been run once and its output matches.
+- Three seeds, not five, because of compute; intervals are rough. All runs came from one machine.
+- The dataset was corrected from the starter's synthetic shapes to Fashion-MNIST late; the earlier results are preserved and labelled.
+- No instructor approval exists for any of this; a question is drafted but unsent.
+- Contribution statements, videos and the worldview reflection are the authors' own and are not written here.
+
+*Contributions are recorded in [docs/CONTRIBUTIONS.md](docs/CONTRIBUTIONS.md); the Fashion-MNIST correction was an AI-assisted session on Emma's machine and is not attributed to Komal.*
+EOF
+wc -w PART2_RESULTS.md
+
+OUT
+     878 PART2_RESULTS.md
+Bash
+IN
+sed -i '' 's/Sandal and Ankle boot are above 94%/Sandal and Ankle boot are above 93%/' PART2_RESULTS.md && sed -e 's#(docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md)#(PART2_RESULTS_HISTORICAL_SYNTHETIC.md)#' -e 's#(docs/CONTRIBUTIONS.md)#(CONTRIBUTIONS.md)#' PART2_RESULTS.md > docs/PART2_RESULTS.md && wc -w PART2_RESULTS.md docs/PART2_RESULTS.md && sed -n 225,235p docs/PART1_HANDOFF.md
+
+OUT
+     878 PART2_RESULTS.md
+     878 docs/PART2_RESULTS.md
+    1756 total
+| Dropout, augmentation shift, scheduler | 0.3, 1 px, cosine |
+| Evidence used to choose these (validation / training only) | see [PART2_PROTOCOL.md](PART2_PROTOCOL.md) and `experiments/results/explore_*.jsonl` |
+| Experiment group | `official-1` |
+| Protocol fingerprint | `cf05f9546cbbb0d4eb1cadfe0f7854bee883ffd9899ba5b1388aab3d6d9a578d` (dataset ID 2; changes only if the Supabase dataset ID differs) |
+| Frozen on (date) | 2026-10-15 |
+
+Results: [PART2_RESULTS.md](PART2_RESULTS.md).
+3:30 PM
+Status: the reports are written (878 words each). I'm now adding tests for the new export tooling, then I'll update the checklist and README.
+
+
+
+Bash
+IN
+sed -i '' 's#^Results: \[PART2_RESULTS.md\](PART2_RESULTS.md)\.#Results of the earlier synthetic-shape experiment (historical): [PART2_RESULTS_HISTORICAL_SYNTHETIC.md](PART2_RESULTS_HISTORICAL_SYNTHETIC.md). The final Fashion-MNIST report is [PART2_RESULTS.md](PART2_RESULTS.md).#' docs/PART1_HANDOFF.md && du -sh experiments/results/fashion-official-1-records experiments/results/fashion-official-1-sql && cat > tests/test_evidence_pipeline.py <<'EOF'
+"""The export / packaging / ingestion tools around the official Fashion-MNIST records (no network, no Supabase)."""
+from __future__ import annotations
+
+import copy
+import csv
+import json
+import re
+from pathlib import Path
+
+import pytest
+
+from experiments import export_records, ingest_sql_export, package_sql
+from ui import evidence
+
+ROOT = Path(__file__).resolve().parent.parent
+PROTO = json.loads((ROOT / "config" / "fashion_protocol.json").read_text())
+RECORDS = ROOT / "experiments" / "results" / "fashion-official-1-records" / "runs.json"
+
+
+@pytest.mark.skipif(not RECORDS.is_file(), reason="official records not exported")
+class TestVerifyOfficialRecords:
+    data = json.loads(RECORDS.read_text()) if RECORDS.is_file() else {}
+
+    def test_the_saved_official_records_pass_every_matched_protocol_check(self):
+        assert export_records.verify(self.data["runs"], self.data["datasets"], PROTO) == []
+        assert sorted(r["id"] for r in self.data["runs"]) == list(range(53, 71))
+
+    @pytest.mark.parametrize("field,value", [("epochs", 19), ("batch_size", 64), ("split_sha256", "x"), ("dropout", 0.5)])
+    def test_a_mismatched_run_is_reported(self, field, value):
+        runs = copy.deepcopy(self.data["runs"])
+        next(r for r in runs if r["run_name"] == "no_scheduler-seed1")[field] = value
+        assert export_records.verify(runs, self.data["datasets"], PROTO)
+
+    def test_a_missing_run_is_reported(self):
+        runs = [r for r in self.data["runs"] if r["run_name"] != "baseline-seed2"]
+        assert any("missing" in p for p in export_records.verify(runs, self.data["datasets"], PROTO))
+
+    def test_the_served_run_is_one_of_the_verified_records(self):
+        served = json.loads((ROOT / "config" / "served_model.json").read_text())
+        run = next(r for r in self.data["runs"] if r["id"] == served["served_run_id"])
+        assert (run["run_name"], run["experiment_group"]) == (served["run_name"], served["experiment_group"])
+        assert run["dataset_id"] == PROTO["frozen_dataset_id"]
+        assert run["config"]["class_names"] == list(evidence.FASHION_CLASSES)
+        assert run["config"]["preprocessing"]["mean"] == 0.286 and run["config"]["preprocessing"]["std"] == 0.353
+
+
+class TestPackagedSql:
+    sql = package_sql.package("fashion-official-1")
+
+    def test_it_is_read_only_and_covers_every_query(self):
+        body = re.sub(r"--[^\n]*", "", self.sql).lower()
+        assert not re.search(r"\b(insert|update|delete|drop|alter|create|truncate|grant)\b", body)
+        assert "replace-with-group" not in body
+        for n in (1, 2, 3, 4, 5, 6, 7, 9, 10):
+            assert f"'q{n}' as query_id" in body.replace("'Q", "'q")
+        assert "'meta'" in body and body.count("union all") >= 9
+
+    def test_the_committed_file_matches_the_generator(self):
+        assert (ROOT / "docs" / "fashion_official_1_export.sql").read_text() == self.sql
+
+    def test_the_header_hash_matches_the_queries_file(self):
+        import hashlib
+        digest = hashlib.sha256(package_sql.SRC.read_bytes()).hexdigest()
+        assert digest in self.sql
+
+
+class TestIngest:
+    def _export(self, tmp_path, as_csv):
+        rows = [{"query_id": "q4", "rows": [{"run_name": "baseline-seed0", "flag": True, "x": None, "n": 1.5}]},
+                {"query_id": "meta", "rows": [{"executed_at": "2026-10-17T00:00:00Z", "server_version": "PostgreSQL 15",
+                                               "database": "postgres", "experiment_group": "g",
+                                               "queries_file": "docs/comparison_queries.sql", "queries_file_sha256": "ab"}]}]
+        p = tmp_path / ("e.csv" if as_csv else "e.json")
+        if as_csv:
+            with open(p, "w", newline="") as f:
+                w = csv.writer(f)
+                w.writerow(["query_id", "rows"])
+                w.writerows([r["query_id"], json.dumps(r["rows"])] for r in rows)
+        else:
+            p.write_text(json.dumps(rows))
+        return p
+
+    @pytest.mark.parametrize("as_csv", [True, False])
+    def test_csv_and_json_exports_give_the_same_files_and_provenance(self, tmp_path, as_csv):
+        out = tmp_path / "o"
+        ingest_sql_export.main(str(self._export(tmp_path, as_csv)), str(out), "supabase-sql-editor")
+        assert list(csv.DictReader(open(out / "q4.csv"))) == [{"run_name": "baseline-seed0", "flag": "true", "x": "", "n": "1.5"}]
+        prov = (out / "PROVENANCE.md").read_text()
+        assert "supabase-sql-editor" in prov and "PostgreSQL 15" in prov and "queries_file".replace("_", " ") not in "x"
+
+    def test_an_export_without_the_database_meta_row_is_refused(self, tmp_path):
+        p = tmp_path / "e.json"
+        p.write_text(json.dumps([{"query_id": "q4", "rows": []}]))
+        with pytest.raises(SystemExit):
+            ingest_sql_export.main(str(p), str(tmp_path / "o"))
+
+
+class TestProvenanceLabel:
+    def test_only_a_supabase_source_counts_as_supabase_sql(self, tmp_path):
+        for text, expect in [("- source: **supabase-sql-editor**", True), ("- source: **LOCAL REPLICA, NOT Supabase SQL.**", False)]:
+            (tmp_path / "PROVENANCE.md").write_text(text)
+            assert evidence.load_provenance(tmp_path)["is_supabase_sql"] is expect
+        assert evidence.load_provenance(tmp_path / "nope")["is_supabase_sql"] is False
+EOF
+env SUPABASE_URL= SUPABASE_SERVICE_KEY= .venv/bin/python -m pytest tests/test_evidence_pipeline.py -q -p no:cacheprovider 2>&1 | tail -8
+
+OUT
+168K	experiments/results/fashion-official-1-records
+156K	experiments/results/fashion-official-1-sql
+..............                                                           [100%]
+14 passed in 0.06s
+Bash
+IN
+sed -i '' 's/ and "queries_file".replace("_", " ") not in "x"//' tests/test_evidence_pipeline.py && pkill -f "uvicorn api.main:app --port 8765"; pkill -f "streamlit run.*8766"; env SUPABASE_URL= SUPABASE_SERVICE_KEY= .venv/bin/python -m pytest -q -p no:cacheprovider -rs 2>&1 | tail -25
+
+OUT
+      alt.themes.register('theme_name', custom_theme)
+      alt.themes.enable('theme_name')
+
+      # Updated
+      @alt.theme.register('theme_name', enable=True)
+      def custom_theme():
+          return alt.theme.ThemeConfig(
+              {'height': 400, 'width': 700}
+          )
+
+  See the updated User Guide for further details:
+      https://altair-viz.github.io/user_guide/api.html#theme
+      https://altair-viz.github.io/user_guide/customization.html#chart-themes
+    with alt.themes.enable("none") if alt.themes.active == "default" else nullcontext():  # type: ignore[attr-defined,unused-ignore]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_live_supabase.py:60: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+SKIPPED [1] tests/test_live_supabase.py:68: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+SKIPPED [1] tests/test_live_supabase.py:88: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+SKIPPED [1] tests/test_live_supabase.py:108: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+SKIPPED [1] tests/test_live_supabase.py:121: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+SKIPPED [1] tests/test_live_supabase.py:140: Live tests write to the real Supabase project; set SEE_SENSE_RUN_LIVE_TESTS=1 (and SUPABASE_URL / SUPABASE_SERVICE_KEY) to run them.
+SKIPPED [1] tests/test_ui_concepts_and_card.py:89: Fashion-MNIST evidence exists; the card should then quote it (checked by hand)
+2 failed, 289 passed, 7 skipped, 4 warnings in 97.83s (0:01:37)
+Bash
+IN
+env SUPABASE_URL= SUPABASE_SERVICE_KEY= .venv/bin/python -m pytest -q -p no:cacheprovider 2>&1 | grep -E "^FAILED|^E  " | head -20; sed -n 75,100p tests/test_ui_concepts_and_card.py
+
+OUT
+E       AssertionError: assert 'Final Fashion-MNIST results are not available yet' in 'A convolutional layer slides a small learnable grid of weights, the **kernel** $K$ (here 3×3), over the image $X$. At...s were generated from them. This tab displays files saved in the repository; it does not re-query Supabase or retrain.'
+E       AssertionError: assert 'PENDING' in '# Grad-CAM failure analysis: Fashion-MNIST (DRAFT for human review)\n\n**Status: DRAFT written by Claude (an AI assis...erpretations in `SUPABASE_GRADCAM_FAILURE_ANALYSIS.md` describe the earlier synthetic shapes and must not be reused.\n'
+FAILED tests/test_ui_app_smoke.py::test_app_renders_five_tabs_without_exception_and_labels_the_missing_evidence
+FAILED tests/test_ui_evidence.py::test_fashion_failure_analysis_is_pending_not_invented
+def test_model_card_missing_or_empty_is_a_friendly_error(tmp_path):
+    with pytest.raises(ev.EvidenceError, match="Missing file"):
+        ev.load_model_card(tmp_path / "nope.md")
+    (tmp_path / "empty.md").write_text("  \n")
+    with pytest.raises(ev.EvidenceError, match="empty"):
+        ev.load_model_card(tmp_path / "empty.md")
+
+
+def test_model_card_does_not_state_fashion_results_that_do_not_exist():
+    """Until the official Fashion-MNIST runs are complete, the card must not quote Fashion-MNIST accuracy."""
+    import re
+
+    text = ev.load_model_card()
+    if ev.FASHION.available():
+        pytest.skip("Fashion-MNIST evidence exists; the card should then quote it (checked by hand)")
+    fashion_section = text.split("# Historical:", 1)[0]
+    assert "pending" in fashion_section.lower()
+    assert not re.search(r"\d{2}\.\d{1,2}\s*%", fashion_section), "a percentage appears before the historical section"
+
+
+def test_historical_numbers_in_the_card_match_the_saved_synthetic_results():
+    text = ev.load_model_card()
+    for r in ev.load_variant_summary():
+        assert f"{r['mean_test_accuracy'] * 100:.2f}%" in text, r["variant"]
+3:34 PM
+Two tests encoded the earlier "pending" state. I'll replace them with tests that check the new content against the saved results, which is stricter.
+
+
+
+Bash
+IN
+grep -n "def test_fashion_failure_analysis_is_pending_not_invented" -B2 -A18 tests/test_ui_evidence.py; grep -n "def test_app_renders_five_tabs_without_exception_and_labels_the_missing_evidence" -B3 -A25 tests/test_ui_app_smoke.py
+
+OUT
+172-
+173-
+174:def test_fashion_failure_analysis_is_pending_not_invented():
+175-    doc = ev.FASHION.failure_doc
+176-    assert doc.is_file()
+177-    text = doc.read_text()
+178-    assert "PENDING" in text
+179-    if "PENDING" in text:
+180-        with pytest.raises(ev.EvidenceError, match="No example interpretations"):
+181-            ev.load_failure_interpretations(doc)
+64-    return at.run()
+65-
+66-
+67:def test_app_renders_five_tabs_without_exception_and_labels_the_missing_evidence(monkeypatch):
+68-    at = _run(monkeypatch, {"recent_predictions": [PRED_ROW], "runs": [RUN_ROW]})
+69-    assert not at.exception, [e.value for e in at.exception]
+70-    assert [t.label for t in at.tabs] == ["Concepts", "Try It", "Compare Models", "Recent Classifications", "Model Card"]
+71-    text = " ".join(m.value for m in at.markdown) + " ".join(w.value for w in at.warning) + " ".join(i.value for i in at.info)
+72-    assert "Fashion-MNIST" in at.title[0].value
+73-    assert "ten Fashion-MNIST clothing categories" in text
+74-    assert "Final Fashion-MNIST results are not available yet" in text
+75-    assert not any("not Fashion-MNIST" in m.value for m in at.warning)  # hidden until the toggle is switched on
+76-    toggle = next(x for x in at.toggle if "historical" in x.label.lower() or "earlier experiment" in x.label.lower())
+77-    assert "NOT Fashion-MNIST" in toggle.label and toggle.value is False
+78-    at = toggle.set_value(True).run()
+79-    assert not at.exception, [e.value for e in at.exception]
+80-    assert any("This is not Fashion-MNIST" in w.value for w in at.warning)  # the historical section is labelled
+81-    assert not any("could not be read" in w.value for w in at.warning)      # every historical section rendered
+82-    assert any("Try It is unavailable" in w.value for w in at.warning)  # no served_run_id yet -> no model, no guessing
+83-
+84-
+85-def test_recent_tab_shows_the_prediction_and_drills_down_to_its_run(monkeypatch):
+86-    at = _run(monkeypatch, {"recent_predictions": [PRED_ROW], "runs": [RUN_ROW]})
+87-    assert not at.exception, [e.value for e in at.exception]
+88-    tables = [d.value for d in at.dataframe]
+89-    flat = " ".join(str(t) for t in tables)
+90-    assert "Dress" in flat and "full_improved-seed0" in flat
+91-    assert "sha256" not in flat.lower()
+92-    assert any("Producing run 7" in m.value for m in at.markdown)
+Bash
+IN
+sed -n 1,64p tests/test_ui_app_smoke.py; grep -n "Try It is unavailable" ui/*.py
+
+OUT
+"""Render the whole Streamlit app (AppTest) with no network: every tab must draw without an exception.
+
+The Supabase client is replaced by a fake, `served_run_id` is unset in the committed configuration, and the
+Fashion-MNIST evidence does not exist yet, so this checks the honest "not available yet" states as well.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+streamlit_testing = pytest.importorskip("streamlit.testing.v1")
+
+APP = Path(__file__).parent.parent / "ui" / "app.py"
+
+
+class FakeTable:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def select(self, *_):
+        return self
+
+    def order(self, *_a, **_k):
+        return self
+
+    def limit(self, *_):
+        return self
+
+    def eq(self, *_):
+        return self
+
+    def execute(self):
+        return type("R", (), {"data": self.rows})()
+
+
+class FakeSupabase:
+    def __init__(self, tables):
+        self.tables = tables
+
+    def table(self, name):
+        return FakeTable(self.tables.get(name, []))
+
+
+PROBS = [0.02, 0.01, 0.03, 0.6, 0.04, 0.05, 0.1, 0.05, 0.05, 0.05]
+PRED_ROW = {"id": 1, "created_at": "2026-10-17T06:38:40+00:00", "predicted_class": "Dress", "confidence": 0.6,
+            "probabilities": PROBS, "served_by_run_id": 7, "run_name": "full_improved-seed0",
+            "experiment_group": "g", "model_variant": "improved", "run_test_accuracy": 0.9, "run_test_macro_f1": 0.89}
+RUN_ROW = {"id": 7, "run_name": "full_improved-seed0", "experiment_group": "g", "model_variant": "improved",
+           "accuracy": 0.9, "macro_f1": 0.89, "config": {"dataset": "fashion-mnist"}, "epochs": 20}
+
+
+def _run(monkeypatch, tables):
+    import streamlit as st
+    import supabase
+
+    st.cache_resource.clear()  # the app caches its anon client; start each test from a clean cache
+
+    monkeypatch.setattr(supabase, "create_client", lambda *a, **k: FakeSupabase(tables))
+    at = streamlit_testing.AppTest.from_file(str(APP), default_timeout=60)
+    at.secrets["API_URL"] = "http://127.0.0.1:9"
+    at.secrets["SUPABASE_URL"] = "https://example.invalid"
+    at.secrets["SUPABASE_ANON_KEY"] = "anon"
+    return at.run()
+ui/app.py:272:        st.warning(f"Try It is unavailable. {exc}")
+Bash
+IN
+sed -n 262,275p ui/app.py; grep -n "def resolve_served_run" -A30 ui/tryit.py | head -50; grep -n "SERVED_CONFIG\|served_model.json" ui/tryit.py | head
+
+OUT
+        "28×28 grayscale pictures of a single light-coloured item on a dark background. It is "
+        "**not a general photo classifier**: a photo of a cat, a face or a cluttered room will still get "
+        "one of those ten labels, and that label will be meaningless. Dark items on a light "
+        "background are *not* inverted for you and will usually be misread."
+    )
+
+    served = None
+    try:
+        served = tryit.resolve_served_run()
+    except tryit.TryItError as exc:
+        st.warning(f"Try It is unavailable. {exc}")
+
+    if served:
+        if "api_ready" not in st.session_state:
+59:def resolve_served_run(config_path: Path | None = None, runs_jsonl: Path | None = None) -> dict:
+60-    """Return {'run_id', 'run_name', 'group'} for the configured Fashion-MNIST model.
+61-
+62-    The run ID is taken from ``served_run_id`` in the configuration and must match exactly one
+63-    saved ``status: saved`` record of that run name in the group's experiment records. There is
+64-    no fallback to any other run (in particular never to the historical synthetic-shape runs).
+65-    """
+66-    cfg = load_served_config(config_path)
+67-    run_id = cfg.get("served_run_id")
+68-    if run_id is None:
+69-        raise TryItError("The Fashion-MNIST model has not been trained and configured yet, so Try It "
+70-                         "is not available. (The earlier synthetic-shape model is deliberately not used.)")
+71-    if not isinstance(run_id, int):
+72-        raise TryItError("served_run_id in the served-model configuration must be an integer.")
+73-    jsonl = runs_jsonl or runs_jsonl_for(cfg["experiment_group"])
+74-    try:
+75-        lines = jsonl.read_text(encoding="utf-8").splitlines()
+76-    except OSError:
+77-        raise TryItError("The saved experiment records for the Fashion-MNIST group are missing, so "
+78-                         "the configured model cannot be verified.") from None
+79-    matches = []
+80-    for line in lines:
+81-        try:
+82-            rec = json.loads(line)
+83-        except ValueError:
+84-            continue
+85-        if rec.get("run_name") == cfg["run_name"] and rec.get("status") == "saved":
+86-            matches.append(rec.get("run_id"))
+87-    if matches != [run_id]:
+88-        raise TryItError(f"The configured run ID {run_id} does not match the saved records for "
+89-                         f"{cfg['run_name']} ({len(matches)} record(s) found).")
+8:``config/served_model.json`` (chosen before any official result existed), is checked against the
+20:SERVED_MODEL_CONFIG = REPO_ROOT / "config" / "served_model.json"
+Bash
+IN
+grep -n "monkeypatch\|SERVED\|served" tests/test_ui_app_smoke.py | sed -n 1,40p
+
+OUT
+3:The Supabase client is replaced by a fake, `served_run_id` is unset in the committed configuration, and the
+47:            "probabilities": PROBS, "served_by_run_id": 7, "run_name": "full_improved-seed0",
+53:def _run(monkeypatch, tables):
+59:    monkeypatch.setattr(supabase, "create_client", lambda *a, **k: FakeSupabase(tables))
+67:def test_app_renders_five_tabs_without_exception_and_labels_the_missing_evidence(monkeypatch):
+68:    at = _run(monkeypatch, {"recent_predictions": [PRED_ROW], "runs": [RUN_ROW]})
+82:    assert any("Try It is unavailable" in w.value for w in at.warning)  # no served_run_id yet -> no model, no guessing
+85:def test_recent_tab_shows_the_prediction_and_drills_down_to_its_run(monkeypatch):
+86:    at = _run(monkeypatch, {"recent_predictions": [PRED_ROW], "runs": [RUN_ROW]})
+95:def test_recent_tab_falls_back_when_the_predictions_view_is_missing(monkeypatch):
+108:    monkeypatch.setattr(supabase, "create_client", lambda *a, **k: Broken(legacy))
+157:def _try_it(monkeypatch, tmp_path, run_body, post_resp, served_run_id=41):
+158:    """Build the app against a configured served model and a fake API; returns (AppTest, post_calls)."""
+167:    cfg = tmp_path / "served_model.json"
+169:                               "run_name": "full_improved-seed0", "served_run_id": served_run_id}))
+172:    monkeypatch.setattr(tryit, "SERVED_MODEL_CONFIG", cfg)
+173:    monkeypatch.setattr(tryit, "runs_jsonl_for", lambda g: recs)
+187:    monkeypatch.setattr(requests, "get", fake_get)
+188:    monkeypatch.setattr(requests, "post", fake_post)
+190:    monkeypatch.setattr(supabase, "create_client", lambda *a, **k: FakeSupabase({}))
+202:def test_try_it_classifies_a_held_out_example_with_exactly_one_post_and_shows_top5(monkeypatch, tmp_path):
+203:    at, posts = _try_it(monkeypatch, tmp_path, RUN_OK, Resp(200, _predict_body()))
+216:def test_try_it_never_retries_a_failed_prediction(monkeypatch, tmp_path):
+217:    at, posts = _try_it(monkeypatch, tmp_path, RUN_OK,
+225:def test_a_result_the_service_did_not_confirm_as_logged_is_flagged(monkeypatch, tmp_path):
+226:    at, _ = _try_it(monkeypatch, tmp_path, RUN_OK, Resp(200, _predict_body(logged=False, prediction_id=None)))
+231:def test_try_it_refuses_a_served_run_that_is_not_the_configured_fashion_model(monkeypatch, tmp_path):
+234:    at, posts = _try_it(monkeypatch, tmp_path, historical, Resp(200, _predict_body()))
+Bash
+IN
+python3 - <<'EOF'
+p="tests/test_ui_app_smoke.py"
+s=open(p).read()
+s=s.replace("""The Supabase client is replaced by a fake, `served_run_id` is unset in the committed configuration, and the
+Fashion-MNIST evidence does not exist yet, so this checks the honest "not available yet" states as well.""","""The Supabase client is replaced by a fake. The committed configuration serves run 54 and the committed official
+evidence (group fashion-official-1) is displayed, including its provenance label; a configuration with no served
+run must still produce the honest "unavailable" state instead of a guess.""")
+s=s.replace("def test_app_renders_five_tabs_without_exception_and_labels_the_missing_evidence(","def test_app_renders_five_tabs_shows_the_final_evidence_and_labels_its_provenance(")
+s=s.replace('''    assert "Final Fashion-MNIST results are not available yet" in text
+''','''    assert "Final Fashion-MNIST results are not available yet" not in text
+    assert any("SQL provenance" in w.value for w in at.warning + at.caption) or "SQL provenance" in text
+    assert "Six-variant results" in " ".join(h.value for h in at.subheader + at.header + at.markdown)
+''')
+s=s.replace('''    assert any("Try It is unavailable" in w.value for w in at.warning)  # no served_run_id yet -> no model, no guessing
+''','''    assert not any("Try It is unavailable" in w.value for w in at.warning)  # run 54 is configured and in the saved records
+
+
+def test_without_a_served_run_id_try_it_is_unavailable_instead_of_guessing(monkeypatch, tmp_path):
+    at, posts = _try_it(monkeypatch, tmp_path, RUN_OK, Resp(200, _predict_body()), served_run_id=None)
+    assert not at.exception, [e.value for e in at.exception]
+    assert any("Try It is unavailable" in w.value for w in at.warning) and posts == []
+''')
+open(p,"w").write(s)
+
+p="tests/test_ui_evidence.py"
+s=open(p).read()
+i=s.index("def test_fashion_failure_analysis_is_pending_not_invented")
+j=s.index("\n\n\n",i) if "\n\n\n" in s[i:] else len(s)
+new='''def test_fashion_failure_analysis_is_a_labelled_draft_grounded_in_the_saved_examples():
+    import csv
+
+    doc = ev.FASHION.failure_doc
+    text = doc.read_text()
+    assert "DRAFT" in text and "human review" in text and "PENDING" not in text
+    interp = ev.load_failure_interpretations(doc)
+    assert len(interp["examples"]) >= 2 and interp["limits"]
+    rows = list(csv.DictReader(open(ev.FASHION.gradcam_dir / "examples.csv")))
+    wrong = {int(r["test_index"]) for r in rows if r["set"] == "incorrect"}
+    assert set(interp["examples"]) <= wrong  # every interpreted example is a real, genuinely incorrect prediction
+    blank = {r["predicted_class"]: r for r in csv.DictReader(open(ev.FASHION.gradcam_dir / "blank_cam_by_class.csv"))}
+    for cls in ("Dress", "Coat"):  # the numbers quoted in the text come from the saved diagnostic
+        r = blank[cls]
+        assert f"{int(r['n_blank_cam']):,} of {int(r['n_predictions']):,}" in text.replace("1,032 of 1,055", "1,032 of 1,055")
+'''
+s=s[:i]+new+s[j:]
+open(p,"w").write(s)
+
+p="tests/test_ui_concepts_and_card.py"
+s=open(p).read()
+i=s.index("def test_model_card_does_not_state_fashion_results_that_do_not_exist")
+j=s.index("def test_historical_numbers_in_the_card")
+new='''def test_model_card_fashion_numbers_match_the_saved_results():
+    """Every variant's accuracy quoted in the card's Fashion-MNIST section equals the saved query-4 CSV."""
+    import csv
+    import statistics as st
+
+    text = ev.load_model_card()
+    section = text.split("# Historical:", 1)[0]
+    assert "Status: DRAFT" in section
+    by = {}
+    for r in csv.DictReader(open(ev.FASHION.sql_dir / "q4.csv")):
+        by.setdefault(r["run_name"].rsplit("-seed", 1)[0], []).append(float(r["test_accuracy"]))
+    assert len(by) == 6 and all(len(v) == 3 for v in by.values())
+    for variant, accs in by.items():
+        assert f"{100 * st.mean(accs):.2f}%" in section, variant
+
+
+'''
+s=s[:i]+new+s[j:]
+open(p,"w").write(s)
+EOF
+env SUPABASE_URL= SUPABASE_SERVICE_KEY= .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_ui_app_smoke.py tests/test_ui_evidence.py tests/test_ui_concepts_and_card.py 2>&1 | grep -E "^FAILED|^E  |passed|failed" | head
+
+OUT
+E       TypeError: unsupported operand type(s) for +: 'ElementList' and 'ElementList'
+FAILED tests/test_ui_app_smoke.py::test_app_renders_five_tabs_shows_the_final_evidence_and_labels_its_provenance
+1 failed, 44 passed, 2 warnings in 82.84s (0:01:22)
+Bash
+IN
+python3 - <<'EOF'
+p="tests/test_ui_app_smoke.py"
+s=open(p).read()
+s=s.replace('''    assert any("SQL provenance" in w.value for w in at.warning + at.caption) or "SQL provenance" in text
+    assert "Six-variant results" in " ".join(h.value for h in at.subheader + at.header + at.markdown)
+''','''    assert "SQL provenance" in text + " ".join(c.value for c in at.caption)
+    assert "Six-variant results" in " ".join(h.value for h in [*at.subheader, *at.header, *at.markdown])
+''')
+open(p,"w").write(s)
+EOF
+env SUPABASE_URL= SUPABASE_SERVICE_KEY= .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_ui_app_smoke.py 2>&1 | grep -E "^FAILED|^E  |passed|failed" | head
+
+OUT
+8 passed, 2 warnings in 82.98s (0:01:22)
+Bash
+IN
+.venv/bin/python - <<'EOF'
+import csv
+r=list(csv.DictReader(open("experiments/results/fashion-official-1-sql/q4.csv")))
+t=[float(x["train_seconds"]) for x in r]; print(len(t), sum(t)/3600, min(t), max(t))
+EOF
+grep -n "FILL" docs/INSTRUCTOR_QUESTION_DRAFT.md; sed -n 1,30p README.md | cut -c1-200; grep -n "pending\|Pending\|not yet\|not available" README.md | cut -c1-160
+
+OUT
+18 0.9736111111111111 113.4 319.1
+17:2. Our compute is a laptop CPU. A full six-variant comparison takes roughly <FILL IN measured hours> per training seed. Is it acceptable to report <FILL IN, e.g. 3> training seeds per variant (we will state the number and its limits plainly), rather than a larger number?
+# See-Sense — Fashion-MNIST CNN Classifier with Grad-CAM (three clouds)
+
+**Streamlit UI ⇄ FastAPI model API ⇄ Supabase data.** A small PyTorch CNN classifies 28×28 grayscale pictures of clothing into the
+ten **Fashion-MNIST** categories (T-shirt/top, trouser, pullover, dress, coat, sandal, shirt, sneaker, bag, ankle boot), shows its
+five most probable classes, and returns a **Grad-CAM** heatmap showing where the network looked. It is a teaching and evaluation
+project, not a general photo classifier.
+
+> **Status (draft, branch `correction/fashion-mnist`).** The code on this branch is the Fashion-MNIST version. **The official
+> Fashion-MNIST experiment has not been run yet, so this README reports no Fashion-MNIST accuracy.** The apps currently deployed at the
+> URLs below are still the *earlier synthetic-shape version* (from `main`); they will change only when this branch is deployed after the
+> database migrations are applied. See [docs/PROJECT_NOTES.md](docs/PROJECT_NOTES.md) and [docs/SUBMISSION_CHECKLIST.md](docs/SUBMISSION_CHECKLIST.md).
+
+## Live deployment URLs
+
+| Tier | Platform | URL |
+|------|----------|-----|
+| UI | Streamlit Community Cloud | https://see-sense-glpk38qzwsf9hhvnlkt798.streamlit.app/ |
+| API | Render.com | https://see-sense-api-rhkb.onrender.com *(free tier sleeps; first call takes ~30–60 s; health check: `/healthz`)* |
+| Data | Supabase | `https://<your-project-ref>.supabase.co` *(placeholder: the project URL is not documented in this repository; fill it in from the Supabase dashboard)* |
+
+## The five tabs (`ui/app.py`)
+
+1. **Concepts** — convolution, stride/padding/output-size arithmetic with a worked example, receptive-field growth (three stacked 3×3 layers: 3 → 5 → 7), and the Grad-CAM derivation and limits, using
+2. **Try It** — classify an uploaded image or one of 20 bundled *held-out* clothing examples (the first two official-test images of each class). Shows the prediction, **top-five probabilities**, the i
+3. **Compare Models** — the final Fashion-MNIST comparison (baseline, full improved and four leave-one-technique-out variants: tables, training/validation curves, confusion matrices, per-class precisi
+4. **Recent Classifications** — reads the latest ≤200 rows of the hash-free `recent_predictions` view with the anon key, shows a class-distribution histogram, and lets you **drill down from a classifi
+5. **Model Card** — [MODEL_CARD.md](MODEL_CARD.md).
+
+Training is not exposed in the UI. It is available through the API (`POST /train`, run from a local machine that has the dataset) and the experiment tools in `experiments/`.
+
+25:3. **Compare Models** — the final Fashion-MNIST comparison (baseline, full improved and four leave-one-technique-out variants: tables, training/validation cu
+33:**Fashion-MNIST: pending.** The protocol ([config/fashion_protocol.json](config/fashion_protocol.json), [docs/FASHION_PROTOCOL.md](docs/FASHION_PROTOCOL.md))
+Bash
+IN
+sed -n 31,40p README.md | cut -c1-700; sed -n 10,22p docs/INSTRUCTOR_QUESTION_DRAFT.md
+
+OUT
+## Results
+
+**Fashion-MNIST: pending.** The protocol ([config/fashion_protocol.json](config/fashion_protocol.json), [docs/FASHION_PROTOCOL.md](docs/FASHION_PROTOCOL.md)) is prepared, and a validation-only runtime pilot has been measured (`experiments/results/fashion-pilot/`). No official run, test accuracy, calibration measurement or Grad-CAM finding exists yet.
+
+**Historical (not Fashion-MNIST):** the first version of the project was built on four generated shapes (group `official-supabase-1`, 2,000 images, 30 runs). That experiment is kept for transparency in [experiments/results/official-supabase-1-analysis/summary.md](experiments/results/official-supabase-1-analysis/summary.md), [docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md](docs/SUPABASE_GRADCAM_FAILURE_ANALYSIS.md) and [PART2_RESULTS.md](PART2_RESULTS.md) (draft). Its numbers say nothing about Fashion-MNIST.
+
+## Data: persisted vs not persisted
+
+| Persisted in Supabase | Never persisted |
+|---|---|
+diagonal line, filled block), not on CIFAR-10 or Fashion-MNIST as the assignment states. We have now moved the model, API, database schema and UI to
+**Fashion-MNIST** (all ten classes, the official train/test split, a validation set carved from the training images) and are re-running the baseline, improved
+and four leave-one-technique-out experiments on it.
+
+Two quick questions, so we do not guess:
+
+1. Is it acceptable to keep the earlier synthetic-shape experiment in the repository, clearly labelled "historical, not the final evidence", or would you prefer that it be removed from the submission?
+2. Our compute is a laptop CPU. A full six-variant comparison takes roughly <FILL IN measured hours> per training seed. Is it acceptable to report <FILL IN, e.g. 3> training seeds per variant (we will state the number and its limits plainly), rather than a larger number?
+
+If the deadline or grading expectations differ from what we assumed, please tell us. Thank you.
+
+Emma Rogoveanu and Komal Khan
+Bash
+IN
+python3 - <<'EOF'
+p="docs/INSTRUCTOR_QUESTION_DRAFT.md"
+s=open(p).read()
+s=s.replace("roughly <FILL IN measured hours> per training seed","about 20 minutes of recorded training time per training seed (about 0.97 h for all 18 runs, measured; one run takes 2 to 5 minutes)")
+s=s.replace("<FILL IN, e.g. 3>","3 (the number we used)")
+s=s.replace("are re-running the baseline, improved\nand four leave-one-technique-out experiments on it.","have re-run the baseline, improved\nand four leave-one-technique-out experiments on it (3 seeds each, 18 runs).")
+open(p,"w").write(s)
+
+p="README.md"
+s=open(p).read()
+a=s.index("> **Status (draft"); b=s.index("## Live deployment URLs")
+s=s[:a]+"""> **Status (draft, branch `correction/fashion-mnist`).** The code on this branch is the Fashion-MNIST version and the official experiment has
+> been run (group `fashion-official-1`, 18 runs, ids 53-70). The apps currently deployed at the URLs below are still the *earlier
+> synthetic-shape version* (from `main`) until this branch is deployed. The results below are provisional: the tables were produced by the
+> project's SQL queries on a local copy of the saved records, and the Supabase SQL-editor export has not yet been run and compared. See
+> [docs/PROJECT_NOTES.md](docs/PROJECT_NOTES.md) and [docs/SUBMISSION_CHECKLIST.md](docs/SUBMISSION_CHECKLIST.md).
+
+"""+s[b:]
+a=s.index("**Fashion-MNIST: pending.**"); b=s.index("**Historical (not Fashion-MNIST):**")
+s=s[:a]+"""**Fashion-MNIST (official, 3 seeds × 6 variants, test set, mean ± sd):** no_augmentation 90.30% ± 0.13, baseline 89.73% ± 0.47, no_dropout 88.94% ± 0.07,
+no_scheduler 88.23% ± 0.40, **full_improved 88.10% ± 0.29**, no_batchnorm 87.12% ± 0.30. **The improved model did not beat the baseline**: only batch
+normalization helped; augmentation and dropout lowered accuracy at this 20-epoch budget. Served model (fixed in advance): `full_improved-seed0`, run 54, 87.82%.
+Details, intervals, per-class results, calibration and Grad-CAM: [MODEL_CARD.md](MODEL_CARD.md), [PART2_RESULTS.md](PART2_RESULTS.md),
+[experiments/results/fashion-official-1-analysis/summary.md](experiments/results/fashion-official-1-analysis/summary.md). Protocol: [docs/FASHION_PROTOCOL.md](docs/FASHION_PROTOCOL.md) (frozen).
+
+"""+s[b:]
+s=s.replace("[PART2_RESULTS.md](PART2_RESULTS.md) (draft). Its numbers say nothing","[docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md](docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md). Its numbers say nothing")
+open(p,"w").write(s)
+
+p="docs/FASHION_PROTOCOL.md"
+s=open(p).read()
+i=s.index("6. Evidence:")
+j=s.index("8. Set `served_run_id`")
+s=s[:i]+"""6. Evidence (official runs done: group `fashion-official-1`, runs 53-70, all saved):
+   - **SQL export (once, in the Supabase SQL editor):** run `docs/fashion_official_1_export.sql` (generated by `python -m experiments.package_sql fashion-official-1 docs/fashion_official_1_export.sql`; read-only; one result row per query plus a `meta` row). Download the result as CSV (or copy as JSON), then
+     `python -m experiments.ingest_sql_export <downloaded file> experiments/results/fashion-official-1-sql --source supabase-sql-editor`
+     and `python -m experiments.analyze experiments/results/fashion-official-1-sql experiments/results/fashion-official-1-analysis`. Until this is done, the CSVs in that folder are labelled in their `PROVENANCE.md` as a **local replica** (same queries, same records read via the API), and every report says so.
+   - Read-only verification of the saved records: `python -m experiments.export_records fashion-official-1 experiments/results/fashion-official-1-records`.
+7. Grad-CAM evidence (done for run 54): `python -m experiments.gradcam_evidence --supabase full_improved-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam` and `python -m experiments.cam_blank_check --supabase full_improved-seed0 fashion-official-1 experiments/results/fashion-official-1-gradcam/blank_cam_by_class.csv`; the two failure interpretations are a **draft** in `docs/FASHION_GRADCAM_FAILURE_ANALYSIS.md` for a person to review.
+"""+s[j:]
+s=s.replace("8. Set `served_run_id` in `config/served_model.json` from `fashion-official-1-runs.jsonl`; deploy.","8. `served_run_id` = 54 is set in `config/served_model.json` (done); deploy is a manual step.")
+open(p,"w").write(s)
+EOF
+sed -n '/^6\. Evidence/,/^8\./p' docs/FASHION_PROTOCOL.md | cut -c1-120 | head -14
+
+OUT
+6. Evidence (official runs done: group `fashion-official-1`, runs 53-70, all saved):
+   - **SQL export (once, in the Supabase SQL editor):** run `docs/fashion_official_1_export.sql` (generated by `python -
+     `python -m experiments.ingest_sql_export <downloaded file> experiments/results/fashion-official-1-sql --source supa
+     and `python -m experiments.analyze experiments/results/fashion-official-1-sql experiments/results/fashion-official-
+   - Read-only verification of the saved records: `python -m experiments.export_records fashion-official-1 experiments/r
+7. Grad-CAM evidence (done for run 54): `python -m experiments.gradcam_evidence --supabase full_improved-seed0 fashion-o
+8. `served_run_id` = 54 is set in `config/served_model.json` (done); deploy is a manual step.
+3:38 PM
+Now the submission checklist, updated against current evidence.
+
+
+
+Bash
+IN
+python3 - <<'EOF'
+p="docs/SUBMISSION_CHECKLIST.md"
+s=open(p).read()
+head=s[:s.index("| # | Requirement")]
+head=head.replace("# Submission checklist (DRAFT — Fashion-MNIST correction, branch `correction/fashion-mnist`)","# Submission checklist (DRAFT — Fashion-MNIST correction, branch `correction/fashion-mnist`; updated after the official runs)")
+head=head.replace("""rubric file itself does not name the dataset; the dataset requirement comes from the assignment text Emma supplied.""","""rubric file itself does not name the dataset; the dataset requirement comes from the assignment text Emma supplied. **The full attached
+assignment document was not available to the assistant that updated this list**, so each row below is checked against the rubric, Emma's
+written requirements and the repository, not against the original assignment text: compare it with the real assignment before submitting.""")
+head=head.replace("Nothing was committed, pushed, deployed or applied to Supabase by the correction session.","Nothing was committed, pushed or deployed by the correction sessions. Emma applied migrations 004/005 herself and ran the 18 official runs; the assistant only read Supabase (plus one small, labelled live-test run, below).")
+rows='''| # | Requirement | Status | Evidence / what is missing |
+|---|---|---|---|
+| 0 | **Dataset is CIFAR-10 or Fashion-MNIST** | ✅ (local) / ⏳ deployed | Fashion-MNIST, 10 classes, official train/test, validation from train: [DATASET_CARD.md](DATASET_CARD.md), `shared/fashion.py`; 18 official runs on Supabase dataset 24. The **deployed** apps are still the synthetic version until this branch is deployed. |
+| 1 | Baseline vs improved CNN, matched seeds and budgets | ✅ | Group `fashion-official-1`, runs 53-70, 3 seeds × 6 variants, matched-protocol check passed on all 18 records (`experiments/export_records.py`; SQL query 1). Result: **improved did not beat baseline** — [MODEL_CARD.md](../MODEL_CARD.md), [PART2_RESULTS.md](../PART2_RESULTS.md). |
+| 2 | ≥3 techniques with controlled ablations | ✅ | Four leave-one-out variants with paired intervals ([summary.md](../experiments/results/fashion-official-1-analysis/summary.md)). Only batch norm helped; augmentation and dropout hurt at 20 epochs. Three seeds: wide intervals, disclosed. |
+| 3 | Runs persisted; train **and** validation loss/accuracy every epoch; test accuracy, loss, macro-F1, confusion matrix, per-class precision/recall | ✅ | Verified on all 18 stored runs (20-epoch histories, 10×10 confusion, per-class arrays, calibration). Migrations 004/005 applied by Emma; columns confirmed. |
+| 4 | Headline numbers sourced via SQL | 🟡 | Tables come from `docs/comparison_queries.sql` (queries 1-7, 9, 10) run on a **local Postgres replica** of the 18 records, labelled as such in `fashion-official-1-sql/PROVENANCE.md`. ⏳ Run `docs/fashion_official_1_export.sql` once in Supabase, ingest it, re-run `analyze`, and compare (see Remaining steps). |
+| 5 | Grad-CAM: ≥5 correct, ≥5 genuinely incorrect, in the dashboard, + two evidence-based failure interpretations | 🟡 | 10 correct + 10 incorrect from run 54 (regenerated accuracy 87.82% = stored); shown in the Compare tab. Two interpretations are **drafted for human review** in [FASHION_GRADCAM_FAILURE_ANALYSIS.md](FASHION_GRADCAM_FAILURE_ANALYSIS.md). ⏳ Emma/Komal must read the figures and confirm or rewrite them. Note: Grad-CAM is blank for 97.8% of Dress and 87.6% of Coat predictions. |
+| 6 | Calibrated probabilities | ✅ (measured) | Validation-fitted temperature; test ECE fell for 5 of 6 variants (full_improved 0.0173 → 0.0069), NLL ≈ unchanged; small gains, stated as such. |
+| 7 | Tab 1 Concepts | ✅ | [ui/app.py](../ui/app.py), [ui/concepts.py](../ui/concepts.py); 10 classes. |
+| 8 | Tab 2 Try It (upload + examples, top-5, Grad-CAM, cold start/errors, single POST) | ✅ locally / ⏳ deployed | `served_run_id` = 54, verified against group, dataset, labels, preprocessing. Real local check: Streamlit server + FastAPI serving run 54 (offline store, no cloud writes); the held-out example classified end to end. ⏳ Deploy. |
+| 9 | Tab 3 Compare Models | ✅ locally | Final Fashion-MNIST tables, curves, confusion, per-class, calibration, Grad-CAM; provenance banner; historical synthetic evidence behind a labelled toggle. |
+| 10 | Tab 4 Recent Classifications + drill-down | ✅ (live view read) | `recent_predictions` anon-readable without hashes (live test passed); drill-down tested. |
+| 11 | Tab 5 Model Card | ✅ draft | [MODEL_CARD.md](../MODEL_CARD.md) with official results; draft until provenance is settled. |
+| 12 | `predictions` table, `GET /predictions`, restricted anon history | ✅ | Live checks passed on Supabase (linkage, atomic function, hash-free anon view, anon denied on tables): `tests/test_live_supabase.py`. |
+| 13 | Three-cloud deployment, URLs documented | ⏳ | URLs in [README.md](../README.md) still serve the synthetic version. Supabase URL placeholder. ⏳ Redeploy API and UI. |
+| 14 | No raw images persisted | ✅ | README "Data" section; tests and the live row check assert no pixels/bytes in stored rows. |
+| 15 | Dataset card, model card, architecture diagram | ✅ draft | [DATASET_CARD.md](DATASET_CARD.md), model card, README diagram. |
+| 16 | Tests: multipart upload, Grad-CAM shape, regression, Supabase round trip, outage path | ✅ | `tests/` (mocks and in-memory DB) plus `tests/test_live_supabase.py` (live; 6 tests passed on 2026-10-17). Mocks and live runs are distinguished in the file headers. |
+| 17 | CI green on every push | ⏳ | `.github/workflows/ci.yml` unchanged; confirm after pushing. |
+| 18 | Ethics: two deployment contexts, safeguards, "not logged", Christian-worldview reflection | 🟡 | [ETHICS_AND_DISCLOSURE.md](ETHICS_AND_DISCLOSURE.md) updated. ⏳ §6 reflection is an AI-drafted scaffold; each author writes their own. **Komal's personal beliefs are left for her to write and review.** |
+| 19 | Individual contribution statements and **individual videos** | ❌ | Placeholders only: [CONTRIBUTIONS.md](CONTRIBUTIONS.md). ⏳ Each person writes their own and records their own video. |
+| 20 | AI-usage records | 🟡 | `ai-usage/` holds earlier sessions. ⏳ Add this correction/evidence session's record (export the transcript yourself). |
+| 21 | Secrets not committed | 🟡 | `.gitignore` covers `.env`, `secrets.toml`; `data/`, `pilot-output/` ignored. The session read credentials only through the project's own code, never printed them. ⏳ Search git history for keys before pushing. |
+| 22 | Changes committed and pushed | ❌ | Not done, by instruction. |
+| 23 | Instructor question | ⏳ | Drafted, **not sent**: [INSTRUCTOR_QUESTION_DRAFT.md](INSTRUCTOR_QUESTION_DRAFT.md) (measured numbers filled in). No approval exists. |
+| 24 | Reports: draft labels, 750-1,000 words, honest results | ✅ draft | [PART2_RESULTS.md](../PART2_RESULTS.md) and [docs/PART2_RESULTS.md](PART2_RESULTS.md): 878 words each (identical copies; the repo has no separate per-person reports). Historical report preserved: [PART2_RESULTS_HISTORICAL_SYNTHETIC.md](PART2_RESULTS_HISTORICAL_SYNTHETIC.md). |
+
+## Remaining steps (manual)
+1. Run `docs/fashion_official_1_export.sql` once in the Supabase SQL editor; download the result; `python -m experiments.ingest_sql_export <file> experiments/results/fashion-official-1-sql --source supabase-sql-editor`; `python -m experiments.analyze experiments/results/fashion-official-1-sql experiments/results/fashion-official-1-analysis`; check that `git diff` on the CSVs and `summary.md` shows no change in the numbers (if it does, update the model card and reports).
+2. Read the Grad-CAM figures yourselves and confirm or rewrite the two interpretations.
+3. Write your own contribution statements, worldview reflections and videos; add the AI-usage record for this session.
+4. Decide whether to send the instructor question. Review, commit, push, confirm CI, redeploy.
+
+## Tests (what each kind proves)
+- **Mocked / in-memory (default `pytest`)**: code paths with a fake database and a tiny Fashion-shaped dataset. They prove nothing about Supabase.
+- **Local Postgres engine (PGlite)**: migrations 001-005 apply and re-apply, `log_prediction` is atomic, anon reads only the hash-free view; the comparison queries and the packaged export run there. This is **not** Supabase.
+- **Live Supabase (`SEE_SENSE_RUN_LIVE_TESTS=1`)**: `tests/test_live_supabase.py` — passed on 2026-10-17 (writes one small dataset row, one 1-epoch run in group `live-test`, two predictions + two image_metadata rows; nothing deleted).
+- **Real-data tests**: `tests/test_fashion_data.py::TestRealFiles` run where the downloaded files exist; `tests/test_evidence_pipeline.py` checks the saved official records against the frozen protocol.
+- **Real local UI check**: Streamlit server (health 200) + FastAPI serving run 54 from an offline copy; full app render and an end-to-end classification with no exception.
+'''
+open(p,"w").write(head+rows)
+EOF
+env SUPABASE_URL= SUPABASE_SERVICE_KEY= .venv/bin/python -m pytest -q -p no:cacheprovider 2>&1 | tail -2
+
+OUT
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+293 passed, 6 skipped, 4 warnings in 98.93s (0:01:38)
+Bash
+IN
+grep -rIln "eyJ[A-Za-z0-9_-]\{20,\}\|sb_secret\|sb_publishable" --exclude-dir=.venv --exclude-dir=.git --exclude-dir=node_modules . | head; grep -rn -i "not been run\|no official\|not yet been\|pending" README.md MODEL_CARD.md PART2_RESULTS.md docs/ETHICS_AND_DISCLOSURE.md docs/DATASET_CARD.md docs/PROJECT_NOTES.md docs/FASHION_PROTOCOL.md | cut -c1-170; git status --short | grep -v "^ M\|^M \|^RM\|^ D" | head -40
+
+OUT
+tests/test_ui_recent.py
+ai-usage/Emma-Session3.md
+README.md:11:> project's SQL queries on a local copy of the saved records, and the Supabase SQL-editor export has not yet been run and compared. See
+docs/FASHION_PROTOCOL.md:59:| Spread of single epochs in the sequential pilots | about 10–19 s (one outlier 34 s) depending on variant and background load |
+docs/ETHICS_AND_DISCLOSURE.md:45:| T1 | **Store a hash and numbers, never pixels — and log atomically.** Uploaded files are decoded in memory; `image_metadata` holds only
+MODEL_CARD.md:85:has not been run yet. Treat the numbers as provisional until it has and has been compared.
+docs/PROJECT_NOTES.md:24:- No official Fashion-MNIST results exist yet; every results section says *pending*.
+?? api/calibration.py
+?? config/
+?? db/migrations/004_predictions.md
+?? db/migrations/004_predictions.sql
+?? db/migrations/004_verify.sql
+?? db/migrations/005_fashion_mnist_and_atomic_logging.md
+?? db/migrations/005_fashion_mnist_and_atomic_logging.sql
+?? db/migrations/005_verify.sql
+?? docs/CONTRIBUTIONS.md
+?? docs/DATASET_CARD.md
+?? docs/DATASET_CARD_HISTORICAL_SYNTHETIC.md
+?? docs/ETHICS_AND_DISCLOSURE.md
+?? docs/FASHION_GRADCAM_FAILURE_ANALYSIS.md
+?? docs/FASHION_PROTOCOL.md
+?? docs/INSTRUCTOR_QUESTION_DRAFT.md
+?? docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md
+?? docs/PROJECT_NOTES.md
+?? docs/SUBMISSION_CHECKLIST.md
+?? docs/fashion_official_1_export.sql
+?? experiments/cam_blank_check.py
+?? experiments/export_records.py
+?? experiments/ingest_sql_export.py
+?? experiments/migration_check.mjs
+?? experiments/package_sql.py
+?? experiments/pilot.py
+?? experiments/pilot_summary.py
+?? experiments/results/fashion-official-1-analysis/
+?? experiments/results/fashion-official-1-gradcam/
+?? experiments/results/fashion-official-1-records/
+?? experiments/results/fashion-official-1-runs.jsonl
+?? experiments/results/fashion-official-1-sql/
+?? experiments/results/fashion-pilot/
+?? experiments/results/official-supabase-1-analysis/accuracy_curves.png
+?? experiments/results/official-supabase-1-analysis/per_class_metrics.csv
+?? pytest.ini
+?? shared/fashion.py
+?? tests/fashion_fixture.py
+?? tests/fixtures/
+?? tests/test_api_predict.py
+?? tests/test_calibration.py
+3:40 PM
+Two files matched a key-like pattern. I'll check whether they're real, without printing the values.
+
+
+
+Bash
+IN
+for f in tests/test_ui_recent.py ai-usage/Emma-Session3.md; do echo "== $f"; grep -n -o "eyJ[A-Za-z0-9_-]\{20,\}\|sb_secret[A-Za-z0-9_-]*\|sb_publishable[A-Za-z0-9_-]*" $f | awk -F: '{print $1": prefix="substr($2,1,10)" len="length($2)}' | head -5; done; git log --oneline -1 -- tests/test_ui_recent.py; git diff HEAD --stat -- ai-usage/Emma-Session3.md | tail -1; git show HEAD:ai-usage/Emma-Session3.md | grep -c "eyJ[A-Za-z0-9_-]\{20,\}"
+
+OUT
+== tests/test_ui_recent.py
+55: prefix=sb_secret_ len=16
+149: prefix=sb_secret_ len=13
+== ai-usage/Emma-Session3.md
+3392: prefix=sb_secret_ len=16
+3817: prefix=sb_publish len=14
+3817: prefix=sb_publish len=14
+3817: prefix=sb_secret len=9
+3817: prefix=sb_secret len=9
+7429ef1 feat: complete five-tab dashboard with predictions and experiment evidence
+ 1 file changed, 1654 insertions(+), 1 deletion(-)
+0
+3:40 PM
+Those matches are short placeholder strings in a test and in a session log, not real keys. Last, the stale line in the project notes.
+
+
+
+Bash
+IN
+sed -i '' 's/^- No official Fashion-MNIST results exist yet; every results section says \*pending\*\./- Official Fashion-MNIST results now exist (group `fashion-official-1`, runs 53-70, 3 seeds): the improved model did not beat the baseline, and the reports say so. SQL provenance is still a local replica until the Supabase export is run./' docs/PROJECT_NOTES.md && sed -n 24p docs/PROJECT_NOTES.md | cut -c1-120; git status --short | grep -c "local_db\|pilot-output"; wc -w PART2_RESULTS.md docs/PART2_RESULTS.md | head -2
+
+OUT
+- Official Fashion-MNIST results now exist (group `fashion-official-1`, runs 53-70, 3 seeds): the improved model did not
+2
+     878 PART2_RESULTS.md
+     878 docs/PART2_RESULTS.md
+Bash
+IN
+git status --short | grep "local_db\|pilot-output"; git check-ignore -v .local_db.json pilot-output 2>&1 | head -3
+
+OUT
+ M api/local_db.py
+ M tests/test_local_db.py
+.gitignore:20:.local_db.json	.local_db.json
+3:40 PM
+The evidence is generated and the local app and reports are updated, but the SQL-sourced step needs you. I could only reach Supabase through the API, which can't run SQL, so the tables come from a local copy. Nothing was retrained, committed, pushed or deployed, no cloud records were changed, and no credentials were printed. The full suite gives 293 passed, 6 skipped. The 6 skips are the live-Supabase tests, which only run with the opt-in variable.
+
+Official results
+Records checked: all 18 runs (53–70), six variants × seeds 0, 1, 2, pass the matched-protocol check. They share one split hash, dataset 24 and identical settings except the declared technique.
+The improved model did not beat the baseline. Test accuracy, mean over 3 seeds:
+Variant	Test accuracy
+no_augmentation	90.30%
+baseline	89.73%
+no_dropout	88.94%
+no_scheduler	88.23%
+full_improved	88.10%
+no_batchnorm	87.12%
+Paired differences vs full_improved: the baseline was higher by 1.62 points, removing augmentation by 2.20 and removing dropout by 0.83, each on all three seeds. Removing batch norm cost 0.98 points, so it was the only technique that helped. Removing the scheduler made no clear difference. The model looks capacity-limited at this budget, but I didn't test that.
+Calibration: temperature scaling lowered test ECE in 5 of 6 variants (full_improved 0.0173 → 0.0069) and left NLL almost unchanged. The gain is small.
+Served model: I set served_run_id to 54 in config/served_model.json and verified group, dataset, labels and preprocessing against Supabase. Run 54 scores 87.82%, and the regenerated Grad-CAM accuracy matches that exactly. It is not the best model, because it was fixed in advance.
+SQL export: your one action
+Direct SQL isn't available to me, and I did not call the API exports SQL-sourced.
+
+What I did instead: I read the 18 records over the API and ran the project's real queries (existing ones plus a new per-class query 10) on a local Postgres copy. The PROVENANCE.md there says "LOCAL REPLICA, NOT Supabase SQL", and the app shows a warning saying the same.
+What you run: paste docs/fashion_official_1_export.sql into the Supabase SQL editor once. It is read-only and returns one row per query plus a meta row.
+How to ingest it: download the result, then run python -m experiments.ingest_sql_export <file> experiments/results/fashion-official-1-sql --source supabase-sql-editor. Then run python -m experiments.analyze experiments/results/fashion-official-1-sql experiments/results/fashion-official-1-analysis. Check that no numbers change.
+Not tested on real Supabase: I tested the packaged statement and ingest only on the local copy.
+Grad-CAM
+Examples: 10 correct (one per class) and 10 incorrect from run 54.
+Selection bias: the incorrect ones are the most confident errors by a rule fixed beforehand, so they aren't a typical sample. The common Shirt confusion appears only once.
+Blank maps: Grad-CAM for the predicted class is empty for 97.8% of Dress and 87.6% of Coat predictions, and for at most 1.2% of any other class. I did not change the method. I disclosed it in the model card, the report and the Try It tab.
+Failure interpretations: two are drafted in docs/FASHION_GRADCAM_FAILURE_ANALYSIS.md, marked as AI-written drafts for you to check against the figures and rewrite. One covers confident footwear swaps, which look like ambiguous 28×28 images. The other is the blank-map limitation.
+Local UI check
+I ran a real Streamlit server and a local API serving run 54 from an offline copy, so no predictions were logged to Supabase. The app rendered with no exception, Compare Models showed the final evidence and the provenance warning, and a held-out example classified end to end.
+
+Reports and docs
+Updated: the model card, dataset card, README, protocol doc and submission checklist. Both report drafts are 878 words each.
+
+Decision for you: "each individual report" suggested one per person, but the repo has only one results report in two identical copies. I rewrote both copies as one 878-word draft and made no per-person split. The old 1,985-word synthetic report is kept as docs/PART2_RESULTS_HISTORICAL_SYNTHETIC.md. If you meant two separate reports (one each for you and Komal), tell me and I'll split them.
+
+Checklist caveat: the full assignment text wasn't available to me, so the checklist is checked against the rubric and your brief. Compare it with the real assignment.
+
+Also changed
+I filled in measured numbers in the instructor question draft (about 0.97 h of recorded training time for all 18 runs, 3 seeds). It is still unsent.
+I fixed the analysis caption about training loss versus training accuracy.
+I added tests for the export tooling.
+I replaced three tests that expected the earlier "pending" state with checks against the saved results.
+Your remaining steps
+Run the SQL export and ingest it as above.
+Read the Grad-CAM figures and confirm or rewrite the two interpretations.
+Write your own contribution statement, video and worldview reflection, and add this session's AI-usage record. Komal's personal beliefs are left for her to write and review.
+Decide whether to send the instructor question. Review, commit, push, confirm CI, then redeploy.
